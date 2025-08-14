@@ -54,6 +54,57 @@ const propertyData = {
       "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1200"
     ],
     facts: ["4 Beds", "From KSh 42M", "ROI 9–11%"]
+  },
+  "skyline-heights": {
+    name: "Skyline Heights",
+    location: "Westlands",
+    description: "Luxurious 2-3 bedroom apartments in the heart of Westlands. Modern design with premium finishes and amenities. Perfect for young professionals and small families seeking convenience and style.",
+    price: "KSh 15,000,000",
+    estimatedIncome: "KSh 180,000/month",
+    beds: 3,
+    baths: 2,
+    sqft: "1,800",
+    images: [
+      "https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=1600",
+      "https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      "https://images.pexels.com/photos/1571453/pexels-photo-1571453.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      "https://images.pexels.com/photos/1643384/pexels-photo-1643384.jpeg?auto=compress&cs=tinysrgb&w=1200"
+    ],
+    facts: ["2-3 Beds", "From KSh 15M", "ROI 11-13%"]
+  },
+  "ocean-view-residences": {
+    name: "Ocean View Residences",
+    location: "Mombasa",
+    description: "Stunning ocean-view residences with 3-5 bedrooms. Perfect for families seeking luxury coastal living with breathtaking views and premium amenities.",
+    price: "KSh 35,000,000",
+    estimatedIncome: "KSh 400,000/month",
+    beds: 5,
+    baths: 4,
+    sqft: "3,200",
+    images: [
+      "https://images.pexels.com/photos/1571453/pexels-photo-1571453.jpeg?auto=compress&cs=tinysrgb&w=1600",
+      "https://images.pexels.com/photos/1643384/pexels-photo-1643384.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      "https://images.pexels.com/photos/1396132/pexels-photo-1396132.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      "https://images.pexels.com/photos/1571467/pexels-photo-1571467.jpeg?auto=compress&cs=tinysrgb&w=1200"
+    ],
+    facts: ["3-5 Beds", "From KSh 35M", "ROI 13-15%"]
+  },
+  "green-valley-estate": {
+    name: "Green Valley Estate",
+    location: "Karen",
+    description: "Exclusive gated community with spacious 4-6 bedroom homes. Perfect for large families seeking privacy, security, and luxury in a serene environment.",
+    price: "KSh 55,000,000",
+    estimatedIncome: "KSh 600,000/month",
+    beds: 6,
+    baths: 5,
+    sqft: "4,500",
+    images: [
+      "https://images.pexels.com/photos/1571467/pexels-photo-1571467.jpeg?auto=compress&cs=tinysrgb&w=1600",
+      "https://images.pexels.com/photos/1643389/pexels-photo-1643389.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      "https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=1200"
+    ],
+    facts: ["4-6 Beds", "From KSh 55M", "ROI 8-10%"]
   }
 };
 
@@ -79,6 +130,8 @@ export default function PropertyDetails() {
   const navigate = useNavigate();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [property, setProperty] = useState<any>(null);
+  
+
 
   useEffect(() => {
     if (propertyId && propertyData[propertyId as keyof typeof propertyData]) {

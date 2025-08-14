@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 // Theme context
 const ThemeContext = React.createContext({
@@ -123,6 +124,7 @@ function Section({ id, children, dark = false, isDarkMode = true }: { id: string
 }
 
 export default function App() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchSuggestionsVisible, setSearchSuggestionsVisible] = useState(false);
   const [filteredSuggestions, setFilteredSuggestions] = useState(searchSuggestions);
@@ -161,15 +163,16 @@ export default function App() {
     localStorage.setItem('realaist_search_history', query);
     setSearchSuggestionsVisible(false);
     // Navigate to properties page with search
-    window.location.href = `/houses?search=${encodeURIComponent(query)}`;
+    navigate(`/houses?search=${encodeURIComponent(query)}`);
   };
 
   const handleExploreHouses = () => {
-    window.location.href = '/houses';
+    navigate('/houses');
   };
 
   const handleBookConsultation = () => {
-    window.location.href = '#contact';
+    // Scroll to contact section
+    document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   // Theme toggle function
@@ -562,11 +565,7 @@ export default function App() {
               >
                 {isDarkMode ? '☀️' : '🌙'}
               </motion.button>
-              <a href="#login" className={`ml-2 px-4 py-2 rounded-full border transition-all ${
-                isDarkMode 
-                  ? 'border-white/30 hover:border-[#C7A667] hover:text-[#C7A667]' 
-                  : 'border-gray-300 hover:border-[#C7A667] hover:text-[#C7A667]'
-              }`}>Investor Login</a>
+              {/* Investor Login removed to fix navigation issues */}
             </nav>
 
             {/* Mobile Menu Button */}
@@ -600,11 +599,7 @@ export default function App() {
               <a href="#properties" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Properties</a>
               <a href="#insights" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Insights</a>
               <a href="#contact" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
-              <a href="#login" className={`block transition-colors py-2 border rounded-full px-4 py-2 text-center mt-4 ${
-                isDarkMode 
-                  ? 'text-white hover:text-white/80 border-white/30' 
-                  : 'text-gray-900 hover:text-gray-600 border-gray-300'
-              }`}>Investor Login</a>
+              {/* Investor Login removed to fix navigation issues */}
             </div>
           </motion.div>
         </motion.header>
@@ -892,7 +887,7 @@ export default function App() {
                         <img src={p.hero} alt={p.name} className="h-full w-full object-cover transition-transform duration-500" />
                       </motion.div>
                       <div className="md:col-span-5 flex flex-col">
-                        <div className={`flex-1 border rounded-2xl p-6 card-3d transition-colors duration-300 ${
+                        <div className={`flex-1 border rounded-2xl p-6 transition-colors duration-300 ${
                           isDarkMode 
                             ? 'bg-white/5 border-white/10' 
                             : 'bg-gray-50 border-gray-200'
@@ -914,17 +909,15 @@ export default function App() {
                             ))}
                           </div>
                           <div className="mt-6 flex gap-3">
-                            <motion.button 
-                              className="btn-3d px-5 py-2.5 rounded-full bg-[#C7A667] text-black text-sm font-medium"
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
+                            <a 
+                              href={`/property/${p.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`}
+                              className="px-5 py-2.5 rounded-full bg-[#C7A667] text-black text-sm font-medium relative z-50 inline-block text-center hover:bg-[#B89657] transition-colors"
                               onClick={() => {
-                                const propertyId = p.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-                                window.location.href = `/property/${propertyId}`;
+                                console.log('View Details clicked in desktop mode for:', p.name);
                               }}
                             >
                               View Details
-                            </motion.button>
+                            </a>
                             <motion.button 
                               className="btn-3d px-5 py-2.5 rounded-full border border-white/30 text-sm hover:border-[#C7A667] hover:text-[#C7A667] transition-all"
                               whileHover={{ scale: 1.05 }}
@@ -955,9 +948,9 @@ export default function App() {
             </div>
 
             {/* Navigation Buttons */}
-            <div className="absolute top-1/2 left-4 transform -translate-y-1/2 z-10">
+            <div className="absolute top-1/2 left-4 transform -translate-y-1/2 z-5 pointer-events-none">
               <motion.button
-                className={`w-12 h-12 rounded-full backdrop-blur-sm border flex items-center justify-center transition-colors ${
+                className={`w-12 h-12 rounded-full backdrop-blur-sm border flex items-center justify-center transition-colors pointer-events-auto ${
                   isDarkMode 
                     ? 'bg-black/50 border-white/20 text-white hover:bg-black/70' 
                     : 'bg-white/80 border-gray-200 text-gray-700 hover:bg-white'
@@ -970,9 +963,9 @@ export default function App() {
                 ←
               </motion.button>
             </div>
-            <div className="absolute top-1/2 right-4 transform -translate-y-1/2 z-10">
+            <div className="absolute top-1/2 right-4 transform -translate-y-1/2 z-5 pointer-events-none">
               <motion.button
-                className={`w-12 h-12 rounded-full backdrop-blur-sm border flex items-center justify-center transition-colors ${
+                className={`w-12 h-12 rounded-full backdrop-blur-sm border flex items-center justify-center transition-colors pointer-events-auto ${
                   isDarkMode 
                     ? 'bg-black/50 border-white/20 text-white hover:bg-black/70' 
                     : 'bg-white/80 border-gray-200 text-gray-700 hover:bg-white'
@@ -1186,7 +1179,9 @@ export default function App() {
               transition={{ duration: 0.6 }}
             >
               <h3 className="font-heading text-3xl md:text-4xl">Let's talk investments</h3>
-              <p className="mt-3 text-white/70 max-w-prose">Fill the form and our team will respond within 24 hours.</p>
+              <p className={`mt-3 max-w-prose transition-colors duration-300 ${
+                isDarkMode ? 'text-white/70' : 'text-gray-600'
+              }`}>Fill the form and our team will respond within 24 hours.</p>
               <form className="mt-8 grid grid-cols-1 gap-4 max-w-lg" onSubmit={(e) => {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget);
@@ -1201,7 +1196,11 @@ export default function App() {
               }}>
                 <motion.input 
                   name="name"
-                  className="bg-white/5 border border-white/15 rounded-lg px-4 py-3 outline-none focus:border-[#C7A667] transition-colors"
+                  className={`border rounded-lg px-4 py-3 outline-none focus:border-[#C7A667] transition-colors ${
+                    isDarkMode 
+                      ? 'bg-white/5 border-white/15 text-white placeholder-white/40' 
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                  }`}
                   placeholder="Name"
                   whileFocus={{ scale: 1.02 }}
                   required
@@ -1209,14 +1208,22 @@ export default function App() {
                 <motion.input 
                   name="email"
                   type="email"
-                  className="bg-white/5 border border-white/15 rounded-lg px-4 py-3 outline-none focus:border-[#C7A667] transition-colors"
+                  className={`border rounded-lg px-4 py-3 outline-none focus:border-[#C7A667] transition-colors ${
+                    isDarkMode 
+                      ? 'bg-white/5 border-white/15 text-white placeholder-white/40' 
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                  }`}
                   placeholder="Email"
                   whileFocus={{ scale: 1.02 }}
                   required
                 />
                 <motion.input 
                   name="phone"
-                  className="bg-white/5 border border-white/15 rounded-lg px-4 py-3 outline-none focus:border-[#C7A667] transition-colors"
+                  className={`border rounded-lg px-4 py-3 outline-none focus:border-[#C7A667] transition-colors ${
+                    isDarkMode 
+                      ? 'bg-white/5 border-white/15 text-white placeholder-white/40' 
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                  }`}
                   placeholder="Phone"
                   whileFocus={{ scale: 1.02 }}
                   required
@@ -1224,12 +1231,18 @@ export default function App() {
                 <motion.textarea 
                   name="message"
                   rows={4} 
-                  className="bg-white/5 border border-white/15 rounded-lg px-4 py-3 outline-none focus:border-[#C7A667] transition-colors resize-none"
+                  className={`border rounded-lg px-4 py-3 outline-none focus:border-[#C7A667] transition-colors resize-none ${
+                    isDarkMode 
+                      ? 'bg-white/5 border-white/15 text-white placeholder-white/40' 
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                  }`}
                   placeholder="Message"
                   whileFocus={{ scale: 1.02 }}
                   required
                 />
-                <label className="flex items-center gap-2 text-sm text-white/70">
+                <label className={`flex items-center gap-2 text-sm transition-colors duration-300 ${
+                  isDarkMode ? 'text-white/70' : 'text-gray-600'
+                }`}>
                   <input type="checkbox" className="accent-[#C7A667]" required /> I agree to the privacy policy
                 </label>
                 <motion.button 
@@ -1243,22 +1256,34 @@ export default function App() {
               </form>
             </motion.div>
             <motion.div 
-              className="rounded-2xl border border-white/10 bg-white/5 p-6 card-3d"
+              className={`rounded-2xl border p-6 card-3d transition-colors duration-300 ${
+                isDarkMode 
+                  ? 'border-white/10 bg-white/5' 
+                  : 'border-gray-200 bg-gray-50'
+              }`}
               initial={{ opacity: 0, x: 50 }}
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
             >
               <div className="font-heading text-xl">REALAIST</div>
-              <p className="text-white/70 mt-2 text-sm">Prominade - General Mathenge</p>
+              <p className={`mt-2 text-sm transition-colors duration-300 ${
+                isDarkMode ? 'text-white/70' : 'text-gray-600'
+              }`}>Prominade - General Mathenge</p>
               <div className="mt-4 flex flex-col gap-3 text-sm">
-                <div className="text-white/70">
+                <div className={`transition-colors duration-300 ${
+                  isDarkMode ? 'text-white/70' : 'text-gray-600'
+                }`}>
                   <div className="font-medium">Phone: 0707 726 297</div>
                   <div className="font-medium">Email: Sales.realaist@gmail.com</div>
                 </div>
                 <div className="flex gap-3">
                   <motion.a 
                     href="tel:0707726297" 
-                    className="px-4 py-2 rounded-full border border-white/30 hover:border-[#C7A667] hover:text-[#C7A667] transition-all btn-3d"
+                    className={`px-4 py-2 rounded-full border transition-all btn-3d ${
+                      isDarkMode 
+                        ? 'border-white/30 hover:border-[#C7A667] hover:text-[#C7A667]' 
+                        : 'border-gray-300 hover:border-[#C7A667] hover:text-[#C7A667]'
+                    }`}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
@@ -1266,7 +1291,11 @@ export default function App() {
                   </motion.a>
                   <motion.a 
                     href="mailto:Sales.realaist@gmail.com" 
-                    className="px-4 py-2 rounded-full border border-white/30 hover:border-[#C7A667] hover:text-[#C7A667] transition-all btn-3d"
+                    className={`px-4 py-2 rounded-full border transition-all btn-3d ${
+                      isDarkMode 
+                        ? 'border-white/30 hover:border-[#C7A667] hover:text-[#C7A667]' 
+                        : 'border-gray-300 hover:border-[#C7A667] hover:text-[#C7A667]'
+                    }`}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
@@ -1274,7 +1303,9 @@ export default function App() {
                   </motion.a>
                 </div>
               </div>
-              <img className="mt-6 rounded-xl border border-white/10 w-full h-48 object-cover" src="https://images.pexels.com/photos/1029599/pexels-photo-1029599.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="office location" />
+              <img className={`mt-6 rounded-xl border w-full h-48 object-cover transition-colors duration-300 ${
+                isDarkMode ? 'border-white/10' : 'border-gray-200'
+              }`} src="https://images.pexels.com/photos/1029599/pexels-photo-1029599.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="office location" />
             </motion.div>
           </div>
         </Section>

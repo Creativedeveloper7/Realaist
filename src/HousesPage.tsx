@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 // Houses data
 const houses = [
@@ -72,6 +73,7 @@ const houses = [
 ];
 
 export default function HousesPage() {
+  const navigate = useNavigate();
   const [filteredHouses, setFilteredHouses] = useState(houses);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('All');
@@ -115,7 +117,7 @@ export default function HousesPage() {
   }, [searchTerm, selectedType, selectedStatus]);
 
   const handleBackToHome = () => {
-    window.location.href = '/';
+    navigate('/');
   };
 
   return (
@@ -356,13 +358,14 @@ export default function HousesPage() {
                         </div>
 
                         <div className="flex gap-3">
-                          <motion.button 
-                            className="btn-3d flex-1 px-4 py-2 rounded-lg bg-[#C7A667] text-black font-medium text-sm"
+                          <motion.a 
+                            href={`/property/${house.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`}
+                            className="btn-3d flex-1 px-4 py-2 rounded-lg bg-[#C7A667] text-black font-medium text-sm inline-block text-center"
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                           >
                             View Details
-                          </motion.button>
+                          </motion.a>
                           <motion.button 
                             className="btn-3d px-4 py-2 rounded-lg border border-white/20 text-white text-sm hover:border-[#C7A667] hover:text-[#C7A667] transition-all"
                             whileHover={{ scale: 1.02 }}
