@@ -2,6 +2,50 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 
+// Helper function to get icon for fact type
+const getFactIcon = (factIndex: number) => {
+  switch (factIndex) {
+    case 0: // Beds
+      return (
+        <img 
+          src="/icons/bed.png" 
+          alt="Beds" 
+          className="w-6 h-6 object-contain filter brightness-0 saturate-100 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]"
+          onError={(e) => {
+            // Hide the image if it fails to load
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+      );
+    case 1: // Baths
+      return (
+        <img 
+          src="/icons/bath.png" 
+          alt="Baths" 
+          className="w-6 h-6 object-contain filter brightness-0 saturate-100 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]"
+          onError={(e) => {
+            // Hide the image if it fails to load
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+      );
+    case 2: // Square Feet
+      return (
+        <img 
+          src="/icons/sqre%20ft.png" 
+          alt="Square Feet" 
+          className="w-6 h-6 object-contain filter brightness-0 saturate-100 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]"
+          onError={(e) => {
+            // Hide the image if it fails to load
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+      );
+    default: // Est. Income (no icon)
+      return null;
+  }
+};
+
 // Property data - you can expand this or fetch from an API
 const propertyData = {
   "escada": {
@@ -130,6 +174,8 @@ export default function PropertyDetails() {
   const navigate = useNavigate();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [property, setProperty] = useState<any>(null);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
 
 
@@ -180,22 +226,104 @@ export default function PropertyDetails() {
               <a href="/#properties" className="hover:text-white/80 transition-colors">Properties</a>
               <a href="/#insights" className="hover:text-white/80 transition-colors">Insights</a>
               <a href="/#contact" className="hover:text-white/80 transition-colors">Contact</a>
-              <a href="#login" className="ml-2 px-4 py-2 rounded-full border border-white/30 hover:border-[#C7A667] hover:text-[#C7A667] transition-all">Investor Login</a>
+              <motion.button
+                onClick={() => setLoginModalOpen(true)}
+                className="ml-2 px-4 py-2 rounded-full border border-white/30 hover:border-[#C7A667] hover:text-[#C7A667] transition-all"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Investor Login
+              </motion.button>
             </nav>
 
             {/* Mobile Menu Button */}
             <button
               className="md:hidden p-2 text-white hover:text-white/80 transition-colors"
-              onClick={() => navigate('/')}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               <div className="w-6 h-6 flex flex-col justify-center items-center">
-                <span className="block w-5 h-0.5 bg-white"></span>
-                <span className="block w-5 h-0.5 bg-white mt-1"></span>
-                <span className="block w-5 h-0.5 bg-white mt-1"></span>
+                <span className={`block w-5 h-0.5 transition-all duration-300 ${mobileMenuOpen ? 'rotate-45 translate-y-1.5' : ''} bg-white`}></span>
+                <span className={`block w-5 h-0.5 transition-all duration-300 ${mobileMenuOpen ? 'opacity-0' : 'opacity-100'} bg-white mt-1`}></span>
+                <span className={`block w-5 h-0.5 transition-all duration-300 ${mobileMenuOpen ? '-rotate-45 -translate-y-1.5' : ''} bg-white mt-1`}></span>
               </div>
             </button>
           </div>
         </motion.header>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <motion.div
+            className="fixed inset-0 z-40 md:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            {/* Backdrop */}
+            <motion.div
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            
+            {/* Menu Panel */}
+            <motion.div
+              className="absolute top-0 right-0 w-80 h-full bg-[#111217] border-l border-white/10 p-6"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              {/* Menu Items */}
+              <div className="mt-12 space-y-6">
+                <a 
+                  href="/#properties" 
+                  className="block text-lg font-medium text-white hover:text-[#C7A667] transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Properties
+                </a>
+                <a 
+                  href="/#insights" 
+                  className="block text-lg font-medium text-white hover:text-[#C7A667] transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Insights
+                </a>
+                <a 
+                  href="/#contact" 
+                  className="block text-lg font-medium text-white hover:text-[#C7A667] transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Contact
+                </a>
+                
+                {/* Investor Login Button */}
+                <motion.button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setLoginModalOpen(true);
+                  }}
+                  className="w-full px-6 py-3 rounded-full border border-white/30 hover:border-[#C7A667] hover:text-[#C7A667] transition-all text-lg font-medium"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Investor Login
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
 
         <div className="pt-16">
           {/* Hero Image Section */}
@@ -213,6 +341,38 @@ export default function PropertyDetails() {
             
             {/* Overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+
+            {/* 3D Virtual Tour Button */}
+            <motion.button
+              className="absolute top-6 right-6 px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors flex items-center gap-2 shadow-lg z-20"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                // Handle 3D virtual tour functionality
+                console.log('3D Virtual Tour clicked for:', property.name);
+              }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              3D Virtual Tour
+            </motion.button>
+
+            {/* Watch Video Button */}
+            <motion.button
+              className="absolute top-20 right-6 px-4 py-2 rounded-full border border-white/30 bg-black/50 backdrop-blur-sm text-white font-medium hover:border-[#C7A667] hover:text-[#C7A667] transition-colors flex items-center gap-2 shadow-lg z-20"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                // Handle watch video functionality
+                console.log('Watch Video clicked for:', property.name);
+              }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3l14 9-14 9V3z" />
+              </svg>
+              Watch Video
+            </motion.button>
 
             {/* Navigation Arrows */}
             <button
@@ -257,13 +417,16 @@ export default function PropertyDetails() {
               <div className="md:col-span-2 space-y-6">
                 {/* Property Name and Location */}
                 <div>
-                  <h1 className="text-4xl md:text-5xl font-heading mb-2" style={{ 
-                    fontFamily: "'Cinzel', 'Playfair Display', serif",
-                    fontWeight: 500,
-                    letterSpacing: '0.05em'
-                  }}>
-                    {property.name}
-                  </h1>
+                  <div className="flex items-center gap-4 mb-2">
+                    <h1 className="text-4xl md:text-5xl font-heading" style={{ 
+                      fontFamily: "'Cinzel', 'Playfair Display', serif",
+                      fontWeight: 500,
+                      letterSpacing: '0.05em'
+                    }}>
+                      {property.name}
+                    </h1>
+                    <div className="text-2xl font-medium text-[#C7A667]">{property.price}</div>
+                  </div>
                   <div className="flex items-center gap-2 text-white/70">
                     <span>📍</span>
                     <span>{property.location}</span>
@@ -273,19 +436,19 @@ export default function PropertyDetails() {
                 {/* Key Metrics */}
                 <div className="flex gap-8">
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">🛏️</span>
+                    {getFactIcon(0)}
                     <div>
                       <div className="text-lg font-medium">{property.beds} Beds</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">🛁</span>
+                    {getFactIcon(1)}
                     <div>
                       <div className="text-lg font-medium">{property.baths} Baths</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">→</span>
+                    {getFactIcon(2)}
                     <div>
                       <div className="text-lg font-medium">{property.sqft} sqft</div>
                     </div>
@@ -307,15 +470,8 @@ export default function PropertyDetails() {
                 </div>
               </div>
 
-              {/* Right Column - Pricing and Actions */}
+              {/* Right Column - Actions */}
               <div className="space-y-6">
-                {/* Pricing */}
-                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
-                  <div className="text-sm text-white/60 mb-1">Starting</div>
-                  <div className="text-3xl font-bold text-[#C7A667] mb-2">{property.price}</div>
-                  <div className="text-sm text-white/70">Estimated Income {property.estimatedIncome}</div>
-                </div>
-
                 {/* Action Buttons */}
                 <div className="space-y-3">
                   <motion.button 
@@ -323,23 +479,15 @@ export default function PropertyDetails() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    📄 Download Brochure
+                    📞 Call Sale Rep.
                   </motion.button>
                   
                   <motion.button 
-                    className="w-full px-6 py-3 bg-white text-black font-medium rounded-lg hover:bg-white/90 transition-colors flex items-center justify-center gap-2"
+                    className="w-full px-6 py-3 border border-[#C7A667] text-[#C7A667] font-medium rounded-lg hover:bg-[#C7A667] hover:text-black transition-colors flex items-center justify-center gap-2"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     📅 Schedule Physical Visit
-                  </motion.button>
-                  
-                  <motion.button 
-                    className="w-full px-6 py-3 border border-white/30 text-white font-medium rounded-lg hover:border-white/50 hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    📞 Call Sale Rep.
                   </motion.button>
                   
                   <motion.button 
@@ -348,6 +496,14 @@ export default function PropertyDetails() {
                     whileTap={{ scale: 0.98 }}
                   >
                     💬 Chat on WhatsApp
+                  </motion.button>
+                  
+                  <motion.button 
+                    className="w-full px-6 py-3 border border-white/30 text-white font-medium rounded-lg hover:border-[#C7A667] hover:text-[#C7A667] transition-colors flex items-center justify-center gap-2"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    📄 Download Brochure
                   </motion.button>
                 </div>
 
@@ -366,6 +522,134 @@ export default function PropertyDetails() {
           </div>
         </div>
       </div>
+
+      {/* Investor Login Modal */}
+      {loginModalOpen && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          {/* Backdrop */}
+          <motion.div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            onClick={() => setLoginModalOpen(false)}
+          />
+          
+          {/* Modal Content */}
+          <motion.div
+            className="relative w-full max-w-md rounded-2xl border border-white/10 bg-[#111217] p-8"
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setLoginModalOpen(false)}
+              className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Header */}
+            <div className="text-center mb-8">
+              <div className="border border-dashed rounded-md px-4 py-3 mb-4 inline-block">
+                <span className="font-logo tracking-[0.25em] text-sm text-white/90">
+                  REALAIST
+                </span>
+              </div>
+              <h2 className="font-heading text-2xl font-medium text-white">
+                Investor Portal
+              </h2>
+              <p className="mt-2 text-sm text-white/70">
+                Access your investment portfolio and exclusive opportunities
+              </p>
+            </div>
+
+            {/* Login Form */}
+            <form className="space-y-4" onSubmit={(e) => {
+              e.preventDefault();
+              // Handle login logic here
+              console.log('Login submitted');
+            }}>
+              <div>
+                <label className="block text-sm font-medium mb-2 text-white/80">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  required
+                  className="w-full px-4 py-3 rounded-lg border bg-white/5 border-white/15 text-white placeholder-white/40 focus:border-[#C7A667] outline-none focus:ring-2 focus:ring-[#C7A667]/20"
+                  placeholder="Enter your email"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2 text-white/80">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  className="w-full px-4 py-3 rounded-lg border bg-white/5 border-white/15 text-white placeholder-white/40 focus:border-[#C7A667] outline-none focus:ring-2 focus:ring-[#C7A667]/20"
+                  placeholder="Enter your password"
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 text-sm text-white/70">
+                  <input type="checkbox" className="accent-[#C7A667]" />
+                  Remember me
+                </label>
+                <button
+                  type="button"
+                  className="text-sm text-[#C7A667] hover:text-[#B89657] transition-colors"
+                >
+                  Forgot password?
+                </button>
+              </div>
+
+              <motion.button
+                type="submit"
+                className="w-full py-3 rounded-lg bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Sign In
+              </motion.button>
+            </form>
+
+            {/* Divider */}
+            <div className="my-6 flex items-center">
+              <div className="flex-1 h-px bg-white/20"></div>
+              <span className="px-4 text-sm text-white/50">or</span>
+              <div className="flex-1 h-px bg-white/20"></div>
+            </div>
+
+            {/* Additional Options */}
+            <div className="space-y-3">
+              <motion.button
+                type="button"
+                className="w-full py-3 rounded-lg border border-white/20 hover:border-white/40 text-white hover:bg-white/5 transition-colors"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <span className="text-sm font-medium">Create Investor Account</span>
+              </motion.button>
+              
+              <p className="text-center text-xs text-white/50">
+                New to REALAIST? Contact our team to get started
+              </p>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </>
   );
 }

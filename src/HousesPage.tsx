@@ -2,15 +2,59 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
+// Helper function to get icon for fact type
+const getFactIcon = (factIndex: number) => {
+  switch (factIndex) {
+    case 0: // Beds
+      return (
+        <img 
+          src="/icons/bed.png" 
+          alt="Beds" 
+          className="w-3 h-3 object-contain filter brightness-0 saturate-100 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]"
+          onError={(e) => {
+            // Hide the image if it fails to load
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+      );
+    case 1: // Baths
+      return (
+        <img 
+          src="/icons/bath.png" 
+          alt="Baths" 
+          className="w-3 h-3 object-contain filter brightness-0 saturate-100 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]"
+          onError={(e) => {
+            // Hide the image if it fails to load
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+      );
+    case 2: // Square Feet
+      return (
+        <img 
+          src="/icons/sqre%20ft.png" 
+          alt="Square Feet" 
+          className="w-3 h-3 object-contain filter brightness-0 saturate-100 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]"
+          onError={(e) => {
+            // Hide the image if it fails to load
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+      );
+    default: // Est. Income (no icon)
+      return null;
+  }
+};
+
 // Houses data
 const houses = [
   {
     id: 1,
     name: "Escada",
     location: "Gigiri / Westlands",
-    price: "From KSh 3.7M",
-    beds: "1-2 Beds",
-    roi: "10-12%",
+    price: "KSh 3.7M",
+    facts: ["2", "2", "1,200 sq ft", "Est. income 10–12%"],
+    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
     image: "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Available",
     type: "Apartments"
@@ -19,9 +63,9 @@ const houses = [
     id: 2,
     name: "Azure Bay Villas",
     location: "Diani Beach",
-    price: "From KSh 28M",
-    beds: "3-4 Beds",
-    roi: "12-14%",
+    price: "KSh 28M",
+    facts: ["4", "3", "20,000 sq ft", "Est. income 12–14%"],
+    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
     image: "https://images.pexels.com/photos/1029599/pexels-photo-1029599.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Pre-Launch",
     type: "Beach Villas"
@@ -30,9 +74,9 @@ const houses = [
     id: 3,
     name: "The Grove",
     location: "Karen – Gated Community",
-    price: "From KSh 42M",
-    beds: "4 Beds",
-    roi: "9-11%",
+    price: "KSh 42M",
+    facts: ["4", "3", "25,000 sq ft", "Est. income 9–11%"],
+    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
     image: "https://images.pexels.com/photos/1396132/pexels-photo-1396132.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Available",
     type: "Townhouses"
@@ -41,9 +85,9 @@ const houses = [
     id: 4,
     name: "Skyline Heights",
     location: "Westlands",
-    price: "From KSh 15M",
-    beds: "2-3 Beds",
-    roi: "11-13%",
+    price: "KSh 18M",
+    facts: ["3", "2", "1,800 sq ft", "Est. income 8–10%"],
+    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
     image: "https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Coming Soon",
     type: "Apartments"
@@ -52,9 +96,9 @@ const houses = [
     id: 5,
     name: "Ocean View Residences",
     location: "Mombasa",
-    price: "From KSh 35M",
-    beds: "3-5 Beds",
-    roi: "13-15%",
+    price: "KSh 35M",
+    facts: ["5", "4", "3,200 sq ft", "Est. income 13–15%"],
+    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
     image: "https://images.pexels.com/photos/1571453/pexels-photo-1571453.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Available",
     type: "Beach Villas"
@@ -63,9 +107,9 @@ const houses = [
     id: 6,
     name: "Green Valley Estate",
     location: "Karen",
-    price: "From KSh 55M",
-    beds: "4-6 Beds",
-    roi: "8-10%",
+    price: "KSh 55M",
+    facts: ["6", "5", "4,500 sq ft", "Est. income 8–10%"],
+    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
     image: "https://images.pexels.com/photos/1571467/pexels-photo-1571467.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Available",
     type: "Gated Communities"
@@ -342,19 +386,13 @@ export default function HousesPage() {
                         <h3 className="font-heading text-xl text-white mb-2">{house.name}</h3>
                         <p className="text-white/70 text-sm mb-4">{house.location}</p>
                         
-                        <div className="grid grid-cols-3 gap-4 mb-6">
-                          <div className="text-center">
-                            <div className="text-white font-semibold">{house.beds}</div>
-                            <div className="text-xs text-white/50">Bedrooms</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-white font-semibold">{house.price}</div>
-                            <div className="text-xs text-white/50">Price</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-white font-semibold">{house.roi}</div>
-                            <div className="text-xs text-white/50">ROI</div>
-                          </div>
+                        <div className="flex flex-wrap gap-2 mb-6">
+                          {house.facts.map((fact, factIndex) => (
+                            <span key={fact} className="text-xs px-3 py-1 rounded-full border border-white/20 bg-white/5 text-white flex items-center gap-1">
+                              {getFactIcon(factIndex)}
+                              {fact}
+                            </span>
+                          ))}
                         </div>
 
                         <div className="flex gap-3">

@@ -2,22 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
-// Theme context
-const ThemeContext = React.createContext({
-  isDarkMode: true,
-  toggleTheme: () => {},
-});
-
-export const useTheme = () => React.useContext(ThemeContext);
-
 // REALAIST – Luxury Real Estate Landing Page
-const properties = [
+const offPlanProjects = [
   {
     name: "Escada",
+    price: "KSh 3.7M",
     location: "Gigiri / Westlands",
     summary:
       "Curated 1–2 bed residences minutes from the city's social and entertainment hub. Designed for dependable yields and elevated living.",
-    facts: ["1–2 Beds", "From KSh 3.7M", "ROI 10–12%"],
+    facts: ["2", "2", "1,200 sq ft", "Est. income 10–12%"],
+    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
     hero: "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600",
     gallery: [
       "https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=1200",
@@ -26,28 +20,70 @@ const properties = [
   },
   {
     name: "Azure Bay Villas",
+    price: "KSh 28M",
     location: "Diani Beach",
     summary:
       "Ocean-view villas with private terraces and access to a lifestyle concierge. Strong short-let demand profile.",
-    facts: ["3–4 Beds", "From KSh 28M", "ROI 12–14%"],
+    facts: ["4", "3", "20,000 sq ft", "Est. income 12–14%"],
+    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
     hero: "https://images.pexels.com/photos/1029599/pexels-photo-1029599.jpeg?auto=compress&cs=tinysrgb&w=1600",
     gallery: [
       "https://images.pexels.com/photos/1571453/pexels-photo-1571453.jpeg?auto=compress&cs=tinysrgb&w=1200",
       "https://images.pexels.com/photos/1643384/pexels-photo-1643384.jpeg?auto=compress&cs=tinysrgb&w=1200",
     ],
   },
+];
+
+const completedProjects = [
   {
     name: "The Grove",
+    price: "KSh 42M",
     location: "Karen – Gated Community",
     summary:
       "Townhouses wrapped in greenery with clubhouse amenities and strong family rental demand.",
-    facts: ["4 Beds", "From KSh 42M", "ROI 9–11%"],
+    facts: ["4", "3", "25,000 sq ft", "Est. income 9–11%"],
+    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
     hero: "https://images.pexels.com/photos/1396132/pexels-photo-1396132.jpeg?auto=compress&cs=tinysrgb&w=1600",
     gallery: [
       "https://images.pexels.com/photos/1571467/pexels-photo-1571467.jpeg?auto=compress&cs=tinysrgb&w=1200",
       "https://images.pexels.com/photos/1643389/pexels-photo-1643389.jpeg?auto=compress&cs=tinysrgb&w=1200",
     ],
   },
+  {
+    name: "Skyline Heights",
+    price: "KSh 18M",
+    location: "Westlands",
+    summary:
+      "Luxury apartments with panoramic city views and premium amenities. Perfect for urban professionals.",
+    facts: ["3", "2", "1,800 sq ft", "Est. income 8–10%"],
+    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    hero: "https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    gallery: [
+      "https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    ],
+  },
+];
+
+const testimonials = [
+  {
+    id: 1,
+    name: "Investor 1",
+    location: "Nairobi, KE",
+    testimonial: "REALAIST helped me access a pre-launch opportunity with transparent numbers. Performance has matched the projections."
+  },
+  {
+    id: 2,
+    name: "Investor 2", 
+    location: "Mombasa, KE",
+    testimonial: "The team's expertise in luxury real estate is unmatched. They guided me through every step of the investment process."
+  },
+  {
+    id: 3,
+    name: "Investor 3",
+    location: "Diani, KE", 
+    testimonial: "Outstanding returns on my beachfront property investment. REALAIST's market insights are invaluable."
+  }
 ];
 
 // Search suggestions data
@@ -56,6 +92,50 @@ const searchSuggestions = [
   "1 Bedroom", "2 Bedroom", "3+ Bedroom", "Penthouse", "Townhouse",
   "Nairobi", "Mombasa", "Diani", "Karen", "Westlands", "Gigiri"
 ];
+
+// Helper function to get icon for fact type
+const getFactIcon = (factIndex: number) => {
+  switch (factIndex) {
+    case 0: // Beds
+      return (
+        <img 
+          src="/icons/bed.png" 
+          alt="Beds" 
+          className="w-3 h-3 object-contain filter brightness-0 saturate-100 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]"
+          onError={(e) => {
+            // Hide the image if it fails to load
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+      );
+    case 1: // Baths
+      return (
+        <img 
+          src="/icons/bath.png" 
+          alt="Baths" 
+          className="w-3 h-3 object-contain filter brightness-0 saturate-100 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]"
+          onError={(e) => {
+            // Hide the image if it fails to load
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+      );
+    case 2: // Square Feet
+      return (
+        <img 
+          src="/icons/sqre%20ft.png" 
+          alt="Square Feet" 
+          className="w-3 h-3 object-contain filter brightness-0 saturate-100 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]"
+          onError={(e) => {
+            // Hide the image if it fails to load
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+      );
+    default: // Est. Income (no icon)
+      return null;
+  }
+};
 
 function FloatingLogo({ isDarkMode = true }: { isDarkMode?: boolean }) {
   return (
@@ -132,8 +212,12 @@ export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [propertiesCarouselIndex, setPropertiesCarouselIndex] = useState(0);
   const [insightsCarouselIndex, setInsightsCarouselIndex] = useState(0);
+  const [offPlanCarouselIndex, setOffPlanCarouselIndex] = useState(0);
+  const [completedCarouselIndex, setCompletedCarouselIndex] = useState(0);
+  const [testimonialsCarouselIndex, setTestimonialsCarouselIndex] = useState(0);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [themeWidgetOpen, setThemeWidgetOpen] = useState(false);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
   const heroRef = useRef(null);
 
   // Search functionality with localStorage
@@ -481,8 +565,8 @@ export default function App() {
         }
       `}</style>
 
-      {/* Floating Logo - Visible across all pages */}
-      <FloatingLogo isDarkMode={isDarkMode} />
+              {/* Floating Logo - Visible across all pages */}
+        <FloatingLogo isDarkMode={isDarkMode} />
 
       {/* Mobile Theme Widget */}
       <motion.div
@@ -554,6 +638,14 @@ export default function App() {
               <a href="#insights" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Insights</a>
               <a href="#contact" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
               <motion.button
+                onClick={() => setLoginModalOpen(true)}
+                className="px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Investor Login
+              </motion.button>
+              <motion.button
                 onClick={toggleTheme}
                 className={`p-2 rounded-full border transition-all ${
                   isDarkMode 
@@ -563,9 +655,8 @@ export default function App() {
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
-                {isDarkMode ? '☀️' : '🌙'}
+                {isDarkMode ? '☀️' : '��'}
               </motion.button>
-              {/* Investor Login removed to fix navigation issues */}
             </nav>
 
             {/* Mobile Menu Button */}
@@ -599,7 +690,14 @@ export default function App() {
               <a href="#properties" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Properties</a>
               <a href="#insights" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Insights</a>
               <a href="#contact" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
-              {/* Investor Login removed to fix navigation issues */}
+              <motion.button
+                onClick={() => setLoginModalOpen(true)}
+                className="w-full px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Investor Login
+              </motion.button>
             </div>
           </motion.div>
         </motion.header>
@@ -697,38 +795,43 @@ export default function App() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.8 }}
           >
-            <div className={`backdrop-blur-sm border rounded-lg p-6 transition-colors duration-300 ${
-              isDarkMode 
-                ? 'bg-white/5 border-white/10' 
-                : 'bg-black/5 border-gray-200'
-            }`}>
+            <div className="bg-[#C7A667] border border-[#B89657] rounded-lg p-6 shadow-lg">
               {/* Search Input */}
               <div className="flex gap-3 mb-4">
                 <input 
-                  className={`flex-1 bg-transparent border-none outline-none text-lg transition-colors duration-300 ${
-                    isDarkMode 
-                      ? 'text-white placeholder-white/40' 
-                      : 'text-gray-900 placeholder-gray-500'
-                  }`}
-                  placeholder="Search properties..."
+                  className="flex-1 bg-white/90 border-none outline-none text-lg text-gray-900 placeholder-gray-600 rounded-md px-3 py-2 transition-colors duration-300 focus:bg-white"
+                  placeholder="Search area & properties"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setSearchSuggestionsVisible(true)}
                 />
                 <motion.button 
-                  className="px-6 py-2 bg-white text-black font-medium rounded-md hover:bg-white/90 transition-colors"
+                  className="p-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors flex items-center justify-center"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleExploreHouses}
                 >
-                  Search
+                  <svg 
+                    className="w-5 h-5" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24" 
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" 
+                    />
+                  </svg>
                 </motion.button>
               </div>
               
               {/* Action Buttons */}
               <div className="flex gap-3">
                 <motion.button 
-                  className="flex-1 px-4 py-2 bg-[#C7A667] text-white font-medium rounded-md hover:bg-[#B89657] transition-colors text-sm"
+                  className="flex-1 px-4 py-2 bg-gray-900 text-white font-medium rounded-md hover:bg-gray-800 transition-colors text-sm"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleExploreHouses}
@@ -736,7 +839,7 @@ export default function App() {
                   Explore Houses
                 </motion.button>
                 <motion.button 
-                  className="flex-1 px-4 py-2 border border-white/30 text-white font-medium rounded-md hover:border-white/50 hover:bg-white/10 transition-colors text-sm"
+                  className="flex-1 px-4 py-2 bg-white/90 text-gray-900 font-medium rounded-md hover:bg-white transition-colors text-sm border border-white/50"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
@@ -749,19 +852,11 @@ export default function App() {
               </div>
               
               {searchSuggestionsVisible && filteredSuggestions.length > 0 && (
-                <div className={`mt-2 backdrop-blur-sm rounded-md border transition-colors duration-300 ${
-                  isDarkMode 
-                    ? 'bg-black/50 border-white/10' 
-                    : 'bg-white/80 border-gray-200'
-                }`}>
+                <div className="mt-2 bg-white/95 border border-gray-200 rounded-md shadow-lg">
                   {filteredSuggestions.slice(0, 5).map((suggestion, index) => (
                     <div
                       key={index}
-                      className={`px-4 py-2 cursor-pointer transition-colors ${
-                        isDarkMode 
-                          ? 'text-white/80 hover:text-white hover:bg-white/10' 
-                          : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
-                      }`}
+                      className="px-4 py-2 cursor-pointer transition-colors text-gray-800 hover:text-gray-900 hover:bg-gray-100"
                       onClick={() => handleSearch(suggestion)}
                     >
                       {suggestion}
@@ -839,19 +934,45 @@ export default function App() {
               whileInView={{ opacity: 0.8, x: 0 }}
               transition={{ duration: 0.6 }}
             >
-              {["BlackRock", "Knight Frank", "HassConsult", "REITs", "IB", "World Bank"].map((n, index) => (
+              {[
+                { name: "BlackRock", logo: "/logos/BlackRock-logo.png" },
+                { name: "Knight Frank", logo: "/logos/Knight_Frank_Logo.svg.png" },
+                { name: "HassConsult", logo: "/logos/hassconsult.png" },
+                { name: "REITs", logo: "/logos/reit.png" },
+                { name: "IB", logo: "/logos/ib-logo.png" },
+                { name: "World Bank", logo: "/logos/worldbank.png" }
+              ].map((partner, index) => (
                 <motion.div 
-                  key={n} 
-                  className={`border rounded-lg h-16 flex items-center justify-center text-xs tracking-wider card-3d transition-colors duration-300 ${
+                  key={partner.name} 
+                  className={`border rounded-lg h-16 flex items-center justify-center card-3d transition-colors duration-300 ${
                     isDarkMode 
-                      ? 'border-white/10 text-white' 
-                      : 'border-gray-200 text-gray-700'
+                      ? 'border-white/10 bg-white/5' 
+                      : 'border-gray-200 bg-gray-50'
                   }`}
                   initial={{ opacity: 0, scale: 0.8 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.4, delay: index * 0.1 }}
                 >
-                  {n}
+                  <img 
+                    src={partner.logo} 
+                    alt={`${partner.name} logo`}
+                    className={`max-w-full object-contain filter brightness-0 invert opacity-70 hover:opacity-100 transition-opacity duration-300 ${
+                      partner.name === "BlackRock" || partner.name === "World Bank" 
+                        ? "max-h-10" 
+                        : "max-h-8"
+                    }`}
+                    onError={(e) => {
+                      // Fallback to text if image fails to load
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      const textFallback = document.createElement('div');
+                      textFallback.className = `text-xs tracking-wider ${
+                        isDarkMode ? 'text-white' : 'text-gray-700'
+                      }`;
+                      textFallback.textContent = partner.name;
+                      target.parentElement?.appendChild(textFallback);
+                    }}
+                  />
                 </motion.div>
               ))}
             </motion.div>
@@ -860,17 +981,17 @@ export default function App() {
 
 
 
-        {/* Featured Properties Carousel */}
+        {/* Off-Plan Projects Carousel */}
         <Section id="properties" dark isDarkMode={isDarkMode}>
-          <h3 className="font-heading text-3xl md:text-4xl">Featured Properties</h3>
+          <h3 className="font-heading text-3xl md:text-4xl">Off-Plan Projects</h3>
           <div className="mt-10 relative">
             {/* Carousel Container */}
             <div className="relative overflow-hidden rounded-2xl">
               <motion.div 
                 className="flex transition-transform duration-500 ease-in-out"
-                style={{ transform: `translateX(-${propertiesCarouselIndex * 100}%)` }}
+                style={{ transform: `translateX(-${offPlanCarouselIndex * 100}%)` }}
               >
-                {properties.map((p, index) => (
+                {offPlanProjects.map((p, index) => (
                   <div key={p.name} className="w-full flex-shrink-0">
                     <motion.article 
                       className="relative grid md:grid-cols-12 gap-6 items-stretch parallax-section p-6"
@@ -895,26 +1016,29 @@ export default function App() {
                           <div className={`text-sm tracking-widest transition-colors duration-300 ${
                             isDarkMode ? 'opacity-70' : 'text-gray-500'
                           }`}>{p.location}</div>
-                          <h4 className="font-heading text-2xl mt-1">{p.name}</h4>
+                          <div className="flex items-center gap-3 mt-1">
+                            <h4 className="font-heading text-2xl">{p.name}</h4>
+                            <div className="text-lg font-medium text-[#C7A667]">{p.price}</div>
+                          </div>
                           <p className={`mt-3 text-sm transition-colors duration-300 ${
                             isDarkMode ? 'text-white/70' : 'text-gray-600'
                           }`}>{p.summary}</p>
                           <div className="mt-4 flex flex-wrap gap-2">
-                            {p.facts.map((f) => (
-                              <span key={f} className={`text-xs px-3 py-1 rounded-full border transition-colors duration-300 ${
+                            {p.facts.map((f, factIndex) => (
+                              <span key={`${p.name}-${factIndex}-${f}`} className={`text-xs px-3 py-1 rounded-full border transition-colors duration-300 flex items-center gap-1 ${
                                 isDarkMode 
                                   ? 'border-white/20 bg-white/5 text-white' 
                                   : 'border-gray-300 bg-gray-100 text-gray-700'
-                              }`}>{f}</span>
+                              }`}>
+                                {getFactIcon(factIndex)}
+                                {f}
+                              </span>
                             ))}
                           </div>
                           <div className="mt-6 flex gap-3">
                             <a 
                               href={`/property/${p.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`}
                               className="px-5 py-2.5 rounded-full bg-[#C7A667] text-black text-sm font-medium relative z-50 inline-block text-center hover:bg-[#B89657] transition-colors"
-                              onClick={() => {
-                                console.log('View Details clicked in desktop mode for:', p.name);
-                              }}
                             >
                               View Details
                             </a>
@@ -955,8 +1079,8 @@ export default function App() {
                     ? 'bg-black/50 border-white/20 text-white hover:bg-black/70' 
                     : 'bg-white/80 border-gray-200 text-gray-700 hover:bg-white'
                 }`}
-                onClick={() => setPropertiesCarouselIndex(Math.max(0, propertiesCarouselIndex - 1))}
-                disabled={propertiesCarouselIndex === 0}
+                onClick={() => setOffPlanCarouselIndex(Math.max(0, offPlanCarouselIndex - 1))}
+                disabled={offPlanCarouselIndex === 0}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
@@ -970,8 +1094,8 @@ export default function App() {
                     ? 'bg-black/50 border-white/20 text-white hover:bg-black/70' 
                     : 'bg-white/80 border-gray-200 text-gray-700 hover:bg-white'
                 }`}
-                onClick={() => setPropertiesCarouselIndex(Math.min(properties.length - 1, propertiesCarouselIndex + 1))}
-                disabled={propertiesCarouselIndex === properties.length - 1}
+                onClick={() => setOffPlanCarouselIndex(Math.min(offPlanProjects.length - 1, offPlanCarouselIndex + 1))}
+                disabled={offPlanCarouselIndex === offPlanProjects.length - 1}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
@@ -981,15 +1105,15 @@ export default function App() {
 
             {/* Dots Indicator */}
             <div className="flex justify-center mt-6 gap-2">
-              {properties.map((_, index) => (
+              {offPlanProjects.map((_, index) => (
                 <motion.button
                   key={index}
                   className={`w-3 h-3 rounded-full transition-colors ${
-                    index === propertiesCarouselIndex 
+                    index === offPlanCarouselIndex 
                       ? 'bg-[#C7A667]' 
                       : (isDarkMode ? 'bg-white/30' : 'bg-gray-300')
                   }`}
-                  onClick={() => setPropertiesCarouselIndex(index)}
+                  onClick={() => setOffPlanCarouselIndex(index)}
                   whileHover={{ scale: 1.2 }}
                   whileTap={{ scale: 0.8 }}
                 />
@@ -998,77 +1122,250 @@ export default function App() {
           </div>
         </Section>
 
-        {/* Amenities with 3D perspective */}
-        <Section id="amenities" isDarkMode={isDarkMode}>
-          <div className="grid md:grid-cols-2 gap-6 items-center parallax-section">
-            <motion.div 
-              className={`rounded-2xl overflow-hidden border card-3d transition-colors duration-300 ${
-                isDarkMode ? 'border-white/10' : 'border-gray-200'
-              }`}
-              whileHover={{ rotateY: 3, rotateX: 1 }}
-            >
-              <img src="https://images.pexels.com/photos/261102/pexels-photo-261102.jpeg?auto=compress&cs=tinysrgb&w=1600" alt="Infinity Pool" className="w-full h-full object-cover" />
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <div className={`text-sm tracking-widest transition-colors duration-300 ${
-                isDarkMode ? 'opacity-70' : 'text-gray-500'
-              }`}>AMENITIES</div>
-              <h3 className="font-heading text-4xl md:text-5xl mt-2">Precipice of Greatness</h3>
-              <p className={`mt-4 max-w-prose transition-colors duration-300 ${
-                isDarkMode ? 'text-white/70' : 'text-gray-600'
-              }`}>
-                Our structures marry desirable aesthetics with durable comforts and a strong focus on environmental wellbeing, including rooftop lounges, fitness studios, and concierge services.
-              </p>
-            </motion.div>
+        {/* Completed Projects Carousel */}
+        <Section id="completed-projects" dark isDarkMode={isDarkMode}>
+          <h3 className="font-heading text-3xl md:text-4xl">Completed Projects</h3>
+          <div className="mt-10 relative">
+            {/* Carousel Container */}
+            <div className="relative overflow-hidden rounded-2xl">
+              <motion.div 
+                className="flex transition-transform duration-500 ease-in-out"
+                style={{ transform: `translateX(-${completedCarouselIndex * 100}%)` }}
+              >
+                {completedProjects.map((p, index) => (
+                  <div key={p.name} className="w-full flex-shrink-0">
+                    <motion.article 
+                      className="relative grid md:grid-cols-12 gap-6 items-stretch parallax-section p-6"
+                      initial={{ opacity: 0, y: 100 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.8, delay: index * 0.2 }}
+                    >
+                      <motion.div 
+                        className={`md:col-span-7 rounded-2xl overflow-hidden border card-3d transition-colors duration-300 ${
+                          isDarkMode ? 'border-white/10' : 'border-gray-200'
+                        }`}
+                        whileHover={{ scale: 1.03, rotateY: 2 }}
+                      >
+                        <img src={p.hero} alt={p.name} className="h-full w-full object-cover transition-transform duration-500" />
+                      </motion.div>
+                      <div className="md:col-span-5 flex flex-col">
+                        <div className={`flex-1 border rounded-2xl p-6 transition-colors duration-300 ${
+                          isDarkMode 
+                            ? 'bg-white/5 border-white/10' 
+                            : 'bg-gray-50 border-gray-200'
+                        }`}>
+                          <div className={`text-sm tracking-widest transition-colors duration-300 ${
+                            isDarkMode ? 'opacity-70' : 'text-gray-500'
+                          }`}>{p.location}</div>
+                          <div className="flex items-center gap-3 mt-1">
+                            <h4 className="font-heading text-2xl">{p.name}</h4>
+                            <div className="text-lg font-medium text-[#C7A667]">{p.price}</div>
+                          </div>
+                          <p className={`mt-3 text-sm transition-colors duration-300 ${
+                            isDarkMode ? 'text-white/70' : 'text-gray-600'
+                          }`}>{p.summary}</p>
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            {p.facts.map((f, factIndex) => (
+                              <span key={`${p.name}-${factIndex}-${f}`} className={`text-xs px-3 py-1 rounded-full border transition-colors duration-300 flex items-center gap-1 ${
+                                isDarkMode 
+                                  ? 'border-white/20 bg-white/5 text-white' 
+                                  : 'border-gray-300 bg-gray-100 text-gray-700'
+                              }`}>
+                                {getFactIcon(factIndex)}
+                                {f}
+                              </span>
+                            ))}
+                          </div>
+                          <div className="mt-6 flex gap-3">
+                            <a 
+                              href={`/property/${p.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`}
+                              className="px-5 py-2.5 rounded-full bg-[#C7A667] text-black text-sm font-medium relative z-50 inline-block text-center hover:bg-[#B89657] transition-colors"
+                            >
+                              View Details
+                            </a>
+                            <motion.button 
+                              className="btn-3d px-5 py-2.5 rounded-full border border-white/30 text-sm hover:border-[#C7A667] hover:text-[#C7A667] transition-all"
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              Download Brochure
+                            </motion.button>
+                          </div>
+                        </div>
+                        <div className="mt-6 grid grid-cols-2 gap-4">
+                          {p.gallery.map((g, i) => (
+                            <motion.img 
+                              key={i} 
+                              src={g} 
+                              alt={`${p.name} ${i + 1}`} 
+                              className={`rounded-xl border h-40 w-full object-cover card-3d transition-colors duration-300 ${
+                                isDarkMode ? 'border-white/10' : 'border-gray-200'
+                              }`}
+                              whileHover={{ scale: 1.05, rotateY: 1 }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </motion.article>
+                  </div>
+                ))}
+              </motion.div>
+            </div>
+
+            {/* Navigation Buttons */}
+            <div className="absolute top-1/2 left-4 transform -translate-y-1/2 z-5 pointer-events-none">
+              <motion.button
+                className={`w-12 h-12 rounded-full backdrop-blur-sm border flex items-center justify-center transition-colors pointer-events-auto ${
+                  isDarkMode 
+                    ? 'bg-black/50 border-white/20 text-white hover:bg-black/70' 
+                    : 'bg-white/80 border-gray-200 text-gray-700 hover:bg-white'
+                }`}
+                onClick={() => setCompletedCarouselIndex(Math.max(0, completedCarouselIndex - 1))}
+                disabled={completedCarouselIndex === 0}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                ←
+              </motion.button>
+            </div>
+            <div className="absolute top-1/2 right-4 transform -translate-y-1/2 z-5 pointer-events-none">
+              <motion.button
+                className={`w-12 h-12 rounded-full backdrop-blur-sm border flex items-center justify-center transition-colors pointer-events-auto ${
+                  isDarkMode 
+                    ? 'bg-black/50 border-white/20 text-white hover:bg-black/70' 
+                    : 'bg-white/80 border-gray-200 text-gray-700 hover:bg-white'
+                }`}
+                onClick={() => setCompletedCarouselIndex(Math.min(completedProjects.length - 1, completedCarouselIndex + 1))}
+                disabled={completedCarouselIndex === completedProjects.length - 1}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                →
+              </motion.button>
+            </div>
+
+            {/* Dots Indicator */}
+            <div className="flex justify-center mt-6 gap-2">
+              {completedProjects.map((_, index) => (
+                <motion.button
+                  key={index}
+                  className={`w-3 h-3 rounded-full transition-colors ${
+                    index === completedCarouselIndex 
+                      ? 'bg-[#C7A667]' 
+                      : (isDarkMode ? 'bg-white/30' : 'bg-gray-300')
+                  }`}
+                  onClick={() => setCompletedCarouselIndex(index)}
+                  whileHover={{ scale: 1.2 }}
+                  whileTap={{ scale: 0.8 }}
+                />
+              ))}
+            </div>
           </div>
         </Section>
 
-        {/* Testimonials with 3D cards */}
+        {/* Testimonials Carousel */}
         <Section id="testimonials" dark isDarkMode={isDarkMode}>
           <h3 className="font-heading text-3xl md:text-4xl">What Our Clients Say</h3>
-          <div className="mt-10 grid md:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i, index) => (
-              <motion.div
-                key={i}
-                className={`group rounded-2xl border p-6 transition-all duration-300 card-3d ${
-                  isDarkMode 
-                    ? 'border-white/10 bg-white/5 hover:bg-white/10' 
-                    : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
-                }`}
-                whileHover={{ 
-                  scale: 1.02,
-                  rotateY: 2,
-                  rotateX: 1,
-                  z: 20
-                }}
-                whileTap={{ scale: 0.98 }}
-                style={{
-                  transformStyle: "preserve-3d",
-                  perspective: "1000px"
-                }}
+          <div className="mt-10 relative">
+            {/* Carousel Container */}
+            <div className="relative overflow-hidden rounded-2xl">
+              <motion.div 
+                className="flex transition-transform duration-500 ease-in-out"
+                style={{ transform: `translateX(-${testimonialsCarouselIndex * 100}%)` }}
               >
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#C7A667] to-[#B8956A] flex items-center justify-center text-black font-semibold">
-                    {i}
+                {testimonials.map((testimonial, index) => (
+                  <div key={testimonial.id} className="w-full flex-shrink-0 p-6">
+                    <motion.div
+                      className={`group rounded-2xl border p-6 transition-all duration-300 card-3d h-full ${
+                        isDarkMode 
+                          ? 'border-white/10 bg-white/5 hover:bg-white/10' 
+                          : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
+                      }`}
+                      whileHover={{ 
+                        scale: 1.02,
+                        rotateY: 2,
+                        rotateX: 1,
+                        z: 20
+                      }}
+                      whileTap={{ scale: 0.98 }}
+                      style={{
+                        transformStyle: "preserve-3d",
+                        perspective: "1000px"
+                      }}
+                      initial={{ opacity: 0, y: 50 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.6, delay: index * 0.1 }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#C7A667] to-[#B8956A] flex items-center justify-center text-black font-semibold">
+                          {testimonial.id}
+                        </div>
+                        <div>
+                          <div className="font-medium">{testimonial.name}</div>
+                          <div className={`text-xs transition-colors duration-300 ${
+                            isDarkMode ? 'text-white/60' : 'text-gray-500'
+                          }`}>{testimonial.location}</div>
+                        </div>
+                      </div>
+                      <p className={`mt-4 text-sm transition-colors duration-300 ${
+                        isDarkMode ? 'text-white/80' : 'text-gray-700'
+                      }`}>
+                        "{testimonial.testimonial}"
+                      </p>
+                    </motion.div>
                   </div>
-                  <div>
-                    <div className="font-medium">Investor {i}</div>
-                    <div className={`text-xs transition-colors duration-300 ${
-                      isDarkMode ? 'text-white/60' : 'text-gray-500'
-                    }`}>Nairobi, KE</div>
-                  </div>
-                </div>
-                <p className={`mt-4 text-sm transition-colors duration-300 ${
-                  isDarkMode ? 'text-white/80' : 'text-gray-700'
-                }`}>
-                  "REALAIST helped me access a pre-launch opportunity with transparent numbers. Performance has matched the projections."
-                </p>
+                ))}
               </motion.div>
-            ))}
+            </div>
+
+            {/* Navigation Buttons */}
+            <div className="absolute top-1/2 left-4 transform -translate-y-1/2 z-10">
+              <motion.button
+                className={`w-12 h-12 rounded-full backdrop-blur-sm border flex items-center justify-center transition-colors ${
+                  isDarkMode 
+                    ? 'bg-black/50 border-white/20 text-white hover:bg-black/70' 
+                    : 'bg-white/80 border-gray-200 text-gray-700 hover:bg-white'
+                }`}
+                onClick={() => setTestimonialsCarouselIndex(Math.max(0, testimonialsCarouselIndex - 1))}
+                disabled={testimonialsCarouselIndex === 0}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                ←
+              </motion.button>
+            </div>
+            <div className="absolute top-1/2 right-4 transform -translate-y-1/2 z-10">
+              <motion.button
+                className={`w-12 h-12 rounded-full backdrop-blur-sm border flex items-center justify-center transition-colors ${
+                  isDarkMode 
+                    ? 'bg-black/50 border-white/20 text-white hover:bg-black/70' 
+                    : 'bg-white/80 border-gray-200 text-gray-700 hover:bg-white'
+                }`}
+                onClick={() => setTestimonialsCarouselIndex(Math.min(testimonials.length - 1, testimonialsCarouselIndex + 1))}
+                disabled={testimonialsCarouselIndex === testimonials.length - 1}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                →
+              </motion.button>
+            </div>
+
+            {/* Dots Indicator */}
+            <div className="flex justify-center mt-6 gap-2">
+              {testimonials.map((_, index) => (
+                <motion.button
+                  key={index}
+                  className={`w-3 h-3 rounded-full transition-colors ${
+                    index === testimonialsCarouselIndex 
+                      ? 'bg-[#C7A667]' 
+                      : (isDarkMode ? 'bg-white/30' : 'bg-gray-300')
+                  }`}
+                  onClick={() => setTestimonialsCarouselIndex(index)}
+                  whileHover={{ scale: 1.2 }}
+                  whileTap={{ scale: 0.8 }}
+                />
+              ))}
+            </div>
           </div>
         </Section>
 
@@ -1172,17 +1469,18 @@ export default function App() {
 
         {/* Contact with 3D form elements */}
         <Section id="contact" dark isDarkMode={isDarkMode}>
-          <div className="grid md:grid-cols-2 gap-10 items-start">
+          <div className="flex justify-center items-center min-h-[60vh]">
             <motion.div
               initial={{ opacity: 0, x: -50 }}
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
+              className="w-full max-w-2xl"
             >
-              <h3 className="font-heading text-3xl md:text-4xl">Let's talk investments</h3>
-              <p className={`mt-3 max-w-prose transition-colors duration-300 ${
+              <h3 className="font-heading text-3xl md:text-4xl text-center">Let's talk investments</h3>
+              <p className={`mt-3 max-w-prose mx-auto text-center transition-colors duration-300 ${
                 isDarkMode ? 'text-white/70' : 'text-gray-600'
               }`}>Fill the form and our team will respond within 24 hours.</p>
-              <form className="mt-8 grid grid-cols-1 gap-4 max-w-lg" onSubmit={(e) => {
+              <form className="mt-8 grid grid-cols-1 gap-4 max-w-lg mx-auto" onSubmit={(e) => {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget);
                 const name = formData.get('name');
@@ -1247,65 +1545,13 @@ export default function App() {
                 </label>
                 <motion.button 
                   type="submit"
-                  className="mt-2 w-max px-6 py-3 rounded-full bg-[#C7A667] text-black font-medium btn-3d"
+                  className="mt-2 w-full px-6 py-3 rounded-full bg-[#C7A667] text-black font-medium btn-3d"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
                   Send Message
                 </motion.button>
               </form>
-            </motion.div>
-            <motion.div 
-              className={`rounded-2xl border p-6 card-3d transition-colors duration-300 ${
-                isDarkMode 
-                  ? 'border-white/10 bg-white/5' 
-                  : 'border-gray-200 bg-gray-50'
-              }`}
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <div className="font-heading text-xl">REALAIST</div>
-              <p className={`mt-2 text-sm transition-colors duration-300 ${
-                isDarkMode ? 'text-white/70' : 'text-gray-600'
-              }`}>Prominade - General Mathenge</p>
-              <div className="mt-4 flex flex-col gap-3 text-sm">
-                <div className={`transition-colors duration-300 ${
-                  isDarkMode ? 'text-white/70' : 'text-gray-600'
-                }`}>
-                  <div className="font-medium">Phone: 0707 726 297</div>
-                  <div className="font-medium">Email: Sales.realaist@gmail.com</div>
-                </div>
-                <div className="flex gap-3">
-                  <motion.a 
-                    href="tel:0707726297" 
-                    className={`px-4 py-2 rounded-full border transition-all btn-3d ${
-                      isDarkMode 
-                        ? 'border-white/30 hover:border-[#C7A667] hover:text-[#C7A667]' 
-                        : 'border-gray-300 hover:border-[#C7A667] hover:text-[#C7A667]'
-                    }`}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    Call Now
-                  </motion.a>
-                  <motion.a 
-                    href="mailto:Sales.realaist@gmail.com" 
-                    className={`px-4 py-2 rounded-full border transition-all btn-3d ${
-                      isDarkMode 
-                        ? 'border-white/30 hover:border-[#C7A667] hover:text-[#C7A667]' 
-                        : 'border-gray-300 hover:border-[#C7A667] hover:text-[#C7A667]'
-                    }`}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    Email
-                  </motion.a>
-                </div>
-              </div>
-              <img className={`mt-6 rounded-xl border w-full h-48 object-cover transition-colors duration-300 ${
-                isDarkMode ? 'border-white/10' : 'border-gray-200'
-              }`} src="https://images.pexels.com/photos/1029599/pexels-photo-1029599.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="office location" />
             </motion.div>
           </div>
         </Section>
@@ -1342,6 +1588,176 @@ export default function App() {
           </div>
         </motion.footer>
       </div>
+
+      {/* Investor Login Modal */}
+      {loginModalOpen && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          {/* Backdrop */}
+          <motion.div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            onClick={() => setLoginModalOpen(false)}
+          />
+          
+          {/* Modal Content */}
+          <motion.div
+            className={`relative w-full max-w-md rounded-2xl border p-8 transition-colors duration-300 ${
+              isDarkMode 
+                ? 'bg-[#111217] border-white/10' 
+                : 'bg-white border-gray-200'
+            }`}
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setLoginModalOpen(false)}
+              className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${
+                isDarkMode 
+                  ? 'hover:bg-white/10 text-white/60 hover:text-white' 
+                  : 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Header */}
+            <div className="text-center mb-8">
+              <div className="border border-dashed rounded-md px-4 py-3 mb-4 inline-block">
+                <span className={`font-logo tracking-[0.25em] text-sm transition-colors duration-300 ${
+                  isDarkMode ? 'text-white/90' : 'text-gray-900/90'
+                }`}>
+                  REALAIST
+                </span>
+              </div>
+              <h2 className={`font-heading text-2xl font-medium transition-colors duration-300 ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
+                Investor Portal
+              </h2>
+              <p className={`mt-2 text-sm transition-colors duration-300 ${
+                isDarkMode ? 'text-white/70' : 'text-gray-600'
+              }`}>
+                Access your investment portfolio and exclusive opportunities
+              </p>
+            </div>
+
+            {/* Login Form */}
+            <form className="space-y-4" onSubmit={(e) => {
+              e.preventDefault();
+              // Handle login logic here
+              console.log('Login submitted');
+            }}>
+              <div>
+                <label className={`block text-sm font-medium mb-2 transition-colors duration-300 ${
+                  isDarkMode ? 'text-white/80' : 'text-gray-700'
+                }`}>
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  required
+                  className={`w-full px-4 py-3 rounded-lg border transition-colors duration-300 ${
+                    isDarkMode 
+                      ? 'bg-white/5 border-white/15 text-white placeholder-white/40 focus:border-[#C7A667]' 
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#C7A667]'
+                  } outline-none focus:ring-2 focus:ring-[#C7A667]/20`}
+                  placeholder="Enter your email"
+                />
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium mb-2 transition-colors duration-300 ${
+                  isDarkMode ? 'text-white/80' : 'text-gray-700'
+                }`}>
+                  Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  className={`w-full px-4 py-3 rounded-lg border transition-colors duration-300 ${
+                    isDarkMode 
+                      ? 'bg-white/5 border-white/15 text-white placeholder-white/40 focus:border-[#C7A667]' 
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#C7A667]'
+                  } outline-none focus:ring-2 focus:ring-[#C7A667]/20`}
+                  placeholder="Enter your password"
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <label className={`flex items-center gap-2 text-sm transition-colors duration-300 ${
+                  isDarkMode ? 'text-white/70' : 'text-gray-600'
+                }`}>
+                  <input type="checkbox" className="accent-[#C7A667]" />
+                  Remember me
+                </label>
+                <button
+                  type="button"
+                  className={`text-sm transition-colors duration-300 ${
+                    isDarkMode ? 'text-[#C7A667] hover:text-[#B89657]' : 'text-[#C7A667] hover:text-[#B89657]'
+                  }`}
+                >
+                  Forgot password?
+                </button>
+              </div>
+
+              <motion.button
+                type="submit"
+                className="w-full py-3 rounded-lg bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Sign In
+              </motion.button>
+            </form>
+
+            {/* Divider */}
+            <div className="my-6 flex items-center">
+              <div className={`flex-1 h-px transition-colors duration-300 ${
+                isDarkMode ? 'bg-white/20' : 'bg-gray-300'
+              }`}></div>
+              <span className={`px-4 text-sm transition-colors duration-300 ${
+                isDarkMode ? 'text-white/50' : 'text-gray-500'
+              }`}>or</span>
+              <div className={`flex-1 h-px transition-colors duration-300 ${
+                isDarkMode ? 'bg-white/20' : 'bg-gray-300'
+              }`}></div>
+            </div>
+
+            {/* Additional Options */}
+            <div className="space-y-3">
+              <motion.button
+                type="button"
+                className={`w-full py-3 rounded-lg border transition-colors duration-300 ${
+                  isDarkMode 
+                    ? 'border-white/20 hover:border-white/40 text-white hover:bg-white/5' 
+                    : 'border-gray-300 hover:border-gray-400 text-gray-700 hover:bg-gray-50'
+                }`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <span className="text-sm font-medium">Create Investor Account</span>
+              </motion.button>
+              
+              <p className={`text-center text-xs transition-colors duration-300 ${
+                isDarkMode ? 'text-white/50' : 'text-gray-500'
+              }`}>
+                New to REALAIST? Contact our team to get started
+              </p>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </>
   );
 }
