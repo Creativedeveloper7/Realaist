@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTheme } from './ThemeContext';
 
 // Helper function to get icon for fact type
-const getFactIcon = (factIndex: number) => {
+const getFactIcon = (factIndex: number, isDarkMode: boolean = true) => {
+  const iconClass = isDarkMode 
+    ? "w-6 h-6 object-contain filter brightness-0 saturate-100 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]"
+    : "w-6 h-6 object-contain filter brightness-0 saturate-100 invert-0";
+    
   switch (factIndex) {
     case 0: // Beds
       return (
         <img 
           src="/icons/bed.png" 
           alt="Beds" 
-          className="w-6 h-6 object-contain filter brightness-0 saturate-100 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]"
+          className={iconClass}
           onError={(e) => {
             // Hide the image if it fails to load
             e.currentTarget.style.display = 'none';
@@ -22,7 +27,7 @@ const getFactIcon = (factIndex: number) => {
         <img 
           src="/icons/bath.png" 
           alt="Baths" 
-          className="w-6 h-6 object-contain filter brightness-0 saturate-100 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]"
+          className={iconClass}
           onError={(e) => {
             // Hide the image if it fails to load
             e.currentTarget.style.display = 'none';
@@ -34,7 +39,7 @@ const getFactIcon = (factIndex: number) => {
         <img 
           src="/icons/sqre%20ft.png" 
           alt="Square Feet" 
-          className="w-6 h-6 object-contain filter brightness-0 saturate-100 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]"
+          className={iconClass}
           onError={(e) => {
             // Hide the image if it fails to load
             e.currentTarget.style.display = 'none';
@@ -152,7 +157,7 @@ const propertyData = {
   }
 };
 
-function FloatingLogo() {
+function FloatingLogo({ isDarkMode = true }: { isDarkMode?: boolean }) {
   return (
     <motion.a 
       href="/"
@@ -160,8 +165,14 @@ function FloatingLogo() {
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
     >
-      <div className="border border-dashed border-white/60 rounded-md px-4 py-3 backdrop-blur-sm bg-black/20">
-        <span className="font-logo tracking-[0.25em] text-white/90 text-sm md:text-base">
+      <div className={`border border-dashed rounded-md px-4 py-3 backdrop-blur-sm transition-colors duration-300 ${
+        isDarkMode 
+          ? 'border-white/60 bg-black/20' 
+          : 'border-gray-400 bg-white/20'
+      }`}>
+        <span className={`font-logo tracking-[0.25em] text-sm md:text-base transition-colors duration-300 ${
+          isDarkMode ? 'text-white/90' : 'text-gray-900/90'
+        }`}>
           REALAIST
         </span>
       </div>
@@ -172,6 +183,7 @@ function FloatingLogo() {
 export default function PropertyDetails() {
   const { propertyId } = useParams();
   const navigate = useNavigate();
+  const { isDarkMode, toggleTheme } = useTheme();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [property, setProperty] = useState<any>(null);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
@@ -189,7 +201,9 @@ export default function PropertyDetails() {
   }, [propertyId, navigate]);
 
   if (!property) {
-    return <div className="min-h-screen bg-[#111217] flex items-center justify-center text-white">Loading...</div>;
+    return <div className={`min-h-screen flex items-center justify-center transition-colors duration-300 ${
+      isDarkMode ? 'bg-[#111217] text-white' : 'bg-white text-gray-900'
+    }`}>Loading...</div>;
   }
 
   const nextImage = () => {
@@ -206,12 +220,32 @@ export default function PropertyDetails() {
 
   return (
     <>
-      <FloatingLogo />
+      <FloatingLogo isDarkMode={isDarkMode} />
       
-      <div className="min-h-screen bg-[#111217] text-white">
+      {/* Mobile Theme Toggle Button */}
+      <motion.button
+        className={`fixed right-2 top-1/4 transform -translate-y-1/2 z-30 md:hidden w-10 h-10 rounded-full backdrop-blur-sm border flex items-center justify-center shadow-lg transition-all duration-300 opacity-60 hover:opacity-100 ${
+          isDarkMode 
+            ? 'bg-black/60 border-white/10 text-white/80' 
+            : 'bg-white/60 border-gray-200/50 text-gray-600'
+        }`}
+        onClick={toggleTheme}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        {isDarkMode ? '☀️' : '🌙'}
+      </motion.button>
+      
+      <div className={`min-h-screen transition-colors duration-300 ${
+        isDarkMode ? 'bg-[#111217] text-white' : 'bg-white text-gray-900'
+      }`}>
         {/* Header */}
         <motion.header 
-          className="fixed top-0 inset-x-0 z-30 backdrop-blur supports-[backdrop-filter]:bg-black/35 bg-black/30 border-b border-white/10"
+          className={`fixed top-0 inset-x-0 z-30 backdrop-blur supports-[backdrop-filter]:backdrop-blur-sm border-b transition-colors duration-300 ${
+            isDarkMode 
+              ? 'bg-black/35 border-white/10' 
+              : 'bg-white/80 border-gray-200'
+          }`}
           initial={{ y: -100 }}
           animate={{ y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
@@ -223,28 +257,39 @@ export default function PropertyDetails() {
             
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-8 text-sm">
-              <a href="/#properties" className="hover:text-white/80 transition-colors">Properties</a>
-              <a href="/#insights" className="hover:text-white/80 transition-colors">Insights</a>
-              <a href="/#contact" className="hover:text-white/80 transition-colors">Contact</a>
+              <a href="/houses" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Properties</a>
+              <a href="/#contact" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
               <motion.button
                 onClick={() => setLoginModalOpen(true)}
-                className="ml-2 px-4 py-2 rounded-full border border-white/30 hover:border-[#C7A667] hover:text-[#C7A667] transition-all"
+                className="ml-2 px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
                 Investor Login
               </motion.button>
+              <motion.button
+                onClick={toggleTheme}
+                className={`p-2 rounded-full border transition-all ${
+                  isDarkMode 
+                    ? 'border-white/30 hover:border-[#C7A667] hover:text-[#C7A667]' 
+                    : 'border-gray-300 hover:border-[#C7A667] hover:text-[#C7A667]'
+                }`}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                {isDarkMode ? '☀️' : '🌙'}
+              </motion.button>
             </nav>
 
             {/* Mobile Menu Button */}
             <button
-              className="md:hidden p-2 text-white hover:text-white/80 transition-colors"
+              className={`md:hidden p-2 transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               <div className="w-6 h-6 flex flex-col justify-center items-center">
-                <span className={`block w-5 h-0.5 transition-all duration-300 ${mobileMenuOpen ? 'rotate-45 translate-y-1.5' : ''} bg-white`}></span>
-                <span className={`block w-5 h-0.5 transition-all duration-300 ${mobileMenuOpen ? 'opacity-0' : 'opacity-100'} bg-white mt-1`}></span>
-                <span className={`block w-5 h-0.5 transition-all duration-300 ${mobileMenuOpen ? '-rotate-45 -translate-y-1.5' : ''} bg-white mt-1`}></span>
+                <span className={`block w-5 h-0.5 transition-all duration-300 ${mobileMenuOpen ? 'rotate-45 translate-y-1.5' : ''} ${isDarkMode ? 'bg-white' : 'bg-gray-900'}`}></span>
+                <span className={`block w-5 h-0.5 transition-all duration-300 ${mobileMenuOpen ? 'opacity-0' : 'opacity-100'} ${isDarkMode ? 'bg-white' : 'bg-gray-900'} mt-1`}></span>
+                <span className={`block w-5 h-0.5 transition-all duration-300 ${mobileMenuOpen ? '-rotate-45 -translate-y-1.5' : ''} ${isDarkMode ? 'bg-white' : 'bg-gray-900'} mt-1`}></span>
               </div>
             </button>
           </div>
@@ -287,7 +332,7 @@ export default function PropertyDetails() {
               {/* Menu Items */}
               <div className="mt-12 space-y-6">
                 <a 
-                  href="/#properties" 
+                  href="/houses" 
                   className="block text-lg font-medium text-white hover:text-[#C7A667] transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -418,7 +463,9 @@ export default function PropertyDetails() {
                 {/* Property Name and Location */}
                 <div>
                   <div className="flex items-center gap-4 mb-2">
-                    <h1 className="text-4xl md:text-5xl font-heading" style={{ 
+                    <h1 className={`text-4xl md:text-5xl font-heading transition-colors duration-300 ${
+                      isDarkMode ? 'text-white' : 'text-gray-900'
+                    }`} style={{ 
                       fontFamily: "'Cinzel', 'Playfair Display', serif",
                       fontWeight: 500,
                       letterSpacing: '0.05em'
@@ -427,7 +474,9 @@ export default function PropertyDetails() {
                     </h1>
                     <div className="text-2xl font-medium text-[#C7A667]">{property.price}</div>
                   </div>
-                  <div className="flex items-center gap-2 text-white/70">
+                  <div className={`flex items-center gap-2 transition-colors duration-300 ${
+                    isDarkMode ? 'text-white/70' : 'text-gray-600'
+                  }`}>
                     <span>📍</span>
                     <span>{property.location}</span>
                   </div>
@@ -436,35 +485,45 @@ export default function PropertyDetails() {
                 {/* Key Metrics */}
                 <div className="flex gap-8">
                   <div className="flex items-center gap-2">
-                    {getFactIcon(0)}
+                    {getFactIcon(0, isDarkMode)}
                     <div>
-                      <div className="text-lg font-medium">{property.beds} Beds</div>
+                      <div className={`text-lg font-medium transition-colors duration-300 ${
+                        isDarkMode ? 'text-white' : 'text-gray-900'
+                      }`}>{property.beds} Beds</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {getFactIcon(1)}
+                    {getFactIcon(1, isDarkMode)}
                     <div>
-                      <div className="text-lg font-medium">{property.baths} Baths</div>
+                      <div className={`text-lg font-medium transition-colors duration-300 ${
+                        isDarkMode ? 'text-white' : 'text-gray-900'
+                      }`}>{property.baths} Baths</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {getFactIcon(2)}
+                    {getFactIcon(2, isDarkMode)}
                     <div>
-                      <div className="text-lg font-medium">{property.sqft} sqft</div>
+                      <div className={`text-lg font-medium transition-colors duration-300 ${
+                        isDarkMode ? 'text-white' : 'text-gray-900'
+                      }`}>{property.sqft} sqft</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Description */}
                 <div>
-                  <h3 className="text-xl font-heading mb-4" style={{ 
+                  <h3 className={`text-xl font-heading mb-4 transition-colors duration-300 ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`} style={{ 
                     fontFamily: "'Cinzel', 'Playfair Display', serif",
                     fontWeight: 500,
                     letterSpacing: '0.05em'
                   }}>
                     Description
                   </h3>
-                  <p className="text-white/80 leading-relaxed">
+                  <p className={`leading-relaxed transition-colors duration-300 ${
+                    isDarkMode ? 'text-white/80' : 'text-gray-700'
+                  }`}>
                     {property.description}
                   </p>
                 </div>
@@ -499,7 +558,11 @@ export default function PropertyDetails() {
                   </motion.button>
                   
                   <motion.button 
-                    className="w-full px-6 py-3 border border-white/30 text-white font-medium rounded-lg hover:border-[#C7A667] hover:text-[#C7A667] transition-colors flex items-center justify-center gap-2"
+                    className={`w-full px-6 py-3 border font-medium rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                      isDarkMode 
+                        ? 'border-white/30 text-white hover:border-[#C7A667] hover:text-[#C7A667]' 
+                        : 'border-gray-300 text-gray-700 hover:border-[#C7A667] hover:text-[#C7A667]'
+                    }`}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >

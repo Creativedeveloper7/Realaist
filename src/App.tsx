@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from './ThemeContext';
 
 // REALAIST – Luxury Real Estate Landing Page
 const offPlanProjects = [
@@ -191,6 +192,7 @@ function Section({ id, children, dark = false, isDarkMode = true }: { id: string
 
 export default function App() {
   const navigate = useNavigate();
+  const { isDarkMode, toggleTheme } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchSuggestionsVisible, setSearchSuggestionsVisible] = useState(false);
   const [filteredSuggestions, setFilteredSuggestions] = useState(searchSuggestions);
@@ -201,9 +203,8 @@ export default function App() {
   const [offPlanCarouselIndex, setOffPlanCarouselIndex] = useState(0);
   const [completedCarouselIndex, setCompletedCarouselIndex] = useState(0);
   const [testimonialsCarouselIndex, setTestimonialsCarouselIndex] = useState(0);
-  const [isDarkMode, setIsDarkMode] = useState(true);
   const [themeWidgetOpen, setThemeWidgetOpen] = useState(false);
-  const [loginModalOpen, setLoginModalOpen] = useState(false);
+
   const heroRef = useRef(null);
 
   // Search functionality with localStorage
@@ -237,6 +238,7 @@ export default function App() {
   };
 
   const handleExploreHouses = () => {
+    console.log('Explore Houses clicked - navigating to /houses');
     navigate('/houses');
   };
 
@@ -245,25 +247,9 @@ export default function App() {
     document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Theme toggle function
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-  };
 
-  // Update body class when theme changes
-  useEffect(() => {
-    document.body.classList.toggle('dark', isDarkMode);
-    document.body.classList.toggle('light', !isDarkMode);
-  }, [isDarkMode]);
 
-  // 3D scroll effects with proper target
-  const { scrollYProgress: heroScrollProgress } = useScroll({
-    target: heroRef,
-    offset: ["start start", "end start"]
-  });
-  const heroY = useTransform(heroScrollProgress, [0, 1], [0, -300]);
-  const heroScale = useTransform(heroScrollProgress, [0, 1], [1, 0.8]);
-  const heroRotateX = useTransform(heroScrollProgress, [0, 1], [0, 15]);
+
 
   return (
     <>
@@ -585,19 +571,19 @@ export default function App() {
 
       {/* Mobile Theme Toggle Button */}
       <motion.button
-        className={`fixed right-2 top-1/3 transform -translate-y-1/2 z-40 md:hidden w-10 h-10 rounded-full backdrop-blur-sm border flex items-center justify-center shadow-lg transition-all duration-300 opacity-60 hover:opacity-100 ${
+        className={`fixed right-2 top-1/4 transform -translate-y-1/2 z-50 md:hidden w-10 h-10 rounded-full backdrop-blur-sm border flex items-center justify-center shadow-lg transition-all duration-300 opacity-60 hover:opacity-100 ${
           isDarkMode 
             ? 'bg-black/60 border-white/10 text-white/80' 
             : 'bg-white/60 border-gray-200/50 text-gray-600'
         }`}
-        onClick={() => setThemeWidgetOpen(!themeWidgetOpen)}
+        onClick={() => {
+          console.log('Mobile theme toggle clicked!');
+          toggleTheme();
+        }}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
+        {isDarkMode ? '☀️' : '🌙'}
       </motion.button>
 
       {/* Wrapper */}
@@ -620,10 +606,9 @@ export default function App() {
             
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-8 text-sm">
-              <a href="#properties" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Properties</a>
+              <a href="/houses" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Properties</a>
               <a href="#contact" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
               <motion.button
-                onClick={() => setLoginModalOpen(true)}
                 className="px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -672,10 +657,9 @@ export default function App() {
             transition={{ duration: 0.3, ease: "easeInOut" }}
           >
             <div className="px-4 py-6 space-y-4">
-                              <a href="#properties" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Properties</a>
-                <a href="#contact" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
+              <a href="/houses" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Properties</a>
+              <a href="#contact" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
               <motion.button
-                onClick={() => setLoginModalOpen(true)}
                 className="w-full px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -690,14 +674,6 @@ export default function App() {
         <motion.section 
           ref={heroRef}
           className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16"
-          style={{
-            y: heroY,
-            scale: heroScale,
-            rotateX: heroRotateX,
-            transformStyle: "preserve-3d",
-            position: "relative",
-            zIndex: 1
-          }}
         >
           {/* 3D Real Estate Video Background */}
           <div className="architecture-background relative w-full h-full">
@@ -730,7 +706,6 @@ export default function App() {
               <source src="https://videos.pexels.com/video-files/7578552/7578552-uhd_2560_1440_30fps.mp4" type="video/mp4" />
               <source src="https://videos.pexels.com/video-files/31617692/13470975_1920_1080_24fps.mp4" type="video/mp4" />
               <source src="https://videos.pexels.com/video-files/33350039/14200445_2560_1440_60fps.mp4" type="video/mp4" />
-              
             </video>
             
 
@@ -774,7 +749,7 @@ export default function App() {
 
           {/* Search Bar at Bottom - Moved outside hero content */}
           <motion.div 
-            className="fixed bottom-20 left-1/3.5 transform -translate-x-1/2 w-full max-w-4xl px-6 z-50"
+            className="absolute bottom-20 left-31.9  md:right-auto  transform -translate-x-1/2 w-full max-w-4xl px-6 z-50"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.8 }}
@@ -814,14 +789,20 @@ export default function App() {
               
               {/* Action Buttons */}
               <div className="flex gap-3">
-                <motion.button 
-                  className="flex-1 px-4 py-2 bg-gray-900 text-white font-medium rounded-md hover:bg-gray-800 transition-colors text-sm"
+                <motion.a 
+                  href="/houses"
+                  className="flex-1 px-4 py-2 bg-gray-900 text-white font-medium rounded-md hover:bg-gray-800 transition-colors text-base flex items-center justify-center relative z-10"
                   whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleExploreHouses}
+                  whileTap={{ scale: 1.05 }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Explore Houses clicked - navigating to /houses');
+                    window.location.href = '/houses';
+                  }}
                 >
                   Explore Houses
-                </motion.button>
+                </motion.a>
                 <motion.button 
                   className="flex-1 px-4 py-2 bg-white/90 text-gray-900 font-medium rounded-md hover:bg-white transition-colors text-sm border border-white/50"
                   whileHover={{ scale: 1.02 }}
@@ -853,7 +834,7 @@ export default function App() {
 
           {/* Scroll Indicator */}
           <motion.div 
-            className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20"
+            className="absolute bottom-2 md:bottom-8 left-1/2 transform -translate-x-1/2 z-20"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 1 }}
@@ -1483,175 +1464,7 @@ export default function App() {
         </motion.footer>
       </div>
 
-      {/* Investor Login Modal */}
-      {loginModalOpen && (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          {/* Backdrop */}
-          <motion.div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            onClick={() => setLoginModalOpen(false)}
-          />
-          
-          {/* Modal Content */}
-          <motion.div
-            className={`relative w-full max-w-md rounded-2xl border p-8 transition-colors duration-300 ${
-              isDarkMode 
-                ? 'bg-[#111217] border-white/10' 
-                : 'bg-white border-gray-200'
-            }`}
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-          >
-            {/* Close Button */}
-            <button
-              onClick={() => setLoginModalOpen(false)}
-              className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${
-                isDarkMode 
-                  ? 'hover:bg-white/10 text-white/60 hover:text-white' 
-                  : 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
 
-            {/* Header */}
-            <div className="text-center mb-8">
-              <div className="border border-dashed rounded-md px-4 py-3 mb-4 inline-block">
-                <span className={`font-logo tracking-[0.25em] text-sm transition-colors duration-300 ${
-                  isDarkMode ? 'text-white/90' : 'text-gray-900/90'
-                }`}>
-                  REALAIST
-                </span>
-              </div>
-              <h2 className={`font-heading text-2xl font-medium transition-colors duration-300 ${
-                isDarkMode ? 'text-white' : 'text-gray-900'
-              }`}>
-                Investor Portal
-              </h2>
-              <p className={`mt-2 text-sm transition-colors duration-300 ${
-                isDarkMode ? 'text-white/70' : 'text-gray-600'
-              }`}>
-                Access your investment portfolio and exclusive opportunities
-              </p>
-            </div>
-
-            {/* Login Form */}
-            <form className="space-y-4" onSubmit={(e) => {
-              e.preventDefault();
-              // Handle login logic here
-              console.log('Login submitted');
-            }}>
-              <div>
-                <label className={`block text-sm font-medium mb-2 transition-colors duration-300 ${
-                  isDarkMode ? 'text-white/80' : 'text-gray-700'
-                }`}>
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  required
-                  className={`w-full px-4 py-3 rounded-lg border transition-colors duration-300 ${
-                    isDarkMode 
-                      ? 'bg-white/5 border-white/15 text-white placeholder-white/40 focus:border-[#C7A667]' 
-                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#C7A667]'
-                  } outline-none focus:ring-2 focus:ring-[#C7A667]/20`}
-                  placeholder="Enter your email"
-                />
-              </div>
-
-              <div>
-                <label className={`block text-sm font-medium mb-2 transition-colors duration-300 ${
-                  isDarkMode ? 'text-white/80' : 'text-gray-700'
-                }`}>
-                  Password
-                </label>
-                <input
-                  type="password"
-                  required
-                  className={`w-full px-4 py-3 rounded-lg border transition-colors duration-300 ${
-                    isDarkMode 
-                      ? 'bg-white/5 border-white/15 text-white placeholder-white/40 focus:border-[#C7A667]' 
-                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#C7A667]'
-                  } outline-none focus:ring-2 focus:ring-[#C7A667]/20`}
-                  placeholder="Enter your password"
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <label className={`flex items-center gap-2 text-sm transition-colors duration-300 ${
-                  isDarkMode ? 'text-white/70' : 'text-gray-600'
-                }`}>
-                  <input type="checkbox" className="accent-[#C7A667]" />
-                  Remember me
-                </label>
-                <button
-                  type="button"
-                  className={`text-sm transition-colors duration-300 ${
-                    isDarkMode ? 'text-[#C7A667] hover:text-[#B89657]' : 'text-[#C7A667] hover:text-[#B89657]'
-                  }`}
-                >
-                  Forgot password?
-                </button>
-              </div>
-
-              <motion.button
-                type="submit"
-                className="w-full py-3 rounded-lg bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                Sign In
-              </motion.button>
-            </form>
-
-            {/* Divider */}
-            <div className="my-6 flex items-center">
-              <div className={`flex-1 h-px transition-colors duration-300 ${
-                isDarkMode ? 'bg-white/20' : 'bg-gray-300'
-              }`}></div>
-              <span className={`px-4 text-sm transition-colors duration-300 ${
-                isDarkMode ? 'text-white/50' : 'text-gray-500'
-              }`}>or</span>
-              <div className={`flex-1 h-px transition-colors duration-300 ${
-                isDarkMode ? 'bg-white/20' : 'bg-gray-300'
-              }`}></div>
-            </div>
-
-            {/* Additional Options */}
-            <div className="space-y-3">
-              <motion.button
-                type="button"
-                className={`w-full py-3 rounded-lg border transition-colors duration-300 ${
-                  isDarkMode 
-                    ? 'border-white/20 hover:border-white/40 text-white hover:bg-white/5' 
-                    : 'border-gray-300 hover:border-gray-400 text-gray-700 hover:bg-gray-50'
-                }`}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <span className="text-sm font-medium">Create Investor Account</span>
-              </motion.button>
-              
-              <p className={`text-center text-xs transition-colors duration-300 ${
-                isDarkMode ? 'text-white/50' : 'text-gray-500'
-              }`}>
-                New to REALAIST? Contact our team to get started
-              </p>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
     </>
   );
 }

@@ -1,16 +1,21 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from './ThemeContext';
 
 // Helper function to get icon for fact type
-const getFactIcon = (factIndex: number) => {
+const getFactIcon = (factIndex: number, isDarkMode: boolean = true) => {
+  const iconClass = isDarkMode 
+    ? "w-3 h-3 object-contain filter brightness-0 saturate-100 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]"
+    : "w-3 h-3 object-contain filter brightness-0 saturate-100 invert-0";
+    
   switch (factIndex) {
     case 0: // Beds
       return (
         <img 
           src="/icons/bed.png" 
           alt="Beds" 
-          className="w-3 h-3 object-contain filter brightness-0 saturate-100 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]"
+          className={iconClass}
           onError={(e) => {
             // Hide the image if it fails to load
             e.currentTarget.style.display = 'none';
@@ -22,7 +27,7 @@ const getFactIcon = (factIndex: number) => {
         <img 
           src="/icons/bath.png" 
           alt="Baths" 
-          className="w-3 h-3 object-contain filter brightness-0 saturate-100 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]"
+          className={iconClass}
           onError={(e) => {
             // Hide the image if it fails to load
             e.currentTarget.style.display = 'none';
@@ -34,7 +39,7 @@ const getFactIcon = (factIndex: number) => {
         <img 
           src="/icons/sqre%20ft.png" 
           alt="Square Feet" 
-          className="w-3 h-3 object-contain filter brightness-0 saturate-100 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]"
+          className={iconClass}
           onError={(e) => {
             // Hide the image if it fails to load
             e.currentTarget.style.display = 'none';
@@ -45,6 +50,8 @@ const getFactIcon = (factIndex: number) => {
       return null;
   }
 };
+
+
 
 // Houses data
 const houses = [
@@ -113,18 +120,166 @@ const houses = [
     image: "https://images.pexels.com/photos/1571467/pexels-photo-1571467.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Available",
     type: "Gated Communities"
+  },
+  {
+    id: 7,
+    name: "Sunset Ridge",
+    location: "Lavington",
+    price: "KSh 25M",
+    facts: ["3", "2", "2,200 sq ft", "Est. income 9–11%"],
+    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    image: "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    status: "Available",
+    type: "Apartments"
+  },
+  {
+    id: 8,
+    name: "Marina Heights",
+    location: "Mombasa",
+    price: "KSh 45M",
+    facts: ["4", "3", "3,800 sq ft", "Est. income 12–14%"],
+    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    image: "https://images.pexels.com/photos/1029599/pexels-photo-1029599.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    status: "Pre-Launch",
+    type: "Beach Villas"
+  },
+  {
+    id: 9,
+    name: "The Pines",
+    location: "Karen",
+    price: "KSh 38M",
+    facts: ["5", "4", "3,500 sq ft", "Est. income 10–12%"],
+    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    image: "https://images.pexels.com/photos/1396132/pexels-photo-1396132.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    status: "Available",
+    type: "Townhouses"
+  },
+  {
+    id: 10,
+    name: "Riverside Gardens",
+    location: "Westlands",
+    price: "KSh 22M",
+    facts: ["2", "2", "1,500 sq ft", "Est. income 8–10%"],
+    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    image: "https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    status: "Coming Soon",
+    type: "Apartments"
+  },
+  {
+    id: 11,
+    name: "Coral Bay",
+    location: "Diani Beach",
+    price: "KSh 65M",
+    facts: ["6", "5", "5,200 sq ft", "Est. income 15–17%"],
+    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    image: "https://images.pexels.com/photos/1571453/pexels-photo-1571453.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    status: "Available",
+    type: "Beach Villas"
+  },
+  {
+    id: 12,
+    name: "Highland Park",
+    location: "Karen",
+    price: "KSh 48M",
+    facts: ["4", "3", "3,000 sq ft", "Est. income 9–11%"],
+    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    image: "https://images.pexels.com/photos/1571467/pexels-photo-1571467.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    status: "Available",
+    type: "Gated Communities"
+  },
+  {
+    id: 13,
+    name: "Urban Heights",
+    location: "Westlands",
+    price: "KSh 15M",
+    facts: ["2", "1", "1,000 sq ft", "Est. income 7–9%"],
+    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    image: "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    status: "Available",
+    type: "Apartments"
+  },
+  {
+    id: 14,
+    name: "Palm Springs",
+    location: "Mombasa",
+    price: "KSh 52M",
+    facts: ["5", "4", "4,200 sq ft", "Est. income 13–15%"],
+    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    image: "https://images.pexels.com/photos/1029599/pexels-photo-1029599.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    status: "Pre-Launch",
+    type: "Beach Villas"
+  },
+  {
+    id: 15,
+    name: "The Meadows",
+    location: "Karen",
+    price: "KSh 35M",
+    facts: ["4", "3", "2,800 sq ft", "Est. income 10–12%"],
+    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    image: "https://images.pexels.com/photos/1396132/pexels-photo-1396132.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    status: "Available",
+    type: "Townhouses"
+  },
+  {
+    id: 16,
+    name: "Sky Gardens",
+    location: "Westlands",
+    price: "KSh 28M",
+    facts: ["3", "2", "2,000 sq ft", "Est. income 9–11%"],
+    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    image: "https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    status: "Coming Soon",
+    type: "Apartments"
+  },
+  {
+    id: 17,
+    name: "Ocean Paradise",
+    location: "Diani Beach",
+    price: "KSh 75M",
+    facts: ["7", "6", "6,000 sq ft", "Est. income 16–18%"],
+    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    image: "https://images.pexels.com/photos/1571453/pexels-photo-1571453.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    status: "Available",
+    type: "Beach Villas"
+  },
+  {
+    id: 18,
+    name: "Eden Gardens",
+    location: "Karen",
+    price: "KSh 42M",
+    facts: ["5", "4", "3,600 sq ft", "Est. income 11–13%"],
+    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    image: "https://images.pexels.com/photos/1571467/pexels-photo-1571467.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    status: "Available",
+    type: "Gated Communities"
   }
 ];
 
 export default function HousesPage() {
   const navigate = useNavigate();
+  const { isDarkMode, toggleTheme } = useTheme();
   const [filteredHouses, setFilteredHouses] = useState(houses);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('All');
   const [selectedStatus, setSelectedStatus] = useState('All');
+  const [selectedPriceRange, setSelectedPriceRange] = useState('All');
+  const [selectedSquareFootage, setSelectedSquareFootage] = useState('All');
+  const [selectedBedrooms, setSelectedBedrooms] = useState('All');
+  const [selectedBathrooms, setSelectedBathrooms] = useState('All');
+  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [themeWidgetOpen, setThemeWidgetOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const propertiesPerPage = 12;
 
   const propertyTypes = ['All', 'Apartments', 'Beach Villas', 'Townhouses', 'Gated Communities'];
   const statuses = ['All', 'Available', 'Pre-Launch', 'Coming Soon'];
+  const priceRanges = ['All', 'Under KSh 5M', 'KSh 5M - 10M', 'KSh 10M - 20M', 'KSh 20M - 50M', 'Over KSh 50M'];
+  const squareFootage = ['All', 'Under 1,000 sq ft', '1,000 - 2,000 sq ft', '2,000 - 5,000 sq ft', 'Over 5,000 sq ft'];
+  const bedrooms = ['All', '1', '2', '3', '4', '5+'];
+  const bathrooms = ['All', '1', '2', '3', '4', '5+'];
 
   useEffect(() => {
     // Get search term from URL if present
@@ -157,11 +312,120 @@ export default function HousesPage() {
       filtered = filtered.filter(house => house.status === selectedStatus);
     }
 
+    // Filter by price range
+    if (selectedPriceRange !== 'All') {
+      filtered = filtered.filter(house => {
+        const price = parseInt(house.price.replace(/[^\d]/g, ''));
+        switch (selectedPriceRange) {
+          case 'Under KSh 5M': return price < 5000000;
+          case 'KSh 5M - 10M': return price >= 5000000 && price < 10000000;
+          case 'KSh 10M - 20M': return price >= 10000000 && price < 20000000;
+          case 'KSh 20M - 50M': return price >= 20000000 && price < 50000000;
+          case 'Over KSh 50M': return price >= 50000000;
+          default: return true;
+        }
+      });
+    }
+
+    // Filter by square footage
+    if (selectedSquareFootage !== 'All') {
+      filtered = filtered.filter(house => {
+        const sqft = parseInt(house.facts[2].replace(/[^\d]/g, ''));
+        switch (selectedSquareFootage) {
+          case 'Under 1,000 sq ft': return sqft < 1000;
+          case '1,000 - 2,000 sq ft': return sqft >= 1000 && sqft < 2000;
+          case '2,000 - 5,000 sq ft': return sqft >= 2000 && sqft < 5000;
+          case 'Over 5,000 sq ft': return sqft >= 5000;
+          default: return true;
+        }
+      });
+    }
+
+    // Filter by bedrooms
+    if (selectedBedrooms !== 'All') {
+      filtered = filtered.filter(house => {
+        const beds = parseInt(house.facts[0]);
+        if (selectedBedrooms === '5+') {
+          return beds >= 5;
+        }
+        return beds === parseInt(selectedBedrooms);
+      });
+    }
+
+    // Filter by bathrooms
+    if (selectedBathrooms !== 'All') {
+      filtered = filtered.filter(house => {
+        const baths = parseInt(house.facts[1]);
+        if (selectedBathrooms === '5+') {
+          return baths >= 5;
+        }
+        return baths === parseInt(selectedBathrooms);
+      });
+    }
+
     setFilteredHouses(filtered);
-  }, [searchTerm, selectedType, selectedStatus]);
+    setCurrentPage(1); // Reset to first page when filters change
+  }, [searchTerm, selectedType, selectedStatus, selectedPriceRange, selectedSquareFootage, selectedBedrooms, selectedBathrooms]);
 
   const handleBackToHome = () => {
     navigate('/');
+  };
+
+  // Generate search suggestions based on property data
+  const generateSearchSuggestions = (query: string) => {
+    if (!query.trim()) return [];
+    
+    const suggestions = new Set<string>();
+    
+    houses.forEach(house => {
+      // Add property names
+      if (house.name.toLowerCase().includes(query.toLowerCase())) {
+        suggestions.add(house.name);
+      }
+      
+      // Add locations
+      if (house.location.toLowerCase().includes(query.toLowerCase())) {
+        suggestions.add(house.location);
+      }
+      
+      // Add property types
+      if (house.type.toLowerCase().includes(query.toLowerCase())) {
+        suggestions.add(house.type);
+      }
+      
+      // Add status
+      if (house.status.toLowerCase().includes(query.toLowerCase())) {
+        suggestions.add(house.status);
+      }
+    });
+    
+    return Array.from(suggestions).slice(0, 5); // Limit to 5 suggestions
+  };
+
+  // Handle search input changes
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    const suggestions = generateSearchSuggestions(value);
+    setSearchSuggestions(suggestions);
+    setShowSuggestions(suggestions.length > 0 && value.trim().length > 0);
+  };
+
+  // Handle suggestion selection
+  const handleSuggestionClick = (suggestion: string) => {
+    setSearchTerm(suggestion);
+    setShowSuggestions(false);
+  };
+
+  // Pagination logic
+  const indexOfLastProperty = currentPage * propertiesPerPage;
+  const indexOfFirstProperty = indexOfLastProperty - propertiesPerPage;
+  const currentProperties = filteredHouses.slice(indexOfFirstProperty, indexOfLastProperty);
+  const totalPages = Math.ceil(filteredHouses.length / propertiesPerPage);
+
+  // Handle page change
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -169,7 +433,14 @@ export default function HousesPage() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Aboreto&family=Montserrat:wght@400;500;600;900&family=Mulish:wght@600;700;800;900&display=swap');
         
-        :root { --bg: #0E0E10; --ink: #F5F6F7; }
+        :root { 
+          --bg: #0E0E10; 
+          --ink: #F5F6F7; 
+          --bg-light: #FFFFFF;
+          --ink-light: #1A1A1A;
+        }
+        body.dark { --bg: #0E0E10; --ink: #F5F6F7; }
+        body.light { --bg: #FFFFFF; --ink: #1A1A1A; }
         html { scroll-behavior: smooth; }
         .font-heading { font-family: 'Mulish', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; font-weight: 900; }
         .font-body { font-family: 'Montserrat', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
@@ -215,32 +486,139 @@ export default function HousesPage() {
       <div className="grain text-[var(--ink)] bg-[var(--bg)] font-body min-h-screen">
         {/* Header */}
         <motion.header 
-          className="fixed top-0 inset-x-0 z-30 backdrop-blur supports-[backdrop-filter]:bg-black/35 bg-black/30 border-b border-white/10"
+          className={`fixed top-0 inset-x-0 z-30 backdrop-blur supports-[backdrop-filter]:backdrop-blur-sm border-b transition-colors duration-300 ${
+            isDarkMode 
+              ? 'bg-black/35 border-white/10' 
+              : 'bg-white/80 border-gray-200'
+          }`}
           initial={{ y: -100 }}
           animate={{ y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="border border-dashed border-white/60 rounded px-2.5 py-1">
-                <span className="font-logo tracking-[0.25em] text-sm">REALAIST</span>
+              <div className={`border border-dashed rounded px-2.5 py-1 transition-colors duration-300 ${
+                isDarkMode ? 'border-white/60' : 'border-gray-400'
+              }`}>
+                <span className={`font-logo tracking-[0.25em] text-sm transition-colors duration-300 ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>REALAIST</span>
               </div>
             </div>
             <nav className="hidden md:flex items-center gap-8 text-sm">
-              <a href="/" className="hover:text-white/80 transition-colors">Home</a>
+              <a href="/" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Home</a>
               <a href="/houses" className="text-[#C7A667]">Properties</a>
-              <a href="/#why" className="hover:text-white/80 transition-colors">Why Us</a>
-              <a href="/#insights" className="hover:text-white/80 transition-colors">Insights</a>
-              <a href="/#contact" className="hover:text-white/80 transition-colors">Contact</a>
+              <a href="/" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
+              <motion.button
+                onClick={toggleTheme}
+                className={`p-2 rounded-full border transition-all ${
+                  isDarkMode 
+                    ? 'border-white/30 hover:border-[#C7A667] hover:text-[#C7A667]' 
+                    : 'border-gray-300 hover:border-[#C7A667] hover:text-[#C7A667]'
+                }`}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                {isDarkMode ? '☀️' : '🌙'}
+              </motion.button>
             </nav>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className={`md:hidden p-2 rounded-lg transition-colors ${
+                isDarkMode ? 'text-white hover:text-[#C7A667]' : 'text-gray-900 hover:text-[#C7A667]'
+              }`}
+            >
+              <div className="flex flex-col gap-1">
+                <span className={`block w-5 h-0.5 transition-all duration-300 ${mobileMenuOpen ? 'rotate-45 translate-y-1' : '-translate-y-1'} ${isDarkMode ? 'bg-white' : 'bg-gray-900'}`}></span>
+                <span className={`block w-5 h-0.5 transition-all duration-300 ${mobileMenuOpen ? 'opacity-0' : 'opacity-100'} ${isDarkMode ? 'bg-white' : 'bg-gray-900'}`}></span>
+                <span className={`block w-5 h-0.5 transition-all duration-300 ${mobileMenuOpen ? '-rotate-45 -translate-y-1' : 'translate-y-1'} ${isDarkMode ? 'bg-white' : 'bg-gray-900'}`}></span>
+              </div>
+            </button>
           </div>
         </motion.header>
 
+        {/* Mobile Menu */}
+        <motion.div
+          className={`fixed inset-0 z-40 md:hidden transition-colors duration-300 ${
+            isDarkMode ? 'bg-black/95' : 'bg-white/95'
+          }`}
+          initial={{ opacity: 0, visibility: 'hidden' }}
+          animate={{
+            opacity: mobileMenuOpen ? 1 : 0,
+            visibility: mobileMenuOpen ? 'visible' : 'hidden'
+          }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="flex flex-col h-full pt-20 pb-6 px-6">
+            <nav className="flex flex-col gap-6 text-lg">
+              <a 
+                href="/" 
+                className={`transition-colors ${isDarkMode ? 'text-white hover:text-[#C7A667]' : 'text-gray-900 hover:text-[#C7A667]'}`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Home
+              </a>
+              <a 
+                href="/houses" 
+                className="text-[#C7A667]"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Properties
+              </a>
+              <a 
+                href="/" 
+                className={`transition-colors ${isDarkMode ? 'text-white hover:text-[#C7A667]' : 'text-gray-900 hover:text-[#C7A667]'}`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Contact
+              </a>
+            </nav>
+            
+            <div className="mt-auto">
+              <motion.button
+                onClick={() => {
+                  toggleTheme();
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full p-4 rounded-lg border transition-all ${
+                  isDarkMode 
+                    ? 'border-white/30 hover:border-[#C7A667] hover:text-[#C7A667]' 
+                    : 'border-gray-300 hover:border-[#C7A667] hover:text-[#C7A667]'
+                }`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
+              </motion.button>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Mobile Theme Toggle Button */}
+        <motion.button
+          className={`fixed right-2 top-1/4 transform -translate-y-1/2 z-30 md:hidden w-10 h-10 rounded-full backdrop-blur-sm border flex items-center justify-center shadow-lg transition-all duration-300 opacity-60 hover:opacity-100 ${
+            isDarkMode 
+              ? 'bg-black/60 border-white/10 text-white/80' 
+              : 'bg-white/60 border-gray-200/50 text-gray-600'
+          }`}
+          onClick={toggleTheme}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          {isDarkMode ? '☀️' : '🌙'}
+        </motion.button>
+
         {/* Main Content */}
-        <div className="pt-16">
+        <div className={`pt-16 transition-colors duration-300 ${
+          isDarkMode 
+            ? 'bg-gradient-to-b from-[#0E0E10] via-[#111217] to-[#0E0E10]' 
+            : 'bg-gradient-to-b from-gray-50 via-white to-gray-50'
+        }`}>
           {/* Hero Section */}
           <motion.section 
-            className="relative py-20 bg-gradient-to-b from-[#0E0E10] to-[#111217]"
+            className="py-20"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8 }}
@@ -248,7 +626,14 @@ export default function HousesPage() {
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               <div className="text-center">
                 <motion.h1 
-                  className="font-heading text-5xl md:text-7xl lg:text-8xl leading-none tracking-tight text-white mb-6"
+                  className={`font-heading text-5xl md:text-7xl lg:text-8xl leading-none tracking-tight mb-6 transition-colors duration-300 ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}
+                  style={{ 
+                    fontFamily: "'Cinzel', 'Playfair Display', serif",
+                    fontWeight: 500,
+                    letterSpacing: '0.05em'
+                  }}
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.2 }}
@@ -256,99 +641,235 @@ export default function HousesPage() {
                   Available Properties
                 </motion.h1>
                 <motion.p 
-                  className="text-xl text-white/70 max-w-2xl mx-auto"
+                  className={`text-xl max-w-2xl mx-auto transition-colors duration-300 ${
+                    isDarkMode ? 'text-white/70' : 'text-gray-600'
+                  }`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.4 }}
                 >
                   Discover our curated selection of high-performance properties across Kenya
                 </motion.p>
-              </div>
 
-              {/* Back to Home Button */}
-              <motion.div 
-                className="mt-8 flex justify-center"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.8, delay: 0.6 }}
-              >
-                <motion.button
-                  onClick={handleBackToHome}
-                  className="btn-3d px-6 py-3 rounded-full border border-white/30 hover:border-[#C7A667] hover:text-[#C7A667] transition-all"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                {/* Back to Home Button */}
+                <motion.div 
+                  className="mt-8 flex justify-center"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.8, delay: 0.6 }}
                 >
-                  ← Back to Home
-                </motion.button>
-              </motion.div>
-            </div>
-          </motion.section>
+                  <motion.button
+                    onClick={handleBackToHome}
+                    className={`btn-3d px-6 py-3 rounded-full border transition-all ${
+                      isDarkMode 
+                        ? 'border-white/30 hover:border-[#C7A667] hover:text-[#C7A667]' 
+                        : 'border-gray-300 hover:border-[#C7A667] hover:text-[#C7A667]'
+                    }`}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    ← Back to Home
+                  </motion.button>
+                </motion.div>
 
-          {/* Filters Section */}
-          <motion.section 
-            className="py-12 bg-[#111217]"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.8 }}
-          >
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm">
-                <div className="grid md:grid-cols-4 gap-4">
-                  {/* Search */}
-                  <div>
-                    <label className="block text-sm font-medium text-white/70 mb-2">Search</label>
-                    <input
-                      type="text"
-                      placeholder="Search properties..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-white/40 outline-none focus:border-[#C7A667] transition-colors"
-                    />
-                  </div>
+                {/* Compact Search Bar */}
+                <motion.div 
+                  className="mt-8 max-w-2xl mx-auto"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.8 }}
+                >
+                  <div className="bg-[#C7A667] border border-[#B89657] rounded-lg p-4 shadow-lg">
+                    <div className="flex items-center gap-3">
+                      {/* Search Input */}
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          placeholder="Search area & properties"
+                          value={searchTerm}
+                          onChange={(e) => handleSearchChange(e.target.value)}
+                          onFocus={() => setShowSuggestions(searchSuggestions.length > 0)}
+                          onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              setShowSuggestions(false);
+                            }
+                          }}
+                          className="w-full bg-white/90 border-none outline-none text-base text-gray-900 placeholder-gray-600 rounded-md px-3 py-2 transition-colors duration-300 focus:bg-white"
+                        />
+                        {/* Search Button */}
+                        <button
+                          onClick={() => {
+                            setShowSuggestions(false);
+                          }}
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          </svg>
+                        </button>
+                      </div>
 
-                  {/* Property Type */}
-                  <div>
-                    <label className="block text-sm font-medium text-white/70 mb-2">Property Type</label>
-                    <select
-                      value={selectedType}
-                      onChange={(e) => setSelectedType(e.target.value)}
-                      className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white outline-none focus:border-[#C7A667] transition-colors"
-                    >
-                      {propertyTypes.map(type => (
-                        <option key={type} value={type}>{type}</option>
-                      ))}
-                    </select>
-                  </div>
+                      {/* Filters Button */}
+                      <div className="relative">
+                        <motion.button
+                          onClick={() => setShowFilters(!showFilters)}
+                          className="bg-white text-black px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors flex items-center gap-2 font-medium"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
+                          </svg>
+                          <span className="text-xs bg-[#C7A667] text-black px-1.5 py-0.5 rounded-full">
+                            {[
+                              selectedType !== 'All' ? 1 : 0,
+                              selectedStatus !== 'All' ? 1 : 0,
+                              selectedPriceRange !== 'All' ? 1 : 0,
+                              selectedSquareFootage !== 'All' ? 1 : 0,
+                              selectedBedrooms !== 'All' ? 1 : 0,
+                              selectedBathrooms !== 'All' ? 1 : 0
+                            ].reduce((a, b) => a + b, 0)}
+                          </span>
+                        </motion.button>
 
-                  {/* Status */}
-                  <div>
-                    <label className="block text-sm font-medium text-white/70 mb-2">Status</label>
-                    <select
-                      value={selectedStatus}
-                      onChange={(e) => setSelectedStatus(e.target.value)}
-                      className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white outline-none focus:border-[#C7A667] transition-colors"
-                    >
-                      {statuses.map(status => (
-                        <option key={status} value={status}>{status}</option>
-                      ))}
-                    </select>
-                  </div>
+                        {/* Filters Dropdown */}
+                        {showFilters && (
+                          <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-gray-300 rounded-lg shadow-xl z-50 p-4">
+                            <div className="space-y-4">
+                              {/* Property Type */}
+                              <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-700">Property Type</label>
+                                <select
+                                  value={selectedType}
+                                  onChange={(e) => setSelectedType(e.target.value)}
+                                  className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 outline-none focus:border-[#C7A667] focus:ring-2 focus:ring-[#C7A667]/20 transition-colors"
+                                >
+                                  {propertyTypes.map(type => (
+                                    <option key={type} value={type}>{type}</option>
+                                  ))}
+                                </select>
+                              </div>
 
-                  {/* Results Count */}
-                  <div className="flex items-end">
-                    <div className="text-white/70">
-                      <span className="text-2xl font-bold text-white">{filteredHouses.length}</span>
-                      <span className="ml-2">Properties Found</span>
+                              {/* Status */}
+                              <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-700">Status</label>
+                                <select
+                                  value={selectedStatus}
+                                  onChange={(e) => setSelectedStatus(e.target.value)}
+                                  className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 outline-none focus:border-[#C7A667] focus:ring-2 focus:ring-[#C7A667]/20 transition-colors"
+                                >
+                                  {statuses.map(status => (
+                                    <option key={status} value={status}>{status}</option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              {/* Price Range */}
+                              <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-700">Price Range</label>
+                                <select
+                                  value={selectedPriceRange}
+                                  onChange={(e) => setSelectedPriceRange(e.target.value)}
+                                  className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 outline-none focus:border-[#C7A667] focus:ring-2 focus:ring-[#C7A667]/20 transition-colors"
+                                >
+                                  {priceRanges.map(range => (
+                                    <option key={range} value={range}>{range}</option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              {/* Square Footage */}
+                              <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-700">Square Footage</label>
+                                <select
+                                  value={selectedSquareFootage}
+                                  onChange={(e) => setSelectedSquareFootage(e.target.value)}
+                                  className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 outline-none focus:border-[#C7A667] focus:ring-2 focus:ring-[#C7A667]/20 transition-colors"
+                                >
+                                  {squareFootage.map(sqft => (
+                                    <option key={sqft} value={sqft}>{sqft}</option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              {/* Bedrooms */}
+                              <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-700">Bedrooms</label>
+                                <select
+                                  value={selectedBedrooms}
+                                  onChange={(e) => setSelectedBedrooms(e.target.value)}
+                                  className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 outline-none focus:border-[#C7A667] focus:ring-2 focus:ring-[#C7A667]/20 transition-colors"
+                                >
+                                  {bedrooms.map(bed => (
+                                    <option key={bed} value={bed}>{bed}</option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              {/* Bathrooms */}
+                              <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-700">Bathrooms</label>
+                                <select
+                                  value={selectedBathrooms}
+                                  onChange={(e) => setSelectedBathrooms(e.target.value)}
+                                  className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 outline-none focus:border-[#C7A667] focus:ring-2 focus:ring-[#C7A667]/20 transition-colors"
+                                >
+                                  {bathrooms.map(bath => (
+                                    <option key={bath} value={bath}>{bath}</option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              {/* Clear Filters Button */}
+                              <motion.button
+                                onClick={() => {
+                                  setSearchTerm('');
+                                  setSelectedType('All');
+                                  setSelectedStatus('All');
+                                  setSelectedPriceRange('All');
+                                  setSelectedSquareFootage('All');
+                                  setSelectedBedrooms('All');
+                                  setSelectedBathrooms('All');
+                                  setShowSuggestions(false);
+                                }}
+                                className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                              >
+                                Clear All Filters
+                              </motion.button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
+
+                    {/* Autocomplete Suggestions */}
+                    {showSuggestions && searchSuggestions.length > 0 && (
+                      <div className="mt-2 bg-white/95 border border-gray-200 rounded-md shadow-lg">
+                        {searchSuggestions.slice(0, 5).map((suggestion, index) => (
+                          <div
+                            key={index}
+                            className="px-3 py-2 cursor-pointer transition-colors text-gray-800 hover:text-gray-900 hover:bg-gray-100"
+                            onClick={() => handleSuggestionClick(suggestion)}
+                          >
+                            {suggestion}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
+                </motion.div>
               </div>
             </div>
           </motion.section>
+
+
 
           {/* Properties Grid */}
           <motion.section 
-            className="py-16 bg-[#0E0E10]"
+            className="py-16"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 1.0 }}
@@ -356,10 +877,14 @@ export default function HousesPage() {
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               {filteredHouses.length > 0 ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {filteredHouses.map((house, index) => (
+                  {currentProperties.map((house, index) => (
                     <motion.div
                       key={house.id}
-                      className="card-3d bg-white/5 border border-white/10 rounded-2xl overflow-hidden"
+                      className={`card-3d border rounded-2xl overflow-hidden transition-colors duration-300 backdrop-blur-sm ${
+                        isDarkMode 
+                          ? 'bg-white/10 border-white/20 shadow-xl' 
+                          : 'bg-white/90 border-gray-200/50 shadow-lg'
+                      }`}
                       initial={{ opacity: 0, y: 50 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.6, delay: index * 0.1 }}
@@ -370,26 +895,38 @@ export default function HousesPage() {
                           alt={house.name} 
                           className="w-full h-48 object-cover"
                         />
-                        <div className="absolute top-4 right-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            house.status === 'Available' ? 'bg-green-500/20 text-green-400' :
-                            house.status === 'Pre-Launch' ? 'bg-blue-500/20 text-blue-400' :
-                            'bg-yellow-500/20 text-yellow-400'
-                          }`}>
-                            {house.status}
-                          </span>
-                        </div>
                       </div>
                       
-                      <div className="p-6">
+                      <div className="p-6 relative">
+                        <div className="absolute top-4 right-4">
+                          <motion.span 
+                            className={`px-3 py-1 rounded-full text-xs font-medium border transition-all shadow-lg ${
+                              isDarkMode 
+                                ? 'border-white/30 text-white hover:border-[#C7A667] hover:text-[#C7A667] hover:shadow-[#C7A667]/20 hover:drop-shadow-[0_0_12px_rgba(199,166,103,0.9)] hover:drop-shadow-[0_0_20px_rgba(199,166,103,0.6)]' 
+                                : 'border-gray-300 text-gray-700 hover:border-[#C7A667] hover:text-[#C7A667] hover:shadow-[#C7A667]/30 hover:drop-shadow-[0_0_12px_rgba(199,166,103,1)] hover:drop-shadow-[0_0_20px_rgba(199,166,103,0.8)]'
+                            }`}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            {house.status}
+                          </motion.span>
+                        </div>
                         <div className="text-sm text-[#C7A667] font-medium mb-2">{house.type}</div>
-                        <h3 className="font-heading text-xl text-white mb-2">{house.name}</h3>
-                        <p className="text-white/70 text-sm mb-4">{house.location}</p>
+                        <h3 className={`font-heading text-xl mb-2 transition-colors duration-300 ${
+                          isDarkMode ? 'text-white' : 'text-gray-900'
+                        }`}>{house.name}</h3>
+                        <p className={`text-sm mb-4 transition-colors duration-300 ${
+                          isDarkMode ? 'text-white/70' : 'text-gray-600'
+                        }`}>{house.location}</p>
                         
                         <div className="flex flex-wrap gap-2 mb-6">
                           {house.facts.map((fact, factIndex) => (
-                            <span key={fact} className="text-xs px-3 py-1 rounded-full border border-white/20 bg-white/5 text-white flex items-center gap-1">
-                              {getFactIcon(factIndex)}
+                            <span key={fact} className={`text-xs px-3 py-1 rounded-full border flex items-center gap-1 transition-colors duration-300 ${
+                              isDarkMode 
+                                ? 'border-white/20 bg-white/5 text-white' 
+                                : 'border-gray-300 bg-gray-100 text-gray-700'
+                            }`}>
+                              {getFactIcon(factIndex, isDarkMode)}
                               {fact}
                             </span>
                           ))}
@@ -405,7 +942,12 @@ export default function HousesPage() {
                             View Details
                           </motion.a>
                           <motion.button 
-                            className="btn-3d px-4 py-2 rounded-lg border border-white/20 text-white text-sm hover:border-[#C7A667] hover:text-[#C7A667] transition-all"
+                            onClick={() => navigate('/')}
+                            className={`btn-3d px-4 py-2 rounded-lg border text-sm transition-all ${
+                              isDarkMode 
+                                ? 'border-white/20 text-white hover:border-[#C7A667] hover:text-[#C7A667]' 
+                                : 'border-gray-300 text-gray-700 hover:border-[#C7A667] hover:text-[#C7A667]'
+                            }`}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                           >
@@ -416,6 +958,7 @@ export default function HousesPage() {
                     </motion.div>
                   ))}
                 </div>
+
               ) : (
                 <motion.div 
                   className="text-center py-20"
@@ -424,8 +967,12 @@ export default function HousesPage() {
                   transition={{ duration: 0.6 }}
                 >
                   <div className="text-6xl mb-4">🏠</div>
-                  <h3 className="font-heading text-2xl text-white mb-2">No Properties Found</h3>
-                  <p className="text-white/70 mb-6">Try adjusting your search criteria or filters</p>
+                  <h3 className={`font-heading text-2xl mb-2 transition-colors duration-300 ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>No Properties Found</h3>
+                  <p className={`mb-6 transition-colors duration-300 ${
+                    isDarkMode ? 'text-white/70' : 'text-gray-600'
+                  }`}>Try adjusting your search criteria or filters</p>
                   <motion.button
                     onClick={() => {
                       setSearchTerm('');
@@ -438,6 +985,81 @@ export default function HousesPage() {
                   >
                     Clear Filters
                   </motion.button>
+                </motion.div>
+              )}
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <motion.div 
+                  className="mt-12 flex justify-center"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                >
+                  <div className="flex items-center gap-2">
+                    {/* Previous Button */}
+                    <motion.button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className={`px-3 py-2 rounded-lg border transition-all ${
+                        currentPage === 1
+                          ? 'opacity-50 cursor-not-allowed'
+                          : 'hover:scale-105'
+                      } ${
+                        isDarkMode 
+                          ? 'border-white/30 text-white hover:border-[#C7A667] hover:text-[#C7A667]' 
+                          : 'border-gray-300 text-gray-700 hover:border-[#C7A667] hover:text-[#C7A667]'
+                      }`}
+                      whileHover={currentPage !== 1 ? { scale: 1.05 } : {}}
+                      whileTap={currentPage !== 1 ? { scale: 0.95 } : {}}
+                    >
+                      ←
+                    </motion.button>
+
+                    {/* Page Numbers */}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <motion.button
+                        key={page}
+                        onClick={() => handlePageChange(page)}
+                        className={`px-3 py-2 rounded-lg border transition-all ${
+                          currentPage === page
+                            ? 'bg-[#C7A667] text-black border-[#C7A667]'
+                            : 'hover:scale-105'
+                        } ${
+                          isDarkMode 
+                            ? currentPage === page 
+                              ? 'border-[#C7A667] text-black' 
+                              : 'border-white/30 text-white hover:border-[#C7A667] hover:text-[#C7A667]'
+                            : currentPage === page
+                              ? 'border-[#C7A667] text-black'
+                              : 'border-gray-300 text-gray-700 hover:border-[#C7A667] hover:text-[#C7A667]'
+                        }`}
+                        whileHover={currentPage !== page ? { scale: 1.05 } : {}}
+                        whileTap={currentPage !== page ? { scale: 0.95 } : {}}
+                      >
+                        {page}
+                      </motion.button>
+                    ))}
+
+                    {/* Next Button */}
+                    <motion.button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className={`px-3 py-2 rounded-lg border transition-all ${
+                        currentPage === totalPages
+                          ? 'opacity-50 cursor-not-allowed'
+                          : 'hover:scale-105'
+                      } ${
+                        isDarkMode 
+                          ? 'border-white/30 text-white hover:border-[#C7A667] hover:text-[#C7A667]' 
+                          : 'border-gray-300 text-gray-700 hover:border-[#C7A667] hover:text-[#C7A667]'
+                      }`}
+                      whileHover={currentPage !== totalPages ? { scale: 1.05 } : {}}
+                      whileTap={currentPage !== totalPages ? { scale: 0.95 } : {}}
+                    >
+                      →
+                    </motion.button>
+                  </div>
                 </motion.div>
               )}
             </div>
