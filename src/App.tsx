@@ -94,14 +94,18 @@ const searchSuggestions = [
 ];
 
 // Helper function to get icon for fact type
-const getFactIcon = (factIndex: number) => {
+const getFactIcon = (factIndex: number, isDarkMode: boolean = true) => {
+  const iconClass = isDarkMode 
+    ? "w-3 h-3 object-contain filter brightness-0 saturate-100 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]"
+    : "w-3 h-3 object-contain filter brightness-0 saturate-100 invert-0";
+    
   switch (factIndex) {
     case 0: // Beds
       return (
         <img 
           src="/icons/bed.png" 
           alt="Beds" 
-          className="w-3 h-3 object-contain filter brightness-0 saturate-100 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]"
+          className={iconClass}
           onError={(e) => {
             // Hide the image if it fails to load
             e.currentTarget.style.display = 'none';
@@ -113,7 +117,7 @@ const getFactIcon = (factIndex: number) => {
         <img 
           src="/icons/bath.png" 
           alt="Baths" 
-          className="w-3 h-3 object-contain filter brightness-0 saturate-100 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]"
+          className={iconClass}
           onError={(e) => {
             // Hide the image if it fails to load
             e.currentTarget.style.display = 'none';
@@ -125,7 +129,7 @@ const getFactIcon = (factIndex: number) => {
         <img 
           src="/icons/sqre%20ft.png" 
           alt="Square Feet" 
-          className="w-3 h-3 object-contain filter brightness-0 saturate-100 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]"
+          className={iconClass}
           onError={(e) => {
             // Hide the image if it fails to load
             e.currentTarget.style.display = 'none';
@@ -163,14 +167,6 @@ function FloatingLogo({ isDarkMode = true }: { isDarkMode?: boolean }) {
 function Section({ id, children, dark = false, isDarkMode = true }: { id: string; children: React.ReactNode; dark?: boolean; isDarkMode?: boolean }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.2 });
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "end start"]
-  });
-
-  const y = useTransform(scrollYProgress, [0, 1], [100, -100]);
-  const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0]);
-  const scale = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0.8, 1, 1, 0.9]);
 
   return (
     <motion.section
@@ -181,24 +177,14 @@ function Section({ id, children, dark = false, isDarkMode = true }: { id: string
           ? (isDarkMode ? "bg-[#0E0E10]" : "bg-gray-100") 
           : (isDarkMode ? "bg-[#111217]" : "bg-white")
       }`}
-      style={{
-        y,
-        opacity,
-        scale,
-        transformStyle: "preserve-3d",
-        perspective: "1000px",
-        position: "relative"
-      }}
-      initial={{ opacity: 0, y: 100, rotateX: 15 }}
-      animate={isInView ? { opacity: 1, y: 0, rotateX: 0 } : {}}
+      initial={{ opacity: 0, y: 50 }}
+      animate={isInView ? { opacity: 1, y: 0 } : {}}
       transition={{ 
-        duration: 0.8, 
-        ease: [0.22, 1, 0.36, 1],
-        type: "spring",
-        stiffness: 100
+        duration: 0.6, 
+        ease: "easeOut"
       }}
     >
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 md:py-24">{children}</div>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 md:py-12">{children}</div>
     </motion.section>
   );
 }
@@ -211,7 +197,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('Buy');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [propertiesCarouselIndex, setPropertiesCarouselIndex] = useState(0);
-  const [insightsCarouselIndex, setInsightsCarouselIndex] = useState(0);
+
   const [offPlanCarouselIndex, setOffPlanCarouselIndex] = useState(0);
   const [completedCarouselIndex, setCompletedCarouselIndex] = useState(0);
   const [testimonialsCarouselIndex, setTestimonialsCarouselIndex] = useState(0);
@@ -635,7 +621,6 @@ export default function App() {
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-8 text-sm">
               <a href="#properties" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Properties</a>
-              <a href="#insights" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Insights</a>
               <a href="#contact" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
               <motion.button
                 onClick={() => setLoginModalOpen(true)}
@@ -655,7 +640,7 @@ export default function App() {
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
-                {isDarkMode ? '☀️' : '��'}
+                {isDarkMode ? '☀️' : '🌙'}
               </motion.button>
             </nav>
 
@@ -687,9 +672,8 @@ export default function App() {
             transition={{ duration: 0.3, ease: "easeInOut" }}
           >
             <div className="px-4 py-6 space-y-4">
-              <a href="#properties" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Properties</a>
-              <a href="#insights" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Insights</a>
-              <a href="#contact" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
+                              <a href="#properties" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Properties</a>
+                <a href="#contact" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
               <motion.button
                 onClick={() => setLoginModalOpen(true)}
                 className="w-full px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
@@ -956,7 +940,11 @@ export default function App() {
                   <img 
                     src={partner.logo} 
                     alt={`${partner.name} logo`}
-                    className={`max-w-full object-contain filter brightness-0 invert opacity-70 hover:opacity-100 transition-opacity duration-300 ${
+                    className={`max-w-full object-contain transition-opacity duration-300 ${
+                      isDarkMode 
+                        ? 'filter brightness-0 invert opacity-70 hover:opacity-100' 
+                        : 'opacity-70 hover:opacity-100'
+                    } ${
                       partner.name === "BlackRock" || partner.name === "World Bank" 
                         ? "max-h-10" 
                         : "max-h-8"
@@ -981,17 +969,18 @@ export default function App() {
 
 
 
-        {/* Off-Plan Projects Carousel */}
-        <Section id="properties" dark isDarkMode={isDarkMode}>
-          <h3 className="font-heading text-3xl md:text-4xl">Off-Plan Projects</h3>
-          <div className="mt-10 relative">
-            {/* Carousel Container */}
-            <div className="relative overflow-hidden rounded-2xl">
-              <motion.div 
-                className="flex transition-transform duration-500 ease-in-out"
-                style={{ transform: `translateX(-${offPlanCarouselIndex * 100}%)` }}
-              >
-                {offPlanProjects.map((p, index) => (
+                            {/* Completed Properties Carousel */}
+          <Section id="properties" dark isDarkMode={isDarkMode}>
+            <h2 className="font-heading text-4xl md:text-5xl mb-4">Featured Properties</h2>
+            <h3 className="font-heading text-3xl md:text-4xl">Completed Properties</h3>
+            <div className="mt-6 relative">
+              {/* Carousel Container */}
+              <div className="relative overflow-hidden rounded-2xl">
+                <motion.div 
+                  className="flex transition-transform duration-500 ease-in-out"
+                  style={{ transform: `translateX(-${offPlanCarouselIndex * 100}%)` }}
+                >
+                  {offPlanProjects.map((p, index) => (
                   <div key={p.name} className="w-full flex-shrink-0">
                     <motion.article 
                       className="relative grid md:grid-cols-12 gap-6 items-stretch parallax-section p-6"
@@ -1030,148 +1019,7 @@ export default function App() {
                                   ? 'border-white/20 bg-white/5 text-white' 
                                   : 'border-gray-300 bg-gray-100 text-gray-700'
                               }`}>
-                                {getFactIcon(factIndex)}
-                                {f}
-                              </span>
-                            ))}
-                          </div>
-                          <div className="mt-6 flex gap-3">
-                            <a 
-                              href={`/property/${p.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`}
-                              className="px-5 py-2.5 rounded-full bg-[#C7A667] text-black text-sm font-medium relative z-50 inline-block text-center hover:bg-[#B89657] transition-colors"
-                            >
-                              View Details
-                            </a>
-                            <motion.button 
-                              className="btn-3d px-5 py-2.5 rounded-full border border-white/30 text-sm hover:border-[#C7A667] hover:text-[#C7A667] transition-all"
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                            >
-                              Download Brochure
-                            </motion.button>
-                          </div>
-                        </div>
-                        <div className="mt-6 grid grid-cols-2 gap-4">
-                          {p.gallery.map((g, i) => (
-                            <motion.img 
-                              key={i} 
-                              src={g} 
-                              alt={`${p.name} ${i + 1}`} 
-                              className={`rounded-xl border h-40 w-full object-cover card-3d transition-colors duration-300 ${
-                                isDarkMode ? 'border-white/10' : 'border-gray-200'
-                              }`}
-                              whileHover={{ scale: 1.05, rotateY: 1 }}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    </motion.article>
-                  </div>
-                ))}
-              </motion.div>
-            </div>
-
-            {/* Navigation Buttons */}
-            <div className="absolute top-1/2 left-4 transform -translate-y-1/2 z-5 pointer-events-none">
-              <motion.button
-                className={`w-12 h-12 rounded-full backdrop-blur-sm border flex items-center justify-center transition-colors pointer-events-auto ${
-                  isDarkMode 
-                    ? 'bg-black/50 border-white/20 text-white hover:bg-black/70' 
-                    : 'bg-white/80 border-gray-200 text-gray-700 hover:bg-white'
-                }`}
-                onClick={() => setOffPlanCarouselIndex(Math.max(0, offPlanCarouselIndex - 1))}
-                disabled={offPlanCarouselIndex === 0}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                ←
-              </motion.button>
-            </div>
-            <div className="absolute top-1/2 right-4 transform -translate-y-1/2 z-5 pointer-events-none">
-              <motion.button
-                className={`w-12 h-12 rounded-full backdrop-blur-sm border flex items-center justify-center transition-colors pointer-events-auto ${
-                  isDarkMode 
-                    ? 'bg-black/50 border-white/20 text-white hover:bg-black/70' 
-                    : 'bg-white/80 border-gray-200 text-gray-700 hover:bg-white'
-                }`}
-                onClick={() => setOffPlanCarouselIndex(Math.min(offPlanProjects.length - 1, offPlanCarouselIndex + 1))}
-                disabled={offPlanCarouselIndex === offPlanProjects.length - 1}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                →
-              </motion.button>
-            </div>
-
-            {/* Dots Indicator */}
-            <div className="flex justify-center mt-6 gap-2">
-              {offPlanProjects.map((_, index) => (
-                <motion.button
-                  key={index}
-                  className={`w-3 h-3 rounded-full transition-colors ${
-                    index === offPlanCarouselIndex 
-                      ? 'bg-[#C7A667]' 
-                      : (isDarkMode ? 'bg-white/30' : 'bg-gray-300')
-                  }`}
-                  onClick={() => setOffPlanCarouselIndex(index)}
-                  whileHover={{ scale: 1.2 }}
-                  whileTap={{ scale: 0.8 }}
-                />
-              ))}
-            </div>
-          </div>
-        </Section>
-
-        {/* Completed Projects Carousel */}
-        <Section id="completed-projects" dark isDarkMode={isDarkMode}>
-          <h3 className="font-heading text-3xl md:text-4xl">Completed Projects</h3>
-          <div className="mt-10 relative">
-            {/* Carousel Container */}
-            <div className="relative overflow-hidden rounded-2xl">
-              <motion.div 
-                className="flex transition-transform duration-500 ease-in-out"
-                style={{ transform: `translateX(-${completedCarouselIndex * 100}%)` }}
-              >
-                {completedProjects.map((p, index) => (
-                  <div key={p.name} className="w-full flex-shrink-0">
-                    <motion.article 
-                      className="relative grid md:grid-cols-12 gap-6 items-stretch parallax-section p-6"
-                      initial={{ opacity: 0, y: 100 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.8, delay: index * 0.2 }}
-                    >
-                      <motion.div 
-                        className={`md:col-span-7 rounded-2xl overflow-hidden border card-3d transition-colors duration-300 ${
-                          isDarkMode ? 'border-white/10' : 'border-gray-200'
-                        }`}
-                        whileHover={{ scale: 1.03, rotateY: 2 }}
-                      >
-                        <img src={p.hero} alt={p.name} className="h-full w-full object-cover transition-transform duration-500" />
-                      </motion.div>
-                      <div className="md:col-span-5 flex flex-col">
-                        <div className={`flex-1 border rounded-2xl p-6 transition-colors duration-300 ${
-                          isDarkMode 
-                            ? 'bg-white/5 border-white/10' 
-                            : 'bg-gray-50 border-gray-200'
-                        }`}>
-                          <div className={`text-sm tracking-widest transition-colors duration-300 ${
-                            isDarkMode ? 'opacity-70' : 'text-gray-500'
-                          }`}>{p.location}</div>
-                          <div className="flex items-center gap-3 mt-1">
-                            <h4 className="font-heading text-2xl">{p.name}</h4>
-                            <div className="text-lg font-medium text-[#C7A667]">{p.price}</div>
-                          </div>
-                          <p className={`mt-3 text-sm transition-colors duration-300 ${
-                            isDarkMode ? 'text-white/70' : 'text-gray-600'
-                          }`}>{p.summary}</p>
-                          <div className="mt-4 flex flex-wrap gap-2">
-                            {p.facts.map((f, factIndex) => (
-                              <span key={`${p.name}-${factIndex}-${f}`} className={`text-xs px-3 py-1 rounded-full border transition-colors duration-300 flex items-center gap-1 ${
-                                isDarkMode 
-                                  ? 'border-white/20 bg-white/5 text-white' 
-                                  : 'border-gray-300 bg-gray-100 text-gray-700'
-                              }`}>
-                                {getFactIcon(factIndex)}
+                                {getFactIcon(factIndex, isDarkMode)}
                                 {f}
                               </span>
                             ))}
@@ -1263,10 +1111,151 @@ export default function App() {
           </div>
         </Section>
 
+        {/* Off-Plan Properties Carousel */}
+        <Section id="off-plan-properties" dark isDarkMode={isDarkMode}>
+          <h3 className="font-heading text-3xl md:text-4xl">Off-Plan Properties</h3>
+          <div className="mt-6 relative">
+            {/* Carousel Container */}
+            <div className="relative overflow-hidden rounded-2xl">
+              <motion.div 
+                className="flex transition-transform duration-500 ease-in-out"
+                style={{ transform: `translateX(-${offPlanCarouselIndex * 100}%)` }}
+              >
+                {offPlanProjects.map((p, index) => (
+                  <div key={p.name} className="w-full flex-shrink-0">
+                    <motion.article 
+                      className="relative grid md:grid-cols-12 gap-6 items-stretch parallax-section p-6"
+                      initial={{ opacity: 0, y: 100 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.8, delay: index * 0.2 }}
+                    >
+                      <motion.div 
+                        className={`md:col-span-7 rounded-2xl overflow-hidden border card-3d transition-colors duration-300 ${
+                          isDarkMode ? 'border-white/10' : 'border-gray-200'
+                        }`}
+                        whileHover={{ scale: 1.03, rotateY: 2 }}
+                      >
+                        <img src={p.hero} alt={p.name} className="h-full w-full object-cover transition-transform duration-500" />
+                      </motion.div>
+                      <div className="md:col-span-5 flex flex-col">
+                        <div className={`flex-1 border rounded-2xl p-6 transition-colors duration-300 ${
+                          isDarkMode 
+                            ? 'bg-white/5 border-white/10' 
+                            : 'bg-gray-50 border-gray-200'
+                        }`}>
+                          <div className={`text-sm tracking-widest transition-colors duration-300 ${
+                            isDarkMode ? 'opacity-70' : 'text-gray-500'
+                          }`}>{p.location}</div>
+                          <div className="flex items-center gap-3 mt-1">
+                            <h4 className="font-heading text-2xl">{p.name}</h4>
+                            <div className="text-lg font-medium text-[#C7A667]">{p.price}</div>
+                          </div>
+                          <p className={`mt-3 text-sm transition-colors duration-300 ${
+                            isDarkMode ? 'text-white/70' : 'text-gray-600'
+                          }`}>{p.summary}</p>
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            {p.facts.map((f, factIndex) => (
+                              <span key={`${p.name}-${factIndex}-${f}`} className={`text-xs px-3 py-1 rounded-full border transition-colors duration-300 flex items-center gap-1 ${
+                                isDarkMode 
+                                  ? 'border-white/20 bg-white/5 text-white' 
+                                  : 'border-gray-300 bg-gray-100 text-gray-700'
+                              }`}>
+                                {getFactIcon(factIndex, isDarkMode)}
+                                {f}
+                              </span>
+                            ))}
+                          </div>
+                          <div className="mt-6 flex gap-3">
+                            <a 
+                              href={`/property/${p.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`}
+                              className="px-5 py-2.5 rounded-full bg-[#C7A667] text-black text-sm font-medium relative z-50 inline-block text-center hover:bg-[#B89657] transition-colors"
+                            >
+                              View Details
+                            </a>
+                            <motion.button 
+                              className="btn-3d px-5 py-2.5 rounded-full border border-white/30 text-sm hover:border-[#C7A667] hover:text-[#C7A667] transition-all"
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              Download Brochure
+                            </motion.button>
+                          </div>
+                        </div>
+                        <div className="mt-6 grid grid-cols-2 gap-4">
+                          {p.gallery.map((g, i) => (
+                            <motion.img 
+                              key={i} 
+                              src={g} 
+                              alt={`${p.name} ${i + 1}`} 
+                              className={`rounded-xl border h-40 w-full object-cover card-3d transition-colors duration-300 ${
+                                isDarkMode ? 'border-white/10' : 'border-gray-200'
+                              }`}
+                              whileHover={{ scale: 1.05, rotateY: 1 }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </motion.article>
+                  </div>
+                ))}
+              </motion.div>
+            </div>
+
+            {/* Navigation Buttons */}
+            <div className="absolute top-1/2 left-4 transform -translate-y-1/2 z-5 pointer-events-none">
+              <motion.button
+                className={`w-12 h-12 rounded-full backdrop-blur-sm border flex items-center justify-center transition-colors pointer-events-auto ${
+                  isDarkMode 
+                    ? 'bg-black/50 border-white/20 text-white hover:bg-black/70' 
+                    : 'bg-white/80 border-gray-200 text-gray-700 hover:bg-white'
+                }`}
+                onClick={() => setOffPlanCarouselIndex(Math.max(0, offPlanCarouselIndex - 1))}
+                disabled={offPlanCarouselIndex === 0}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                ←
+              </motion.button>
+            </div>
+            <div className="absolute top-1/2 right-4 transform -translate-y-1/2 z-5 pointer-events-none">
+              <motion.button
+                className={`w-12 h-12 rounded-full backdrop-blur-sm border flex items-center justify-center transition-colors pointer-events-auto ${
+                  isDarkMode 
+                    ? 'bg-black/50 border-white/20 text-white hover:bg-black/70' 
+                    : 'bg-white/80 border-gray-200 text-gray-700 hover:bg-white'
+                }`}
+                onClick={() => setOffPlanCarouselIndex(Math.min(offPlanProjects.length - 1, offPlanCarouselIndex + 1))}
+                disabled={offPlanCarouselIndex === offPlanProjects.length - 1}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                →
+              </motion.button>
+            </div>
+
+            {/* Dots Indicator */}
+            <div className="flex justify-center mt-6 gap-2">
+              {offPlanProjects.map((_, index) => (
+                <motion.button
+                  key={index}
+                  className={`w-3 h-3 rounded-full transition-colors ${
+                    index === offPlanCarouselIndex 
+                      ? 'bg-[#C7A667]' 
+                      : (isDarkMode ? 'bg-white/30' : 'bg-gray-300')
+                  }`}
+                  onClick={() => setOffPlanCarouselIndex(index)}
+                  whileHover={{ scale: 1.2 }}
+                  whileTap={{ scale: 0.8 }}
+                />
+              ))}
+            </div>
+          </div>
+        </Section>
+
         {/* Testimonials Carousel */}
         <Section id="testimonials" dark isDarkMode={isDarkMode}>
           <h3 className="font-heading text-3xl md:text-4xl">What Our Clients Say</h3>
-          <div className="mt-10 relative">
+          <div className="mt-6 relative">
             {/* Carousel Container */}
             <div className="relative overflow-hidden rounded-2xl">
               <motion.div 
@@ -1370,102 +1359,7 @@ export default function App() {
         </Section>
 
         {/* Insights Carousel */}
-        <Section id="insights" isDarkMode={isDarkMode}>
-          <h3 className="font-heading text-3xl md:text-4xl">Insights</h3>
-          <div className="mt-10 relative">
-            {/* Carousel Container */}
-            <div className="relative overflow-hidden rounded-2xl">
-              <motion.div 
-                className="flex transition-transform duration-500 ease-in-out"
-                style={{ transform: `translateX(-${insightsCarouselIndex * 100}%)` }}
-              >
-                {[
-                  { img: "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1200", title: "Quarterly Yield Outlook" },
-                  { img: "https://images.pexels.com/photos/1029599/pexels-photo-1029599.jpeg?auto=compress&cs=tinysrgb&w=1200", title: "Market Trends Analysis" },
-                  { img: "https://images.pexels.com/photos/1396132/pexels-photo-1396132.jpeg?auto=compress&cs=tinysrgb&w=1200", title: "Investment Strategies" }
-                ].map((article, i) => (
-                  <div key={i} className="w-full flex-shrink-0 p-6">
-                    <motion.a 
-                      href="#" 
-                      className={`group block rounded-2xl overflow-hidden border card-3d h-full transition-colors duration-300 ${
-                        isDarkMode 
-                          ? 'border-white/10 bg-white/5' 
-                          : 'border-gray-200 bg-gray-50'
-                      }`}
-                      whileHover={{ scale: 1.02, rotateY: 2 }}
-                      initial={{ opacity: 0, y: 50 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.6, delay: i * 0.1 }}
-                    >
-                      <img className="h-48 w-full object-cover" src={article.img} alt="blog" />
-                      <div className="p-5">
-                        <div className={`text-xs tracking-widest transition-colors duration-300 ${
-                          isDarkMode ? 'opacity-70' : 'text-gray-500'
-                        }`}>MARKET</div>
-                        <h4 className="font-heading text-xl mt-1">{article.title}</h4>
-                        <p className={`text-sm mt-2 transition-colors duration-300 ${
-                          isDarkMode ? 'text-white/70' : 'text-gray-600'
-                        }`}>Signals from prime Nairobi and coastal corridors; what to expect next quarter.</p>
-                        <span className={`inline-block mt-3 text-sm transition-opacity ${
-                          isDarkMode ? 'opacity-80' : 'text-gray-500'
-                        } group-hover:opacity-100`}>Read Article →</span>
-                      </div>
-                    </motion.a>
-                  </div>
-                ))}
-              </motion.div>
-            </div>
 
-            {/* Navigation Buttons */}
-            <div className="absolute top-1/2 left-4 transform -translate-y-1/2 z-10">
-              <motion.button
-                className={`w-12 h-12 rounded-full backdrop-blur-sm border flex items-center justify-center transition-colors ${
-                  isDarkMode 
-                    ? 'bg-black/50 border-white/20 text-white hover:bg-black/70' 
-                    : 'bg-white/80 border-gray-200 text-gray-700 hover:bg-white'
-                }`}
-                onClick={() => setInsightsCarouselIndex(Math.max(0, insightsCarouselIndex - 1))}
-                disabled={insightsCarouselIndex === 0}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                ←
-              </motion.button>
-            </div>
-            <div className="absolute top-1/2 right-4 transform -translate-y-1/2 z-10">
-              <motion.button
-                className={`w-12 h-12 rounded-full backdrop-blur-sm border flex items-center justify-center transition-colors ${
-                  isDarkMode 
-                    ? 'bg-black/50 border-white/20 text-white hover:bg-black/70' 
-                    : 'bg-white/80 border-gray-200 text-gray-700 hover:bg-white'
-                }`}
-                onClick={() => setInsightsCarouselIndex(Math.min(2, insightsCarouselIndex + 1))}
-                disabled={insightsCarouselIndex === 2}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                →
-              </motion.button>
-            </div>
-
-            {/* Dots Indicator */}
-            <div className="flex justify-center mt-6 gap-2">
-              {[0, 1, 2].map((index) => (
-                <motion.button
-                  key={index}
-                  className={`w-3 h-3 rounded-full transition-colors ${
-                    index === insightsCarouselIndex 
-                      ? 'bg-[#C7A667]' 
-                      : (isDarkMode ? 'bg-white/30' : 'bg-gray-300')
-                  }`}
-                  onClick={() => setInsightsCarouselIndex(index)}
-                  whileHover={{ scale: 1.2 }}
-                  whileTap={{ scale: 0.8 }}
-                />
-              ))}
-            </div>
-          </div>
-        </Section>
 
         {/* Contact with 3D form elements */}
         <Section id="contact" dark isDarkMode={isDarkMode}>
