@@ -1187,58 +1187,60 @@ export default function App() {
 
               {/* Mobile: Carousel */}
               <div className="md:hidden relative">
-                <motion.div
-                  className="flex gap-4 overflow-hidden"
-                  style={{ width: `${howItWorksSteps.length * 100}%` }}
-                  animate={{ x: `${-howItWorksCarouselIndex * 100}%` }}
-                  transition={{ duration: 0.5, ease: "easeInOut" }}
-                >
-                  {howItWorksSteps.map((step, index) => (
-                    <motion.div
-                      key={step.title}
-                      className="flex-shrink-0"
-                      style={{ width: `${100 / howItWorksSteps.length}%` }}
-                      initial={{ opacity: 0, y: 30 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.6, delay: index * 0.2 }}
-                      viewport={{ once: true }}
-                    >
-                      <div className={`h-full border rounded-2xl p-4 md:p-6 transition-colors duration-300 ${
-                        isDarkMode
-                          ? 'bg-white/5 border-white/10'
-                          : 'bg-gray-50 border-gray-200'
-                      }`}>
-                        <div className="text-center">
-                          <div className="text-xs md:text-sm text-[#C7A667] mb-3 md:mb-4 font-light tracking-wider">
-                            STEP {index + 1}
+                <div className="overflow-hidden">
+                  <motion.div
+                    className="flex"
+                    style={{ width: `${howItWorksSteps.length * 100}%` }}
+                    animate={{ x: `${-howItWorksCarouselIndex * (100 / howItWorksSteps.length)}%` }}
+                    transition={{ duration: 0.5, ease: "easeInOut" }}
+                  >
+                    {howItWorksSteps.map((step, index) => (
+                      <motion.div
+                        key={step.title}
+                        className="flex-shrink-0 px-2"
+                        style={{ width: `${100 / howItWorksSteps.length}%` }}
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: index * 0.2 }}
+                        viewport={{ once: true }}
+                      >
+                        <div className={`h-full border rounded-2xl p-4 transition-colors duration-300 ${
+                          isDarkMode
+                            ? 'bg-white/5 border-white/10'
+                            : 'bg-gray-50 border-gray-200'
+                        }`}>
+                          <div className="text-center">
+                            <div className="text-xs text-[#C7A667] mb-3 font-light tracking-wider">
+                              STEP {index + 1}
+                            </div>
+                            <motion.img
+                              src={step.image}
+                              alt={step.title}
+                              className="w-full h-32 object-cover rounded-xl mb-3"
+                              whileHover={{ scale: 1.05 }}
+                              transition={{ duration: 0.3 }}
+                            />
+                            <h3 className={`font-heading text-lg font-bold mb-2 transition-colors duration-300 ${
+                              isDarkMode ? 'text-white' : 'text-gray-900'
+                            }`}>
+                              {step.title}
+                            </h3>
+                            <p className={`text-xs leading-relaxed transition-colors duration-300 ${
+                              isDarkMode ? 'text-white/70' : 'text-gray-600'
+                            }`}>
+                              {step.description}
+                            </p>
                           </div>
-                          <motion.img
-                            src={step.image}
-                            alt={step.title}
-                            className="w-full h-32 md:h-40 object-cover rounded-xl mb-3 md:mb-4"
-                            whileHover={{ scale: 1.05 }}
-                            transition={{ duration: 0.3 }}
-                          />
-                          <h3 className={`font-heading text-lg md:text-xl font-bold mb-2 md:mb-3 transition-colors duration-300 ${
-                            isDarkMode ? 'text-white' : 'text-gray-900'
-                          }`}>
-                            {step.title}
-                          </h3>
-                          <p className={`text-xs md:text-sm leading-relaxed transition-colors duration-300 ${
-                            isDarkMode ? 'text-white/70' : 'text-gray-600'
-                          }`}>
-                            {step.description}
-                          </p>
                         </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </motion.div>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                </div>
 
                 {/* Mobile Navigation Buttons */}
-                <div className="absolute top-1/2 left-1 md:left-2 transform -translate-y-1/2 z-10 pointer-events-none">
+                <div className="absolute top-1/2 left-1 transform -translate-y-1/2 z-10 pointer-events-none">
                   <motion.button
-                    className={`w-8 h-8 md:w-10 md:h-10 rounded-full backdrop-blur-sm border flex items-center justify-center transition-colors pointer-events-auto shadow-lg text-sm md:text-base ${
+                    className={`w-8 h-8 rounded-full backdrop-blur-sm border flex items-center justify-center transition-colors pointer-events-auto shadow-lg text-sm ${
                       isDarkMode 
                         ? 'bg-black/70 border-white/30 text-white hover:bg-black/90' 
                         : 'bg-white/90 border-gray-300 text-gray-700 hover:bg-white'
@@ -1251,9 +1253,9 @@ export default function App() {
                     ←
                   </motion.button>
                 </div>
-                <div className="absolute top-1/2 right-1 md:right-2 transform -translate-y-1/2 z-10 pointer-events-none">
+                <div className="absolute top-1/2 right-1 transform -translate-y-1/2 z-10 pointer-events-none">
                   <motion.button
-                    className={`w-8 h-8 md:w-10 md:h-10 rounded-full backdrop-blur-sm border flex items-center justify-center transition-colors pointer-events-auto shadow-lg text-sm md:text-base ${
+                    className={`w-8 h-8 rounded-full backdrop-blur-sm border flex items-center justify-center transition-colors pointer-events-auto shadow-lg text-sm ${
                       isDarkMode 
                         ? 'bg-black/70 border-white/30 text-white hover:bg-black/90' 
                         : 'bg-white/90 border-gray-300 text-gray-700 hover:bg-white'
@@ -1268,11 +1270,11 @@ export default function App() {
                 </div>
 
                 {/* Mobile Dots Indicator */}
-                <div className="flex justify-center mt-4 md:mt-6 gap-1.5 md:gap-2">
+                <div className="flex justify-center mt-4 gap-1.5">
                   {howItWorksSteps.map((_, index) => (
                     <motion.button
                       key={index}
-                      className={`w-2.5 h-2.5 md:w-3 md:h-3 rounded-full transition-colors ${
+                      className={`w-2.5 h-2.5 rounded-full transition-colors ${
                         index === howItWorksCarouselIndex
                           ? 'bg-[#C7A667]'
                           : isDarkMode
