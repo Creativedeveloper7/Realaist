@@ -5,6 +5,8 @@ import { ThemeProvider } from './ThemeContext.tsx';
 import App from './App.tsx';
 import HousesPage from './HousesPage.tsx';
 import PropertyDetails from './PropertyDetails.tsx';
+import BlogsPage from './BlogsPage.tsx';
+import SingleBlogPost from './SingleBlogPost.tsx';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
@@ -14,6 +16,8 @@ createRoot(document.getElementById('root')!).render(
         <Routes>
           <Route path="/" element={<App />} />
           <Route path="/houses" element={<HousesPage />} />
+          <Route path="/blogs" element={<BlogsPage />} />
+          <Route path="/blog/:blogId" element={<SingleBlogPost />} />
           <Route path="/property/:propertyId" element={<PropertyDetails />} />
         </Routes>
       </BrowserRouter>

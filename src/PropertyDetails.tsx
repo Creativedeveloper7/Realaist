@@ -258,6 +258,7 @@ export default function PropertyDetails() {
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-8 text-sm">
               <a href="/houses" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Properties</a>
+              <a href="/blogs" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Blogs</a>
               <a href="/#contact" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
               <motion.button
                 onClick={() => setLoginModalOpen(true)}
@@ -265,7 +266,7 @@ export default function PropertyDetails() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                Investor Login
+                Login
               </motion.button>
               <motion.button
                 onClick={toggleTheme}
@@ -339,11 +340,11 @@ export default function PropertyDetails() {
                   Properties
                 </a>
                 <a 
-                  href="/#insights" 
+                  href="/blogs" 
                   className="block text-lg font-medium text-white hover:text-[#C7A667] transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Insights
+                  Blogs
                 </a>
                 <a 
                   href="/#contact" 
@@ -363,7 +364,7 @@ export default function PropertyDetails() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  Investor Login
+                  Login
                 </motion.button>
               </div>
             </motion.div>
@@ -462,24 +463,22 @@ export default function PropertyDetails() {
               <div className="md:col-span-2 space-y-6">
                 {/* Property Name and Location */}
                 <div>
-                  <div className="flex items-center gap-4 mb-2">
-                    <h1 className={`text-4xl md:text-5xl font-heading transition-colors duration-300 ${
-                      isDarkMode ? 'text-white' : 'text-gray-900'
-                    }`} style={{ 
-                      fontFamily: "'Cinzel', 'Playfair Display', serif",
-                      fontWeight: 500,
-                      letterSpacing: '0.05em'
-                    }}>
-                      {property.name}
-                    </h1>
-                    <div className="text-2xl font-medium text-[#C7A667]">{property.price}</div>
-                  </div>
-                  <div className={`flex items-center gap-2 transition-colors duration-300 ${
+                  <h1 className={`text-4xl md:text-5xl font-heading mb-2 transition-colors duration-300 ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`} style={{ 
+                    fontFamily: "'Cinzel', 'Playfair Display', serif",
+                    fontWeight: 500,
+                    letterSpacing: '0.05em'
+                  }}>
+                    {property.name}
+                  </h1>
+                  <div className={`flex items-center gap-2 mb-2 transition-colors duration-300 ${
                     isDarkMode ? 'text-white/70' : 'text-gray-600'
                   }`}>
                     <span>📍</span>
                     <span>{property.location}</span>
                   </div>
+                  <div className="text-2xl font-medium text-[#C7A667]">{property.price}</div>
                 </div>
 
                 {/* Key Metrics */}
@@ -527,9 +526,35 @@ export default function PropertyDetails() {
                     {property.description}
                   </p>
                 </div>
+
+                {/* Mobile Map Section */}
+                <div className="md:hidden">
+                  <h3 className={`text-xl font-heading mb-4 transition-colors duration-300 ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`} style={{ 
+                    fontFamily: "'Cinzel', 'Playfair Display', serif",
+                    fontWeight: 500,
+                    letterSpacing: '0.05em'
+                  }}>
+                    Location
+                  </h3>
+                  <div className={`h-64 rounded-xl border transition-colors duration-300 ${
+                    isDarkMode ? 'border-white/10' : 'border-gray-200'
+                  }`}>
+                    <iframe
+                      src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(property.location)}`}
+                      width="100%"
+                      height="100%"
+                      style={{ border: 0, borderRadius: '12px' }}
+                      allowFullScreen
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
+                  </div>
+                </div>
               </div>
 
-              {/* Right Column - Actions */}
+              {/* Right Column - Actions and Desktop Map */}
               <div className="space-y-6">
                 {/* Action Buttons */}
                 <div className="space-y-3">
@@ -558,11 +583,7 @@ export default function PropertyDetails() {
                   </motion.button>
                   
                   <motion.button 
-                    className={`w-full px-6 py-3 border font-medium rounded-lg transition-colors flex items-center justify-center gap-2 ${
-                      isDarkMode 
-                        ? 'border-white/30 text-white hover:border-[#C7A667] hover:text-[#C7A667]' 
-                        : 'border-gray-300 text-gray-700 hover:border-[#C7A667] hover:text-[#C7A667]'
-                    }`}
+                    className="w-full px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -570,15 +591,30 @@ export default function PropertyDetails() {
                   </motion.button>
                 </div>
 
-                {/* Share Button */}
-                <div className="flex justify-center">
-                  <motion.button 
-                    className="p-3 rounded-full border border-white/30 text-white hover:border-white/50 hover:bg-white/10 transition-colors"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    📤
-                  </motion.button>
+                {/* Desktop Map Section */}
+                <div className="hidden md:block">
+                  <h3 className={`text-xl font-heading mb-4 transition-colors duration-300 ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`} style={{ 
+                    fontFamily: "'Cinzel', 'Playfair Display', serif",
+                    fontWeight: 500,
+                    letterSpacing: '0.05em'
+                  }}>
+                    Location
+                  </h3>
+                  <div className={`h-64 rounded-xl border transition-colors duration-300 ${
+                    isDarkMode ? 'border-white/10' : 'border-gray-200'
+                  }`}>
+                    <iframe
+                      src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(property.location)}`}
+                      width="100%"
+                      height="100%"
+                      style={{ border: 0, borderRadius: '12px' }}
+                      allowFullScreen
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
