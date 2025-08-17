@@ -923,9 +923,13 @@ export default function HousesPage() {
                         <h3 className={`font-heading text-xl mb-2 transition-colors duration-300 ${
                           isDarkMode ? 'text-white' : 'text-gray-900'
                         }`}>{house.name}</h3>
-                        <p className={`text-sm mb-4 transition-colors duration-300 ${
+                        <div className={`flex items-center gap-2 mb-2 transition-colors duration-300 ${
                           isDarkMode ? 'text-white/70' : 'text-gray-600'
-                        }`}>{house.location}</p>
+                        }`}>
+                          <span className="text-[#C7A667]">📍</span>
+                          <span>{house.location}</span>
+                        </div>
+                        <div className="text-lg font-medium text-[#C7A667] mb-4">{house.price}</div>
                         
                         <div className="flex flex-wrap gap-2 mb-6">
                           {house.facts.map((fact, factIndex) => (
@@ -951,7 +955,7 @@ export default function HousesPage() {
                           </motion.a>
                           <motion.button 
                             onClick={() => navigate('/')}
-                            className={`btn-3d px-4 py-2 rounded-lg border text-sm transition-all ${
+                            className={`btn-3d px-4 py-2 rounded-lg border text-sm transition-all flex items-center gap-2 ${
                               isDarkMode 
                                 ? 'border-white/20 text-white hover:border-[#C7A667] hover:text-[#C7A667]' 
                                 : 'border-gray-300 text-gray-700 hover:border-[#C7A667] hover:text-[#C7A667]'
@@ -959,6 +963,16 @@ export default function HousesPage() {
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                           >
+                            <img 
+                              src="/icons/phone.png" 
+                              alt="Phone" 
+                              className="w-4 h-4 object-contain"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                              }}
+                              style={{ filter: isDarkMode ? 'brightness(0) invert(1)' : 'brightness(0)' }}
+                            />
                             Contact
                           </motion.button>
                         </div>
