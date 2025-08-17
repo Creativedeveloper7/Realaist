@@ -1335,8 +1335,8 @@ export default function App() {
                             <div className="text-lg font-medium text-[#C7A667]">{p.price}</div>
                             <div className={`text-sm font-medium px-3 py-1 rounded-full border transition-colors duration-300 ${
                               isDarkMode 
-                                ? 'border-white/20 bg-white/5 text-[#C7A667]' 
-                                : 'border-gray-300 bg-gray-100 text-[#C7A667]'
+                                ? 'border-white/20 bg-white/5 text-white' 
+                                : 'border-gray-300 bg-gray-100 text-gray-900'
                             }`}>
                               Est. Income: KES 350,000/mo
                             </div>
@@ -1496,8 +1496,8 @@ export default function App() {
                             <div className="text-lg font-medium text-[#C7A667]">{p.price}</div>
                             <div className={`text-sm font-medium px-3 py-1 rounded-full border transition-colors duration-300 ${
                               isDarkMode 
-                                ? 'border-white/20 bg-white/5 text-[#C7A667]' 
-                                : 'border-gray-300 bg-gray-100 text-[#C7A667]'
+                                ? 'border-white/20 bg-white/5 text-white' 
+                                : 'border-gray-300 bg-gray-100 text-gray-900'
                             }`}>
                               Est. Income: KES 350,000/mo
                             </div>

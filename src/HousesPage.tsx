@@ -60,8 +60,8 @@ const houses = [
     name: "Escada",
     location: "Gigiri / Westlands",
     price: "KSh 3.7M",
-    facts: ["2", "2", "1,200 sq ft", "Est. income 10–12%"],
-    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    facts: ["2", "2", "1,200 sq ft"],
+    factLabels: ["Beds", "Baths", "Square Feet"],
     image: "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Available",
     type: "Apartments"
@@ -71,8 +71,8 @@ const houses = [
     name: "Azure Bay Villas",
     location: "Diani Beach",
     price: "KSh 28M",
-    facts: ["4", "3", "20,000 sq ft", "Est. income 12–14%"],
-    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    facts: ["4", "3", "20,000 sq ft"],
+    factLabels: ["Beds", "Baths", "Square Feet"],
     image: "https://images.pexels.com/photos/1029599/pexels-photo-1029599.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Pre-Launch",
     type: "Beach Villas"
@@ -82,8 +82,8 @@ const houses = [
     name: "The Grove",
     location: "Karen – Gated Community",
     price: "KSh 42M",
-    facts: ["4", "3", "25,000 sq ft", "Est. income 9–11%"],
-    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    facts: ["4", "3", "25,000 sq ft"],
+    factLabels: ["Beds", "Baths", "Square Feet"],
     image: "https://images.pexels.com/photos/1396132/pexels-photo-1396132.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Available",
     type: "Townhouses"
@@ -93,8 +93,8 @@ const houses = [
     name: "Skyline Heights",
     location: "Westlands",
     price: "KSh 18M",
-    facts: ["3", "2", "1,800 sq ft", "Est. income 8–10%"],
-    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    facts: ["3", "2", "1,800 sq ft"],
+    factLabels: ["Beds", "Baths", "Square Feet"],
     image: "https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Coming Soon",
     type: "Apartments"
@@ -104,8 +104,8 @@ const houses = [
     name: "Ocean View Residences",
     location: "Mombasa",
     price: "KSh 35M",
-    facts: ["5", "4", "3,200 sq ft", "Est. income 13–15%"],
-    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    facts: ["5", "4", "3,200 sq ft"],
+    factLabels: ["Beds", "Baths", "Square Feet"],
     image: "https://images.pexels.com/photos/1571453/pexels-photo-1571453.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Available",
     type: "Beach Villas"
@@ -115,8 +115,8 @@ const houses = [
     name: "Green Valley Estate",
     location: "Karen",
     price: "KSh 55M",
-    facts: ["6", "5", "4,500 sq ft", "Est. income 8–10%"],
-    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    facts: ["6", "5", "4,500 sq ft"],
+    factLabels: ["Beds", "Baths", "Square Feet"],
     image: "https://images.pexels.com/photos/1571467/pexels-photo-1571467.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Available",
     type: "Gated Communities"
@@ -126,8 +126,8 @@ const houses = [
     name: "Sunset Ridge",
     location: "Lavington",
     price: "KSh 25M",
-    facts: ["3", "2", "2,200 sq ft", "Est. income 9–11%"],
-    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    facts: ["3", "2", "2,200 sq ft"],
+    factLabels: ["Beds", "Baths", "Square Feet"],
     image: "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Available",
     type: "Apartments"
@@ -137,8 +137,8 @@ const houses = [
     name: "Marina Heights",
     location: "Mombasa",
     price: "KSh 45M",
-    facts: ["4", "3", "3,800 sq ft", "Est. income 12–14%"],
-    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    facts: ["4", "3", "3,800 sq ft"],
+    factLabels: ["Beds", "Baths", "Square Feet"],
     image: "https://images.pexels.com/photos/1029599/pexels-photo-1029599.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Pre-Launch",
     type: "Beach Villas"
@@ -148,8 +148,8 @@ const houses = [
     name: "The Pines",
     location: "Karen",
     price: "KSh 38M",
-    facts: ["5", "4", "3,500 sq ft", "Est. income 10–12%"],
-    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    facts: ["5", "4", "3,500 sq ft"],
+    factLabels: ["Beds", "Baths", "Square Feet"],
     image: "https://images.pexels.com/photos/1396132/pexels-photo-1396132.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Available",
     type: "Townhouses"
@@ -159,8 +159,8 @@ const houses = [
     name: "Riverside Gardens",
     location: "Westlands",
     price: "KSh 22M",
-    facts: ["2", "2", "1,500 sq ft", "Est. income 8–10%"],
-    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    facts: ["2", "2", "1,500 sq ft"],
+    factLabels: ["Beds", "Baths", "Square Feet"],
     image: "https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Coming Soon",
     type: "Apartments"
@@ -170,8 +170,8 @@ const houses = [
     name: "Coral Bay",
     location: "Diani Beach",
     price: "KSh 65M",
-    facts: ["6", "5", "5,200 sq ft", "Est. income 15–17%"],
-    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    facts: ["6", "5", "5,200 sq ft"],
+    factLabels: ["Beds", "Baths", "Square Feet"],
     image: "https://images.pexels.com/photos/1571453/pexels-photo-1571453.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Available",
     type: "Beach Villas"
@@ -181,8 +181,8 @@ const houses = [
     name: "Highland Park",
     location: "Karen",
     price: "KSh 48M",
-    facts: ["4", "3", "3,000 sq ft", "Est. income 9–11%"],
-    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    facts: ["4", "3", "3,000 sq ft"],
+    factLabels: ["Beds", "Baths", "Square Feet"],
     image: "https://images.pexels.com/photos/1571467/pexels-photo-1571467.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Available",
     type: "Gated Communities"
@@ -192,8 +192,8 @@ const houses = [
     name: "Urban Heights",
     location: "Westlands",
     price: "KSh 15M",
-    facts: ["2", "1", "1,000 sq ft", "Est. income 7–9%"],
-    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    facts: ["2", "1", "1,000 sq ft"],
+    factLabels: ["Beds", "Baths", "Square Feet"],
     image: "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Available",
     type: "Apartments"
@@ -203,8 +203,8 @@ const houses = [
     name: "Palm Springs",
     location: "Mombasa",
     price: "KSh 52M",
-    facts: ["5", "4", "4,200 sq ft", "Est. income 13–15%"],
-    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    facts: ["5", "4", "4,200 sq ft"],
+    factLabels: ["Beds", "Baths", "Square Feet"],
     image: "https://images.pexels.com/photos/1029599/pexels-photo-1029599.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Pre-Launch",
     type: "Beach Villas"
@@ -214,8 +214,8 @@ const houses = [
     name: "The Meadows",
     location: "Karen",
     price: "KSh 35M",
-    facts: ["4", "3", "2,800 sq ft", "Est. income 10–12%"],
-    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    facts: ["4", "3", "2,800 sq ft"],
+    factLabels: ["Beds", "Baths", "Square Feet"],
     image: "https://images.pexels.com/photos/1396132/pexels-photo-1396132.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Available",
     type: "Townhouses"
@@ -225,8 +225,8 @@ const houses = [
     name: "Sky Gardens",
     location: "Westlands",
     price: "KSh 28M",
-    facts: ["3", "2", "2,000 sq ft", "Est. income 9–11%"],
-    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    facts: ["3", "2", "2,000 sq ft"],
+    factLabels: ["Beds", "Baths", "Square Feet"],
     image: "https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Coming Soon",
     type: "Apartments"
@@ -236,8 +236,8 @@ const houses = [
     name: "Ocean Paradise",
     location: "Diani Beach",
     price: "KSh 75M",
-    facts: ["7", "6", "6,000 sq ft", "Est. income 16–18%"],
-    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    facts: ["7", "6", "6,000 sq ft"],
+    factLabels: ["Beds", "Baths", "Square Feet"],
     image: "https://images.pexels.com/photos/1571453/pexels-photo-1571453.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Available",
     type: "Beach Villas"
@@ -247,8 +247,8 @@ const houses = [
     name: "Eden Gardens",
     location: "Karen",
     price: "KSh 42M",
-    facts: ["5", "4", "3,600 sq ft", "Est. income 11–13%"],
-    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    facts: ["5", "4", "3,600 sq ft"],
+    factLabels: ["Beds", "Baths", "Square Feet"],
     image: "https://images.pexels.com/photos/1571467/pexels-photo-1571467.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Available",
     type: "Gated Communities"
@@ -929,7 +929,16 @@ export default function HousesPage() {
                           <span className="text-[#C7A667]">📍</span>
                           <span>{house.location}</span>
                         </div>
-                        <div className="text-lg font-medium text-[#C7A667] mb-4">{house.price}</div>
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className="text-lg font-medium text-[#C7A667]">{house.price}</div>
+                          <div className={`text-sm font-medium px-3 py-1 rounded-full border transition-colors duration-300 ${
+                            isDarkMode 
+                              ? 'border-white/20 bg-white/5 text-white' 
+                              : 'border-gray-300 bg-gray-100 text-gray-900'
+                          }`}>
+                            Est. Income: KES 350,000/mo
+                          </div>
+                        </div>
                         
                         <div className="flex flex-wrap gap-2 mb-6">
                           {house.facts.map((fact, factIndex) => (
