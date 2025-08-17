@@ -188,6 +188,11 @@ export default function PropertyDetails() {
   const [property, setProperty] = useState<any>(null);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedTime, setSelectedTime] = useState('');
+  const [visitorName, setVisitorName] = useState('');
+  const [visitorEmail, setVisitorEmail] = useState('');
   
 
 
@@ -257,7 +262,7 @@ export default function PropertyDetails() {
             
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-8 text-sm">
-              <a href="/houses" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Properties</a>
+              <a href="/houses" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Investors</a>
               <a href="/blogs" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Blogs</a>
               <a href="/#contact" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
               <motion.button
@@ -337,7 +342,7 @@ export default function PropertyDetails() {
                   className="block text-lg font-medium text-white hover:text-[#C7A667] transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Properties
+                  Investors
                 </a>
                 <a 
                   href="/blogs" 
@@ -478,7 +483,16 @@ export default function PropertyDetails() {
                     <span>📍</span>
                     <span>{property.location}</span>
                   </div>
-                  <div className="text-2xl font-medium text-[#C7A667]">{property.price}</div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-2xl font-medium text-[#C7A667]">{property.price}</div>
+                    <div className={`text-sm font-medium px-3 py-1 rounded-full border transition-colors duration-300 ${
+                      isDarkMode 
+                        ? 'border-white/20 bg-white/5 text-[#C7A667]' 
+                        : 'border-gray-300 bg-gray-100 text-[#C7A667]'
+                    }`}>
+                      Est. Income: KES 350,000/mo
+                    </div>
+                  </div>
                 </div>
 
                 {/* Key Metrics */}
@@ -508,6 +522,11 @@ export default function PropertyDetails() {
                     </div>
                   </div>
                 </div>
+
+                {/* Divider */}
+                <div className={`border-t transition-colors duration-300 ${
+                  isDarkMode ? 'border-white/10' : 'border-gray-200'
+                }`}></div>
 
                 {/* Description */}
                 <div>
@@ -567,6 +586,7 @@ export default function PropertyDetails() {
                   </motion.button>
                   
                   <motion.button 
+                    onClick={() => setScheduleModalOpen(true)}
                     className="w-full px-6 py-3 border border-[#C7A667] text-[#C7A667] font-medium rounded-lg hover:bg-[#C7A667] hover:text-black transition-colors flex items-center justify-center gap-2"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -744,6 +764,193 @@ export default function PropertyDetails() {
               
               <p className="text-center text-xs text-white/50">
                 New to REALAIST? Contact our team to get started
+              </p>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Schedule Visit Modal */}
+      {scheduleModalOpen && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          {/* Backdrop */}
+          <motion.div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            onClick={() => setScheduleModalOpen(false)}
+          />
+          
+          {/* Modal Content */}
+          <motion.div
+            className={`relative w-full max-w-md rounded-2xl border p-8 ${
+              isDarkMode 
+                ? 'border-white/10 bg-[#111217]' 
+                : 'border-gray-200 bg-white'
+            }`}
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setScheduleModalOpen(false)}
+              className={`absolute top-4 right-4 p-2 rounded-full hover:bg-opacity-10 transition-colors ${
+                isDarkMode 
+                  ? 'hover:bg-white text-white/60 hover:text-white' 
+                  : 'hover:bg-gray-900 text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Header */}
+            <div className="text-center mb-8">
+              <div className={`border border-dashed rounded-md px-4 py-3 mb-4 inline-block ${
+                isDarkMode ? 'border-white/20' : 'border-gray-300'
+              }`}>
+                <span className={`font-logo tracking-[0.25em] text-sm ${
+                  isDarkMode ? 'text-white/90' : 'text-gray-700'
+                }`}>
+                  REALAIST
+                </span>
+              </div>
+              <h2 className={`font-heading text-2xl font-medium transition-colors duration-300 ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
+                Schedule Property Visit
+              </h2>
+              <p className={`mt-2 text-sm transition-colors duration-300 ${
+                isDarkMode ? 'text-white/70' : 'text-gray-600'
+              }`}>
+                Book a viewing for {property.name}
+              </p>
+            </div>
+
+            {/* Scheduling Form */}
+            <form className="space-y-6" onSubmit={(e) => {
+              e.preventDefault();
+              // Handle scheduling logic here
+              console.log('Schedule visit:', { selectedDate, selectedTime, visitorName, visitorEmail });
+              setScheduleModalOpen(false);
+            }}>
+              {/* Date Selection */}
+              <div>
+                <label className={`block text-sm font-medium mb-2 transition-colors duration-300 ${
+                  isDarkMode ? 'text-white/80' : 'text-gray-700'
+                }`}>
+                  Preferred Date
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className={`w-full px-4 py-3 rounded-lg border transition-colors duration-300 ${
+                    isDarkMode 
+                      ? 'bg-white/5 border-white/15 text-white placeholder-white/40 focus:border-[#C7A667]' 
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#C7A667]'
+                  } outline-none focus:ring-2 focus:ring-[#C7A667]/20`}
+                />
+              </div>
+
+              {/* Time Selection */}
+              <div>
+                <label className={`block text-sm font-medium mb-2 transition-colors duration-300 ${
+                  isDarkMode ? 'text-white/80' : 'text-gray-700'
+                }`}>
+                  Preferred Time
+                </label>
+                <select
+                  required
+                  value={selectedTime}
+                  onChange={(e) => setSelectedTime(e.target.value)}
+                  className={`w-full px-4 py-3 rounded-lg border transition-colors duration-300 ${
+                    isDarkMode 
+                      ? 'bg-white/5 border-white/15 text-white focus:border-[#C7A667]' 
+                      : 'bg-white border-gray-300 text-gray-900 focus:border-[#C7A667]'
+                  } outline-none focus:ring-2 focus:ring-[#C7A667]/20`}
+                >
+                  <option value="">Select a time</option>
+                  <option value="09:00">9:00 AM</option>
+                  <option value="10:00">10:00 AM</option>
+                  <option value="11:00">11:00 AM</option>
+                  <option value="12:00">12:00 PM</option>
+                  <option value="14:00">2:00 PM</option>
+                  <option value="15:00">3:00 PM</option>
+                  <option value="16:00">4:00 PM</option>
+                  <option value="17:00">5:00 PM</option>
+                </select>
+              </div>
+
+              {/* Name Field */}
+              <div>
+                <label className={`block text-sm font-medium mb-2 transition-colors duration-300 ${
+                  isDarkMode ? 'text-white/80' : 'text-gray-700'
+                }`}>
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={visitorName}
+                  onChange={(e) => setVisitorName(e.target.value)}
+                  className={`w-full px-4 py-3 rounded-lg border transition-colors duration-300 ${
+                    isDarkMode 
+                      ? 'bg-white/5 border-white/15 text-white placeholder-white/40 focus:border-[#C7A667]' 
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#C7A667]'
+                  } outline-none focus:ring-2 focus:ring-[#C7A667]/20`}
+                  placeholder="Enter your full name"
+                />
+              </div>
+
+              {/* Email Field */}
+              <div>
+                <label className={`block text-sm font-medium mb-2 transition-colors duration-300 ${
+                  isDarkMode ? 'text-white/80' : 'text-gray-700'
+                }`}>
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={visitorEmail}
+                  onChange={(e) => setVisitorEmail(e.target.value)}
+                  className={`w-full px-4 py-3 rounded-lg border transition-colors duration-300 ${
+                    isDarkMode 
+                      ? 'bg-white/5 border-white/15 text-white placeholder-white/40 focus:border-[#C7A667]' 
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#C7A667]'
+                  } outline-none focus:ring-2 focus:ring-[#C7A667]/20`}
+                  placeholder="Enter your email address"
+                />
+              </div>
+
+              {/* Submit Button */}
+              <motion.button
+                type="submit"
+                className="w-full py-3 rounded-lg bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Schedule Visit
+              </motion.button>
+            </form>
+
+            {/* Additional Info */}
+            <div className="mt-6 text-center">
+              <p className={`text-xs transition-colors duration-300 ${
+                isDarkMode ? 'text-white/50' : 'text-gray-500'
+              }`}>
+                We'll confirm your appointment within 24 hours
               </p>
             </div>
           </motion.div>

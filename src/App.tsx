@@ -11,8 +11,8 @@ const offPlanProjects = [
     location: "Gigiri / Westlands",
     summary:
       "Curated 1–2 bed residences minutes from the city's social and entertainment hub. Designed for dependable yields and elevated living.",
-    facts: ["2", "2", "1,200 sq ft", "Est. income 10–12%"],
-    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    facts: ["2", "2", "1,200 sq ft"],
+    factLabels: ["Beds", "Baths", "Square Feet"],
     hero: "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600",
     gallery: [
       "https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=1200",
@@ -25,8 +25,8 @@ const offPlanProjects = [
     location: "Diani Beach",
     summary:
       "Ocean-view villas with private terraces and access to a lifestyle concierge. Strong short-let demand profile.",
-    facts: ["4", "3", "20,000 sq ft", "Est. income 12–14%"],
-    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    facts: ["4", "3", "20,000 sq ft"],
+    factLabels: ["Beds", "Baths", "Square Feet"],
     hero: "https://images.pexels.com/photos/1029599/pexels-photo-1029599.jpeg?auto=compress&cs=tinysrgb&w=1600",
     gallery: [
       "https://images.pexels.com/photos/1571453/pexels-photo-1571453.jpeg?auto=compress&cs=tinysrgb&w=1200",
@@ -42,8 +42,8 @@ const completedProjects = [
     location: "Karen – Gated Community",
     summary:
       "Townhouses wrapped in greenery with clubhouse amenities and strong family rental demand.",
-    facts: ["4", "3", "25,000 sq ft", "Est. income 9–11%"],
-    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    facts: ["4", "3", "25,000 sq ft"],
+    factLabels: ["Beds", "Baths", "Square Feet"],
     hero: "https://images.pexels.com/photos/1396132/pexels-photo-1396132.jpeg?auto=compress&cs=tinysrgb&w=1600",
     gallery: [
       "https://images.pexels.com/photos/1571467/pexels-photo-1571467.jpeg?auto=compress&cs=tinysrgb&w=1200",
@@ -56,8 +56,8 @@ const completedProjects = [
     location: "Westlands",
     summary:
       "Luxury apartments with panoramic city views and premium amenities. Perfect for urban professionals.",
-    facts: ["3", "2", "1,800 sq ft", "Est. income 8–10%"],
-    factLabels: ["Beds", "Baths", "Square Feet", "Est. Income"],
+    facts: ["3", "2", "1,800 sq ft"],
+    factLabels: ["Beds", "Baths", "Square Feet"],
     hero: "https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=1600",
     gallery: [
       "https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=1200",
@@ -706,7 +706,7 @@ export default function App() {
             
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-8 text-sm">
-              <a href="/houses" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Properties</a>
+              <a href="/houses" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Investors</a>
               <a href="/blogs" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Blogs</a>
               <a href="#contact" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
               <motion.button
@@ -758,7 +758,7 @@ export default function App() {
             transition={{ duration: 0.3, ease: "easeInOut" }}
           >
             <div className="px-4 py-6 space-y-4">
-              <a href="/houses" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Properties</a>
+              <a href="/houses" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Investors</a>
               <a href="/blogs" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Blogs</a>
               <a href="#contact" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
               <motion.button
@@ -1331,7 +1331,16 @@ export default function App() {
                             <span className="text-[#C7A667]">📍</span>
                             {p.location}
                           </div>
-                          <div className="text-lg font-medium text-[#C7A667] mt-1">{p.price}</div>
+                          <div className="flex items-center gap-4 mt-1">
+                            <div className="text-lg font-medium text-[#C7A667]">{p.price}</div>
+                            <div className={`text-sm font-medium px-3 py-1 rounded-full border transition-colors duration-300 ${
+                              isDarkMode 
+                                ? 'border-white/20 bg-white/5 text-[#C7A667]' 
+                                : 'border-gray-300 bg-gray-100 text-[#C7A667]'
+                            }`}>
+                              Est. Income: KES 350,000/mo
+                            </div>
+                          </div>
                           <p className={`mt-3 text-sm transition-colors duration-300 ${
                             isDarkMode ? 'text-white/70' : 'text-gray-600'
                           }`}>{p.summary}</p>
@@ -1483,7 +1492,16 @@ export default function App() {
                             <span className="text-[#C7A667]">📍</span>
                             {p.location}
                           </div>
-                          <div className="text-lg font-medium text-[#C7A667] mt-1">{p.price}</div>
+                          <div className="flex items-center gap-4 mt-1">
+                            <div className="text-lg font-medium text-[#C7A667]">{p.price}</div>
+                            <div className={`text-sm font-medium px-3 py-1 rounded-full border transition-colors duration-300 ${
+                              isDarkMode 
+                                ? 'border-white/20 bg-white/5 text-[#C7A667]' 
+                                : 'border-gray-300 bg-gray-100 text-[#C7A667]'
+                            }`}>
+                              Est. Income: KES 350,000/mo
+                            </div>
+                          </div>
                           <p className={`mt-3 text-sm transition-colors duration-300 ${
                             isDarkMode ? 'text-white/70' : 'text-gray-600'
                           }`}>{p.summary}</p>

@@ -507,7 +507,7 @@ export default function HousesPage() {
             </div>
             <nav className="hidden md:flex items-center gap-8 text-sm">
               <a href="/" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Home</a>
-              <a href="/houses" className="text-[#C7A667]">Properties</a>
+              <a href="/houses" className="text-[#C7A667]">Investors</a>
               <a href="/blogs" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Blogs</a>
               <a href="/" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
               <motion.button
@@ -566,7 +566,7 @@ export default function HousesPage() {
                 className="text-[#C7A667]"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Properties
+                Investors
               </a>
               <a 
                 href="/blogs" 
