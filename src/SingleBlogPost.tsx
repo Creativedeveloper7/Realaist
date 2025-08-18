@@ -195,7 +195,7 @@ export default function SingleBlogPost() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                Login
+                Login/Signup
               </motion.button>
               <motion.button
                 onClick={toggleTheme}
@@ -247,7 +247,7 @@ export default function SingleBlogPost() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                Login
+                Login/Signup
               </motion.button>
             </div>
           </motion.div>

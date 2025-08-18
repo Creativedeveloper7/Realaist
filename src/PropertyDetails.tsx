@@ -271,7 +271,7 @@ export default function PropertyDetails() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                Login
+                Login/Signup
               </motion.button>
               <motion.button
                 onClick={toggleTheme}
