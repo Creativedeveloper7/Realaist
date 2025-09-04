@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
   isDarkMode: boolean;
@@ -9,6 +11,13 @@ interface HeaderProps {
 
 export function Header({ isDarkMode, toggleTheme, onLoginClick }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isAuthenticated, user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <motion.header 
@@ -31,14 +40,44 @@ export function Header({ isDarkMode, toggleTheme, onLoginClick }: HeaderProps) {
           <a href="/houses" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Investors</a>
           <a href="/blogs" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Blogs</a>
           <a href="#contact" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
-          <motion.button
-            onClick={onLoginClick}
-            className="px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            Login/Signup
-          </motion.button>
+          {isAuthenticated ? (
+            <div className="flex items-center gap-3">
+              <motion.button
+                onClick={() => navigate('/dashboard')}
+                className="px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Dashboard
+              </motion.button>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-[#C7A667] rounded-full flex items-center justify-center text-black font-bold text-sm">
+                  {user?.firstName?.[0]}{user?.lastName?.[0]}
+                </div>
+                <motion.button
+                  onClick={handleLogout}
+                  className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                    isDarkMode 
+                      ? 'text-white/70 hover:text-white hover:bg-white/10' 
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Logout
+                </motion.button>
+              </div>
+            </div>
+          ) : (
+            <motion.button
+              onClick={onLoginClick}
+              className="px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Login/Signup
+            </motion.button>
+          )}
           <motion.button
             onClick={toggleTheme}
             className={`p-2 rounded-full border transition-all ${
@@ -84,14 +123,48 @@ export function Header({ isDarkMode, toggleTheme, onLoginClick }: HeaderProps) {
           <a href="/houses" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Investors</a>
           <a href="/blogs" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Blogs</a>
           <a href="#contact" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
-          <motion.button
-            onClick={onLoginClick}
-            className="w-full px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            Login/Signup
-          </motion.button>
+          {isAuthenticated ? (
+            <div className="space-y-3">
+              <motion.button
+                onClick={() => navigate('/dashboard')}
+                className="w-full px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Dashboard
+              </motion.button>
+              <div className="flex items-center gap-3 py-2">
+                <div className="w-8 h-8 bg-[#C7A667] rounded-full flex items-center justify-center text-black font-bold text-sm">
+                  {user?.firstName?.[0]}{user?.lastName?.[0]}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">{user?.firstName} {user?.lastName}</p>
+                  <p className="text-xs opacity-70">{user?.email}</p>
+                </div>
+                <motion.button
+                  onClick={handleLogout}
+                  className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                    isDarkMode 
+                      ? 'text-white/70 hover:text-white hover:bg-white/10' 
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Logout
+                </motion.button>
+              </div>
+            </div>
+          ) : (
+            <motion.button
+              onClick={onLoginClick}
+              className="w-full px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Login/Signup
+            </motion.button>
+          )}
         </div>
       </motion.div>
     </motion.header>
