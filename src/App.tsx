@@ -8,6 +8,12 @@ import { DashboardLayout } from './components/dashboard/DashboardLayout';
 import { UserProfile } from './components/dashboard/UserProfile';
 import { Dashboard } from './pages/Dashboard';
 import { HomePage } from './pages/HomePage';
+import { MyProperties } from './pages/MyProperties';
+import { ScheduledVisits } from './pages/ScheduledVisits';
+import { Documents } from './pages/Documents';
+import { Analytics } from './pages/Analytics';
+import { Blogs } from './pages/Blogs';
+import PropertyDetails from './PropertyDetails';
 
 // Import styles
 import './styles/global.css';
@@ -29,11 +35,55 @@ function AppContent() {
           <HomePage onLoginClick={handleLoginClick} />
         } />
         
+        <Route path="/property/:id" element={
+          <PropertyDetails />
+        } />
+        
         {/* Protected Dashboard Routes */}
         <Route path="/dashboard" element={
           <ProtectedRoute>
             <DashboardLayout isDarkMode={isDarkMode}>
               <Dashboard isDarkMode={isDarkMode} />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/dashboard/properties" element={
+          <ProtectedRoute>
+            <DashboardLayout isDarkMode={isDarkMode}>
+              <MyProperties isDarkMode={isDarkMode} />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/dashboard/scheduled-visits" element={
+          <ProtectedRoute>
+            <DashboardLayout isDarkMode={isDarkMode}>
+              <ScheduledVisits isDarkMode={isDarkMode} />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/dashboard/documents" element={
+          <ProtectedRoute>
+            <DashboardLayout isDarkMode={isDarkMode}>
+              <Documents isDarkMode={isDarkMode} />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/dashboard/blogs" element={
+          <ProtectedRoute>
+            <DashboardLayout isDarkMode={isDarkMode}>
+              <Blogs isDarkMode={isDarkMode} />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/dashboard/analytics" element={
+          <ProtectedRoute>
+            <DashboardLayout isDarkMode={isDarkMode}>
+              <Analytics isDarkMode={isDarkMode} />
             </DashboardLayout>
           </ProtectedRoute>
         } />

@@ -17,6 +17,7 @@ import { TestimonialsSection } from '../components/TestimonialsSection';
 import { BlogsSection } from '../components/BlogsSection';
 import { ContactSection } from '../components/ContactSection';
 import { ConsultationModal } from '../components/ConsultationModal';
+import { ChatBot } from '../components/ChatBot';
 
 interface HomePageProps {
   onLoginClick: () => void;
@@ -147,6 +148,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onLoginClick }) => {
           onClose={() => setConsultationModalOpen(false)}
           isDarkMode={isDarkMode}
         />
+
+        {/* ChatBot */}
+        <ChatBot isDarkMode={isDarkMode} />
       </div>
     </>
   );

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
   Home, 
@@ -13,7 +14,9 @@ import {
   Bell,
   MessageSquare,
   FileText,
-  BarChart3
+  BarChart3,
+  BookOpen,
+  ArrowLeft
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
@@ -32,12 +35,11 @@ interface NavItem {
 const navItems: NavItem[] = [
   { id: 'overview', label: 'Overview', icon: Home, href: '/dashboard' },
   { id: 'properties', label: 'My Properties', icon: Search, href: '/dashboard/properties' },
-  { id: 'favorites', label: 'Favorites', icon: Heart, href: '/dashboard/favorites' },
-  { id: 'inquiries', label: 'Inquiries', icon: MessageSquare, href: '/dashboard/inquiries', badge: 3 },
+  { id: 'scheduled-visits', label: 'Scheduled Visits', icon: MessageSquare, href: '/dashboard/scheduled-visits', badge: 3 },
   { id: 'documents', label: 'Documents', icon: FileText, href: '/dashboard/documents' },
+  { id: 'blogs', label: 'Blogs', icon: BookOpen, href: '/dashboard/blogs' },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/dashboard/analytics' },
   { id: 'profile', label: 'Profile', icon: User, href: '/dashboard/profile' },
-  { id: 'settings', label: 'Settings', icon: Settings, href: '/dashboard/settings' },
 ];
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ 
@@ -45,8 +47,23 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   isDarkMode 
 }) => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeItem, setActiveItem] = useState('overview');
+  
+  // Determine active item based on current route
+  const getActiveItem = () => {
+    const path = location.pathname;
+    if (path === '/dashboard') return 'overview';
+    if (path === '/dashboard/properties') return 'properties';
+    if (path === '/dashboard/scheduled-visits') return 'scheduled-visits';
+    if (path === '/dashboard/documents') return 'documents';
+    if (path === '/dashboard/analytics') return 'analytics';
+    if (path === '/dashboard/profile') return 'profile';
+    return 'overview';
+  };
+  
+  const activeItem = getActiveItem();
 
   const handleLogout = () => {
     logout();
@@ -57,6 +74,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     const Icon = item.icon;
     const isActive = activeItem === item.id;
 
+    const handleClick = () => {
+      navigate(item.href);
+      setSidebarOpen(false); // Close mobile sidebar after navigation
+    };
+
     return (
       <motion.button
         className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
@@ -66,12 +88,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               ? 'text-white/70 hover:text-white hover:bg-white/10'
               : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
         }`}
-        onClick={() => setActiveItem(item.id)}
+        onClick={handleClick}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
       >
         <Icon size={20} />
-        <span className="font-medium">{item.label}</span>
+        <span className={`font-medium ${item.id === 'scheduled-visits' ? 'text-sm' : ''}`}>{item.label}</span>
         {item.badge && (
           <motion.span
             className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full"
@@ -102,6 +124,19 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           >
             <Menu size={24} />
           </button>
+          <motion.button
+            onClick={() => navigate('/')}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border transition-colors ${
+              isDarkMode 
+                ? 'border-white/20 text-white hover:bg-white/10' 
+                : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+            }`}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <ArrowLeft size={14} />
+            <span className="text-sm">Home</span>
+          </motion.button>
           <h1 className="text-xl font-bold">Dashboard</h1>
         </div>
         <div className="flex items-center gap-3">
@@ -187,9 +222,24 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           <div className={`hidden lg:flex items-center justify-between p-6 border-b ${
             isDarkMode ? 'border-white/10' : 'border-gray-200'
           }`}>
-            <div>
-              <h1 className="text-2xl font-bold">Welcome back, {user?.firstName}!</h1>
-              <p className="text-gray-600 mt-1">Here's what's happening with your properties today.</p>
+            <div className="flex items-center gap-4">
+              <motion.button
+                onClick={() => navigate('/')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                  isDarkMode 
+                    ? 'border-white/20 text-white hover:bg-white/10' 
+                    : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                }`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <ArrowLeft size={16} />
+                Back to Home
+              </motion.button>
+              <div>
+                <h1 className="text-2xl font-bold">Welcome back, {user?.firstName}!</h1>
+                <p className="text-gray-600 mt-1">Here's what's happening with your properties today.</p>
+              </div>
             </div>
             <div className="flex items-center gap-4">
               <button className={`p-3 rounded-lg relative ${
