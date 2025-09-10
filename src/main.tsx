@@ -10,6 +10,9 @@ import BlogsPage from './BlogsPage.tsx';
 import SingleBlogPost from './SingleBlogPost.tsx';
 import './index.css';
 
+// Import debug utility for development
+import './utils/authDebug';
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>

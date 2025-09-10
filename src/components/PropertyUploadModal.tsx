@@ -155,12 +155,18 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically send the data to your backend
-    console.log('Property data:', formData);
-    alert('Property uploaded successfully! (This is a demo)');
-    onClose();
+    try {
+      // TODO: Implement actual property upload with Supabase
+      console.log('Property data:', formData);
+      // await propertiesService.createProperty(formData);
+      onClose();
+      // Show success message
+    } catch (error) {
+      console.error('Error uploading property:', error);
+      // Show error message
+    }
   };
 
   const nextStep = () => {

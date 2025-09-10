@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { authService, type AuthUser } from '../services/authService';
 
 export interface User {
   id: string;
@@ -6,22 +7,15 @@ export interface User {
   firstName: string;
   lastName: string;
   phone?: string;
-  avatar?: string;
-  role: 'buyer' | 'developer' | 'admin';
+  avatarUrl?: string;
   userType: 'buyer' | 'developer';
-  createdAt: string;
+  companyName?: string;
+  licenseNumber?: string;
   preferences: {
     notifications: boolean;
     darkMode: boolean;
     language: string;
   };
-  // Buyer-specific data
-  savedProperties?: string[];
-  favoriteProperties?: string[];
-  // Developer-specific data
-  companyName?: string;
-  licenseNumber?: string;
-  properties?: string[];
 }
 
 export interface AuthContextType {
@@ -30,6 +24,7 @@ export interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (userData: SignupData) => Promise<{ success: boolean; error?: string }>;
+  signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   updateProfile: (userData: Partial<User>) => Promise<{ success: boolean; error?: string }>;
   updatePreferences: (preferences: Partial<User['preferences']>) => Promise<{ success: boolean; error?: string }>;
@@ -65,93 +60,79 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Helper function to convert AuthUser to User
+  const convertAuthUserToUser = (authUser: AuthUser): User => ({
+    id: authUser.id,
+    email: authUser.email,
+    firstName: authUser.firstName,
+    lastName: authUser.lastName,
+    phone: authUser.phone,
+    avatarUrl: authUser.avatarUrl,
+    userType: authUser.userType,
+    companyName: authUser.companyName,
+    licenseNumber: authUser.licenseNumber,
+    preferences: {
+      notifications: true,
+      darkMode: false,
+      language: 'en'
+    }
+  });
+
   // Check for existing session on mount
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const token = localStorage.getItem('auth_token');
-        if (token) {
-          // In a real app, you'd validate the token with your backend
-          const userData = localStorage.getItem('user_data');
-          if (userData) {
-            setUser(JSON.parse(userData));
-          }
+        const authUser = await authService.getCurrentUser();
+        if (authUser) {
+          setUser(convertAuthUserToUser(authUser));
         }
       } catch (error) {
         console.error('Auth check failed:', error);
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user_data');
       } finally {
         setIsLoading(false);
       }
     };
 
     checkAuth();
+
+    // Listen to auth state changes
+    const { data: { subscription } } = authService.onAuthStateChange((authUser) => {
+      if (authUser) {
+        setUser(convertAuthUserToUser(authUser));
+      } else {
+        setUser(null);
+      }
+      // Don't set loading to false here as it interferes with login process
+    });
+
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
       setIsLoading(true);
       
-      // Mock API call - replace with real API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Add timeout to prevent infinite loading
+      const timeoutId = setTimeout(() => {
+        setIsLoading(false);
+      }, 10000); // 10 second timeout
       
-      // Mock validation
-      if (email === 'buyer@realaist.com' && password === 'password') {
-        const mockUser: User = {
-          id: '1',
-          email: 'buyer@realaist.com',
-          firstName: 'John',
-          lastName: 'Doe',
-          phone: '+254 700 000 000',
-          role: 'buyer',
-          userType: 'buyer',
-          createdAt: new Date().toISOString(),
-          preferences: {
-            notifications: true,
-            darkMode: false,
-            language: 'en'
-          },
-          savedProperties: [],
-          favoriteProperties: []
-        };
-        
-        const token = 'mock_jwt_token_' + Date.now();
-        localStorage.setItem('auth_token', token);
-        localStorage.setItem('user_data', JSON.stringify(mockUser));
-        setUser(mockUser);
-        
-        return { success: true };
-      } else if (email === 'developer@realaist.com' && password === 'password') {
-        const mockUser: User = {
-          id: '2',
-          email: 'developer@realaist.com',
-          firstName: 'Jane',
-          lastName: 'Smith',
-          phone: '+254 700 000 001',
-          role: 'developer',
-          userType: 'developer',
-          createdAt: new Date().toISOString(),
-          preferences: {
-            notifications: true,
-            darkMode: false,
-            language: 'en'
-          },
-          companyName: 'Smith Properties Ltd',
-          licenseNumber: 'DEV-2024-001',
-          properties: []
-        };
-        
-        const token = 'mock_jwt_token_' + Date.now();
-        localStorage.setItem('auth_token', token);
-        localStorage.setItem('user_data', JSON.stringify(mockUser));
-        setUser(mockUser);
-        
+      const result = await authService.signIn({ email, password });
+      
+      clearTimeout(timeoutId);
+      
+      if (result.user) {
+        setUser(convertAuthUserToUser(result.user));
         return { success: true };
       } else {
-        return { success: false, error: 'Invalid email or password' };
+        return { success: false, error: result.error || 'Login failed' };
       }
     } catch (error) {
+      console.error('Login error:', error);
       return { success: false, error: 'Login failed. Please try again.' };
     } finally {
       setIsLoading(false);
@@ -162,57 +143,65 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       
-      // Mock API call - replace with real API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Add timeout to prevent infinite loading
+      const timeoutId = setTimeout(() => {
+        setIsLoading(false);
+      }, 15000); // 15 second timeout for signup
       
-      // Mock validation
-      if (userData.email && userData.password && userData.firstName && userData.lastName) {
-        const newUser: User = {
-          id: Date.now().toString(),
-          email: userData.email,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          phone: userData.phone,
-          role: userData.userType,
-          userType: userData.userType,
-          createdAt: new Date().toISOString(),
-          preferences: {
-            notifications: true,
-            darkMode: false,
-            language: 'en'
-          },
-          // Initialize user type specific data
-          ...(userData.userType === 'buyer' && {
-            savedProperties: [],
-            favoriteProperties: []
-          }),
-          ...(userData.userType === 'developer' && {
-            companyName: userData.companyName,
-            licenseNumber: userData.licenseNumber,
-            properties: []
-          })
-        };
-        
-        const token = 'mock_jwt_token_' + Date.now();
-        localStorage.setItem('auth_token', token);
-        localStorage.setItem('user_data', JSON.stringify(newUser));
-        setUser(newUser);
-        
+      const result = await authService.signUp({
+        email: userData.email,
+        password: userData.password,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        userType: userData.userType,
+        phone: userData.phone,
+        companyName: userData.companyName,
+        licenseNumber: userData.licenseNumber
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (result.user) {
+        setUser(convertAuthUserToUser(result.user));
         return { success: true };
       } else {
-        return { success: false, error: 'Please fill in all required fields' };
+        return { success: false, error: result.error || 'Signup failed' };
       }
     } catch (error) {
+      console.error('Signup error:', error);
       return { success: false, error: 'Signup failed. Please try again.' };
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_data');
-    setUser(null);
+  const signInWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setIsLoading(true);
+      
+      const result = await authService.signInWithGoogle();
+      
+      if (result.error) {
+        return { success: false, error: result.error };
+      }
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Google sign-in error:', error);
+      return { success: false, error: 'Google sign-in failed. Please try again.' };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await authService.signOut();
+      setUser(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+      setUser(null);
+    }
   };
 
   const updateProfile = async (userData: Partial<User>): Promise<{ success: boolean; error?: string }> => {
@@ -221,12 +210,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return { success: false, error: 'Not authenticated' };
       }
       
-      const updatedUser = { ...user, ...userData };
-      localStorage.setItem('user_data', JSON.stringify(updatedUser));
-      setUser(updatedUser);
+      const result = await authService.updateProfile({
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        phone: userData.phone,
+        avatarUrl: userData.avatarUrl,
+        companyName: userData.companyName,
+        licenseNumber: userData.licenseNumber
+      });
       
-      return { success: true };
+      if (result.user) {
+        setUser(convertAuthUserToUser(result.user));
+        return { success: true };
+      } else {
+        return { success: false, error: result.error || 'Profile update failed' };
+      }
     } catch (error) {
+      console.error('Profile update error:', error);
       return { success: false, error: 'Profile update failed' };
     }
   };
@@ -256,6 +256,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     login,
     signup,
+    signInWithGoogle,
     logout,
     updateProfile,
     updatePreferences

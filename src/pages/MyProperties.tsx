@@ -168,19 +168,26 @@ export const MyProperties: React.FC<MyPropertiesProps> = ({ isDarkMode }) => {
     setDeletingProperty(property);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deletingProperty) {
-      // Here you would typically make an API call to delete the property
-      console.log('Deleting property:', deletingProperty.id);
-      alert(`Property "${deletingProperty.title}" has been deleted! (This is a demo)`);
-      setDeletingProperty(null);
+      try {
+        // TODO: Implement actual property deletion with Supabase
+        console.log('Deleting property:', deletingProperty.id);
+        // await propertiesService.deleteProperty(deletingProperty.id);
+        setDeletingProperty(null);
+        // Show success message
+      } catch (error) {
+        console.error('Error deleting property:', error);
+        // Show error message
+      }
     }
   };
 
   const handleViewProperty = (property: Property) => {
-    // Here you would typically navigate to a property details page
+    // Navigate to property details page
     console.log('Viewing property:', property.id);
-    alert(`Viewing property: "${property.title}" (This is a demo)`);
+    // TODO: Implement navigation to property details
+    // navigate(`/property/${property.id}`);
   };
 
   const PropertyCard: React.FC<{ property: Property }> = ({ property }) => (

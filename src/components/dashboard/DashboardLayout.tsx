@@ -32,7 +32,25 @@ interface NavItem {
   badge?: number;
 }
 
-const navItems: NavItem[] = [
+const allNavItems: NavItem[] = [
+  { id: 'overview', label: 'Overview', icon: Home, href: '/dashboard' },
+  { id: 'properties', label: 'My Properties', icon: Search, href: '/dashboard/properties' },
+  { id: 'scheduled-visits', label: 'Scheduled Visits', icon: MessageSquare, href: '/dashboard/scheduled-visits', badge: 3 },
+  { id: 'documents', label: 'Documents', icon: FileText, href: '/dashboard/documents' },
+  { id: 'blogs', label: 'Blogs', icon: BookOpen, href: '/dashboard/blogs' },
+  { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/dashboard/analytics' },
+  { id: 'profile', label: 'Profile', icon: User, href: '/dashboard/profile' },
+];
+
+// Navigation items for buyers (investors)
+const buyerNavItems: NavItem[] = [
+  { id: 'overview', label: 'Overview', icon: Home, href: '/dashboard' },
+  { id: 'scheduled-visits', label: 'Scheduled Visits', icon: MessageSquare, href: '/dashboard/scheduled-visits', badge: 3 },
+  { id: 'profile', label: 'Profile', icon: User, href: '/dashboard/profile' },
+];
+
+// Navigation items for developers
+const developerNavItems: NavItem[] = [
   { id: 'overview', label: 'Overview', icon: Home, href: '/dashboard' },
   { id: 'properties', label: 'My Properties', icon: Search, href: '/dashboard/properties' },
   { id: 'scheduled-visits', label: 'Scheduled Visits', icon: MessageSquare, href: '/dashboard/scheduled-visits', badge: 3 },
@@ -50,6 +68,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Get navigation items based on user type
+  const getNavItems = () => {
+    if (user?.userType === 'buyer') {
+      return buyerNavItems;
+    } else if (user?.userType === 'developer') {
+      return developerNavItems;
+    }
+    return allNavItems; // fallback
+  };
+  
+  const navItems = getNavItems();
   
   // Determine active item based on current route
   const getActiveItem = () => {

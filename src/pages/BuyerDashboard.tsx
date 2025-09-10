@@ -5,12 +5,11 @@ import {
   Heart, 
   Bookmark, 
   MessageSquare, 
-  Share2,
   Search,
   MapPin,
   DollarSign,
-  Calendar,
-  Eye
+  Eye,
+  Bell
 } from 'lucide-react';
 
 interface BuyerDashboardProps {
@@ -43,15 +42,15 @@ export const BuyerDashboard: React.FC<BuyerDashboardProps> = ({ isDarkMode }) =>
       color: 'text-purple-500'
     },
     {
-      title: 'Inquiries Sent',
+      title: 'Notifications',
       value: '5',
       change: '+2',
-      icon: MessageSquare,
-      color: 'text-green-500'
+      icon: Bell,
+      color: 'text-orange-500'
     }
   ];
 
-  const recentProperties = [
+  const favoriteProperties = [
     {
       id: 1,
       title: 'Luxury Apartment in Westlands',
@@ -62,7 +61,8 @@ export const BuyerDashboard: React.FC<BuyerDashboardProps> = ({ isDarkMode }) =>
       bedrooms: 3,
       bathrooms: 2,
       isFavorite: true,
-      isSaved: true
+      isSaved: true,
+      addedDate: '2 days ago'
     },
     {
       id: 2,
@@ -73,8 +73,9 @@ export const BuyerDashboard: React.FC<BuyerDashboardProps> = ({ isDarkMode }) =>
       type: 'Villa',
       bedrooms: 5,
       bathrooms: 4,
-      isFavorite: false,
-      isSaved: true
+      isFavorite: true,
+      isSaved: false,
+      addedDate: '1 week ago'
     },
     {
       id: 3,
@@ -86,11 +87,12 @@ export const BuyerDashboard: React.FC<BuyerDashboardProps> = ({ isDarkMode }) =>
       bedrooms: 4,
       bathrooms: 3,
       isFavorite: true,
-      isSaved: false
+      isSaved: true,
+      addedDate: '3 days ago'
     }
   ];
 
-  const recommendedProperties = [
+  const savedProperties = [
     {
       id: 4,
       title: 'Penthouse in Kilimani',
@@ -98,7 +100,8 @@ export const BuyerDashboard: React.FC<BuyerDashboardProps> = ({ isDarkMode }) =>
       location: 'Kilimani, Nairobi',
       type: 'Penthouse',
       bedrooms: 4,
-      bathrooms: 3
+      bathrooms: 3,
+      savedDate: '1 day ago'
     },
     {
       id: 5,
@@ -107,7 +110,43 @@ export const BuyerDashboard: React.FC<BuyerDashboardProps> = ({ isDarkMode }) =>
       location: 'Lavington, Nairobi',
       type: 'Duplex',
       bedrooms: 3,
-      bathrooms: 2
+      bathrooms: 2,
+      savedDate: '4 days ago'
+    }
+  ];
+
+  const notifications = [
+    {
+      id: 1,
+      title: 'Price Drop Alert',
+      message: 'Luxury Apartment in Westlands price reduced by $50,000',
+      time: '2 hours ago',
+      type: 'price_drop',
+      propertyId: 1
+    },
+    {
+      id: 2,
+      title: 'New Property Match',
+      message: '3 new properties match your search criteria',
+      time: '5 hours ago',
+      type: 'new_match',
+      propertyId: null
+    },
+    {
+      id: 3,
+      title: 'Viewing Scheduled',
+      message: 'Your viewing for Modern Villa in Karen is confirmed for tomorrow',
+      time: '1 day ago',
+      type: 'viewing',
+      propertyId: 2
+    },
+    {
+      id: 4,
+      title: 'Market Update',
+      message: 'Property prices in Westlands increased by 5% this month',
+      time: '2 days ago',
+      type: 'market_update',
+      propertyId: null
     }
   ];
 
@@ -123,7 +162,7 @@ export const BuyerDashboard: React.FC<BuyerDashboardProps> = ({ isDarkMode }) =>
       >
         <h2 className="text-2xl font-bold mb-2">Welcome back, {user?.firstName}! 🏠</h2>
         <p className="text-gray-600">
-          Discover your next investment opportunity and manage your property portfolio.
+          Discover your next dream property and manage your favorites and saved properties.
         </p>
       </motion.div>
 
@@ -155,7 +194,7 @@ export const BuyerDashboard: React.FC<BuyerDashboardProps> = ({ isDarkMode }) =>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Properties */}
+        {/* Favorite Properties */}
         <motion.div
           className={`p-6 rounded-2xl ${
             isDarkMode ? 'bg-[#0E0E10] border border-white/10' : 'bg-white border border-gray-200'
@@ -164,9 +203,9 @@ export const BuyerDashboard: React.FC<BuyerDashboardProps> = ({ isDarkMode }) =>
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <h3 className="text-xl font-bold mb-4">Your Properties</h3>
+          <h3 className="text-xl font-bold mb-4">Favorite Properties</h3>
           <div className="space-y-4">
-            {recentProperties.map((property, index) => (
+            {favoriteProperties.map((property, index) => (
               <motion.div
                 key={property.id}
                 className="flex gap-4 p-4 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
@@ -198,13 +237,14 @@ export const BuyerDashboard: React.FC<BuyerDashboardProps> = ({ isDarkMode }) =>
                       {property.price}
                     </span>
                   </div>
+                  <p className="text-xs text-gray-400 mt-1">Added {property.addedDate}</p>
                 </div>
               </motion.div>
             ))}
           </div>
         </motion.div>
 
-        {/* Recommended Properties */}
+        {/* Saved Properties */}
         <motion.div
           className={`p-6 rounded-2xl ${
             isDarkMode ? 'bg-[#0E0E10] border border-white/10' : 'bg-white border border-gray-200'
@@ -213,9 +253,9 @@ export const BuyerDashboard: React.FC<BuyerDashboardProps> = ({ isDarkMode }) =>
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <h3 className="text-xl font-bold mb-4">Recommended for You</h3>
+          <h3 className="text-xl font-bold mb-4">Saved Properties</h3>
           <div className="space-y-4">
-            {recommendedProperties.map((property, index) => (
+            {savedProperties.map((property, index) => (
               <motion.div
                 key={property.id}
                 className="flex gap-4 p-4 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors cursor-pointer"
@@ -237,12 +277,50 @@ export const BuyerDashboard: React.FC<BuyerDashboardProps> = ({ isDarkMode }) =>
                       {property.price}
                     </span>
                   </div>
+                  <p className="text-xs text-gray-400 mt-1">Saved {property.savedDate}</p>
                 </div>
               </motion.div>
             ))}
           </div>
         </motion.div>
       </div>
+
+      {/* Notifications */}
+      <motion.div
+        className={`p-6 rounded-2xl ${
+          isDarkMode ? 'bg-[#0E0E10] border border-white/10' : 'bg-white border border-gray-200'
+        }`}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+      >
+        <h3 className="text-xl font-bold mb-4">Recent Notifications</h3>
+        <div className="space-y-3">
+          {notifications.map((notification, index) => (
+            <motion.div
+              key={notification.id}
+              className="flex gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 + index * 0.1 }}
+            >
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                notification.type === 'price_drop' ? 'bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-300' :
+                notification.type === 'new_match' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300' :
+                notification.type === 'viewing' ? 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-300' :
+                'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-300'
+              }`}>
+                <Bell size={14} />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-sm">{notification.title}</h4>
+                <p className="text-xs text-gray-500">{notification.message}</p>
+                <p className="text-xs text-gray-400 mt-1">{notification.time}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
 
       {/* Quick Actions */}
       <motion.div
@@ -284,8 +362,8 @@ export const BuyerDashboard: React.FC<BuyerDashboardProps> = ({ isDarkMode }) =>
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <Share2 className="w-5 h-5 text-[#C7A667]" />
-            <span>Share Properties</span>
+            <Bell className="w-5 h-5 text-[#C7A667]" />
+            <span>Notifications</span>
           </motion.button>
         </div>
       </motion.div>

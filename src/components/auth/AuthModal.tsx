@@ -4,6 +4,7 @@ import { LoginForm } from './LoginForm';
 import { UserTypeSelector } from './UserTypeSelector';
 import { BuyerSignupForm } from './BuyerSignupForm';
 import { DeveloperSignupForm } from './DeveloperSignupForm';
+import { GoogleSignupHandler } from './GoogleSignupHandler';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -12,7 +13,7 @@ interface AuthModalProps {
   initialMode?: 'login' | 'signup';
 }
 
-type AuthStep = 'login' | 'signup' | 'userType' | 'buyerSignup' | 'developerSignup';
+type AuthStep = 'login' | 'signup' | 'userType' | 'buyerSignup' | 'developerSignup' | 'googleSignup';
 
 export const AuthModal: React.FC<AuthModalProps> = ({ 
   isOpen, 
@@ -166,6 +167,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               isDarkMode={isDarkMode}
               onBack={handleBack}
               onSwitchToLogin={() => setCurrentStep('login')}
+              onSuccess={handleSuccess}
             />
           )}
           {currentStep === 'developerSignup' && (
@@ -174,6 +176,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               isDarkMode={isDarkMode}
               onBack={handleBack}
               onSwitchToLogin={() => setCurrentStep('login')}
+              onSuccess={handleSuccess}
+            />
+          )}
+          {currentStep === 'googleSignup' && (
+            <GoogleSignupHandler
+              key="googleSignup"
+              isDarkMode={isDarkMode}
+              onComplete={handleSuccess}
             />
           )}
         </AnimatePresence>

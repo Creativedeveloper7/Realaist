@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useAuth } from '../contexts/AuthContext';
 import { 
   Calendar,
   MapPin,
@@ -14,7 +15,9 @@ import {
   MessageSquare,
   CheckCircle,
   XCircle,
-  MoreVertical
+  MoreVertical,
+  Edit,
+  Trash2
 } from 'lucide-react';
 
 interface ScheduledVisitsProps {
@@ -30,10 +33,17 @@ interface ScheduledVisit {
     image: string;
     price: string;
   };
-  visitor: {
+  visitor?: {
     name: string;
     email: string;
     phone: string;
+    avatar?: string;
+  };
+  developer?: {
+    name: string;
+    email: string;
+    phone: string;
+    company: string;
     avatar?: string;
   };
   scheduledDate: string;
@@ -44,10 +54,12 @@ interface ScheduledVisit {
 }
 
 export const ScheduledVisits: React.FC<ScheduledVisitsProps> = ({ isDarkMode }) => {
+  const { user } = useAuth();
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const scheduledVisits: ScheduledVisit[] = [
+  // Data for developers (visits they received from buyers)
+  const developerVisits: ScheduledVisit[] = [
     {
       id: 1,
       property: {
@@ -107,29 +119,34 @@ export const ScheduledVisits: React.FC<ScheduledVisitsProps> = ({ isDarkMode }) 
       status: 'Completed',
       message: 'Looking for a 3-bedroom unit with parking.',
       createdAt: '3 days ago'
-    },
+    }
+  ];
+
+  // Data for buyers (visits they booked with developers)
+  const buyerVisits: ScheduledVisit[] = [
     {
-      id: 4,
+      id: 1,
       property: {
-        id: 3,
-        title: 'Townhouses - Runda',
-        location: 'Runda, Nairobi',
+        id: 1,
+        title: 'Luxury Apartments - Westlands',
+        location: 'Westlands, Nairobi',
         image: '/api/placeholder/300/200',
-        price: '$800,000'
+        price: '$450,000'
       },
-      visitor: {
-        name: 'Sarah Wilson',
-        email: 'sarah@example.com',
-        phone: '+254 700 000 003'
+      developer: {
+        name: 'Sarah Johnson',
+        email: 'sarah@hassconsult.com',
+        phone: '+254 700 000 000',
+        company: 'HassConsult'
       },
-      scheduledDate: '2024-01-17',
-      scheduledTime: '11:00 AM',
+      scheduledDate: '2024-01-15',
+      scheduledTime: '10:00 AM',
       status: 'Scheduled',
-      message: 'Interested in viewing the show house.',
-      createdAt: '4 hours ago'
+      message: 'I would like to view Unit 3A and discuss financing options.',
+      createdAt: '2 hours ago'
     },
     {
-      id: 5,
+      id: 2,
       property: {
         id: 2,
         title: 'Modern Villas - Karen',
@@ -137,22 +154,74 @@ export const ScheduledVisits: React.FC<ScheduledVisitsProps> = ({ isDarkMode }) 
         image: '/api/placeholder/300/200',
         price: '$1,200,000'
       },
-      visitor: {
-        name: 'David Brown',
-        email: 'david@example.com',
-        phone: '+254 700 000 004'
+      developer: {
+        name: 'David Kimani',
+        email: 'david@knightfrank.com',
+        phone: '+254 700 000 001',
+        company: 'Knight Frank'
       },
-      scheduledDate: '2024-01-13',
-      scheduledTime: '4:00 PM',
-      status: 'Cancelled',
-      message: 'Need to reschedule due to work commitment.',
-      createdAt: '1 week ago'
+      scheduledDate: '2024-01-16',
+      scheduledTime: '2:00 PM',
+      status: 'Confirmed',
+      message: 'Interested in the villa with garden space.',
+      createdAt: '1 day ago'
+    },
+    {
+      id: 3,
+      property: {
+        id: 3,
+        title: 'Townhouses - Runda',
+        location: 'Runda, Nairobi',
+        image: '/api/placeholder/300/200',
+        price: '$800,000'
+      },
+      developer: {
+        name: 'Mary Wanjiku',
+        email: 'mary@reit.com',
+        phone: '+254 700 000 002',
+        company: 'REIT Properties'
+      },
+      scheduledDate: '2024-01-14',
+      scheduledTime: '3:00 PM',
+      status: 'Completed',
+      message: 'Looking for a family-friendly townhouse.',
+      createdAt: '3 days ago'
+    },
+    {
+      id: 4,
+      property: {
+        id: 4,
+        title: 'Penthouse - Kilimani',
+        location: 'Kilimani, Nairobi',
+        image: '/api/placeholder/300/200',
+        price: '$650,000'
+      },
+      developer: {
+        name: 'Peter Mwangi',
+        email: 'peter@blackrock.com',
+        phone: '+254 700 000 003',
+        company: 'BlackRock Properties'
+      },
+      scheduledDate: '2024-01-17',
+      scheduledTime: '11:00 AM',
+      status: 'Scheduled',
+      message: 'Want to see the penthouse with city views.',
+      createdAt: '4 hours ago'
     }
   ];
 
+  // Get the appropriate data based on user type
+  const scheduledVisits = user?.userType === 'buyer' ? buyerVisits : developerVisits;
+
   const filteredVisits = scheduledVisits.filter(visit => {
+    const contactName = visit.visitor?.name || visit.developer?.name || '';
+    const contactEmail = visit.visitor?.email || visit.developer?.email || '';
+    const companyName = visit.developer?.company || '';
+    
     const matchesSearch = 
-      visit.visitor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      contactName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      contactEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       visit.property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       visit.property.location.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filterStatus === 'all' || visit.status.toLowerCase() === filterStatus;
@@ -199,7 +268,11 @@ export const ScheduledVisits: React.FC<ScheduledVisitsProps> = ({ isDarkMode }) 
     });
   };
 
-  const VisitCard: React.FC<{ visit: ScheduledVisit }> = ({ visit }) => (
+  const VisitCard: React.FC<{ visit: ScheduledVisit }> = ({ visit }) => {
+    const contact = visit.visitor || visit.developer;
+    const isBuyer = user?.userType === 'buyer';
+    
+    return (
     <motion.div
       className={`p-6 rounded-2xl border transition-all duration-200 hover:shadow-lg ${
         isDarkMode 
@@ -213,12 +286,15 @@ export const ScheduledVisits: React.FC<ScheduledVisitsProps> = ({ isDarkMode }) 
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 bg-[#C7A667] rounded-full flex items-center justify-center text-black font-bold text-lg">
-            {visit.visitor.name.split(' ').map(n => n[0]).join('')}
+              {contact?.name.split(' ').map(n => n[0]).join('')}
           </div>
           <div>
-            <h3 className="font-bold text-lg">{visit.visitor.name}</h3>
-            <p className="text-gray-600 text-sm">{visit.visitor.email}</p>
-          </div>
+              <h3 className="font-bold text-lg">{contact?.name}</h3>
+              <p className="text-gray-600 text-sm">{contact?.email}</p>
+              {visit.developer?.company && (
+                <p className="text-gray-500 text-xs">{visit.developer.company}</p>
+              )}
+            </div>
         </div>
         <div className="flex items-center gap-2">
           <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(visit.status)}`}>
@@ -264,14 +340,14 @@ export const ScheduledVisits: React.FC<ScheduledVisitsProps> = ({ isDarkMode }) 
 
       <div className="flex items-center gap-2 mb-4">
         <a 
-          href={`tel:${visit.visitor.phone}`}
+          href={`tel:${contact?.phone}`}
           className="flex items-center gap-2 px-3 py-2 bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-lg text-sm font-medium hover:bg-green-200 dark:hover:bg-green-900/30 transition-colors"
         >
           <Phone size={14} />
           Call
         </a>
         <a 
-          href={`mailto:${visit.visitor.email}`}
+          href={`mailto:${contact?.email}`}
           className="flex items-center gap-2 px-3 py-2 bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium hover:bg-blue-200 dark:hover:bg-blue-900/30 transition-colors"
         >
           <Mail size={14} />
@@ -284,6 +360,71 @@ export const ScheduledVisits: React.FC<ScheduledVisitsProps> = ({ isDarkMode }) 
       </div>
 
       <div className="flex gap-2">
+        {isBuyer ? (
+          // Buyer actions
+          <>
+            {visit.status === 'Scheduled' && (
+              <>
+                <motion.button
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-600 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-white/5 transition-colors flex items-center justify-center gap-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Edit size={16} />
+                  Edit
+                </motion.button>
+                <motion.button
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Trash2 size={16} />
+                  Cancel
+                </motion.button>
+              </>
+            )}
+            {visit.status === 'Confirmed' && (
+              <>
+                <motion.button
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-600 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-white/5 transition-colors flex items-center justify-center gap-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Edit size={16} />
+                  Reschedule
+                </motion.button>
+                <motion.button
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Trash2 size={16} />
+                  Cancel
+                </motion.button>
+              </>
+            )}
+            {visit.status === 'Completed' && (
+              <motion.button
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-600 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                View Details
+              </motion.button>
+            )}
+            {visit.status === 'Cancelled' && (
+              <motion.button
+                className="flex-1 px-4 py-2 bg-[#C7A667] text-black rounded-lg font-medium hover:bg-[#B8965A] transition-colors"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Book Again
+              </motion.button>
+            )}
+          </>
+        ) : (
+          // Developer actions
+          <>
         {visit.status === 'Scheduled' && (
           <>
             <motion.button
@@ -328,10 +469,13 @@ export const ScheduledVisits: React.FC<ScheduledVisitsProps> = ({ isDarkMode }) 
           >
             Reschedule
           </motion.button>
+            )}
+          </>
         )}
       </div>
     </motion.div>
   );
+  };
 
   return (
     <div className="space-y-6">
@@ -347,7 +491,10 @@ export const ScheduledVisits: React.FC<ScheduledVisitsProps> = ({ isDarkMode }) 
           <div>
             <h2 className="text-2xl font-bold mb-2">Scheduled Visits</h2>
             <p className="text-gray-600">
-              Manage property viewing appointments and visitor interactions.
+              {user?.userType === 'buyer' 
+                ? 'View and manage your property viewing appointments with developers.'
+                : 'Manage property viewing appointments and visitor interactions.'
+              }
             </p>
           </div>
           <div className="text-right">
@@ -362,7 +509,10 @@ export const ScheduledVisits: React.FC<ScheduledVisitsProps> = ({ isDarkMode }) 
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
             <input
               type="text"
-              placeholder="Search by visitor name, property, or location..."
+              placeholder={user?.userType === 'buyer' 
+                ? "Search by developer name, company, property, or location..."
+                : "Search by visitor name, property, or location..."
+              }
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
