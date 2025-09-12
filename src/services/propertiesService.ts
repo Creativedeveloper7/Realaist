@@ -16,6 +16,13 @@ const FALLBACK_PROPERTIES: Property[] = [
     images: ['https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop'],
     status: 'active',
     developerId: 'fallback-dev-1',
+    developer: {
+      id: 'fallback-dev-1',
+      firstName: 'John',
+      lastName: 'Kamau',
+      companyName: 'Kamau Properties Ltd',
+      phone: '+254 712 345 678'
+    },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -32,6 +39,13 @@ const FALLBACK_PROPERTIES: Property[] = [
     images: ['https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=600&fit=crop'],
     status: 'active',
     developerId: 'fallback-dev-2',
+    developer: {
+      id: 'fallback-dev-2',
+      firstName: 'Mary',
+      lastName: 'Wanjiku',
+      companyName: 'Wanjiku Homes',
+      phone: '+254 723 456 789'
+    },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -48,6 +62,13 @@ const FALLBACK_PROPERTIES: Property[] = [
     images: ['https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=600&fit=crop'],
     status: 'active',
     developerId: 'fallback-dev-3',
+    developer: {
+      id: 'fallback-dev-3',
+      firstName: 'David',
+      lastName: 'Muthoni',
+      companyName: 'Muthoni Estates',
+      phone: '+254 734 567 890'
+    },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -64,6 +85,13 @@ const FALLBACK_PROPERTIES: Property[] = [
     images: ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=600&fit=crop'],
     status: 'active',
     developerId: 'fallback-dev-4',
+    developer: {
+      id: 'fallback-dev-4',
+      firstName: 'Grace',
+      lastName: 'Njeri',
+      companyName: 'Njeri Developments',
+      phone: '+254 745 678 901'
+    },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -80,6 +108,13 @@ const FALLBACK_PROPERTIES: Property[] = [
     images: ['https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop'],
     status: 'active',
     developerId: 'fallback-dev-5',
+    developer: {
+      id: 'fallback-dev-5',
+      firstName: 'Peter',
+      lastName: 'Kinyua',
+      companyName: 'Kinyua Properties',
+      phone: '+254 756 789 012'
+    },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -96,6 +131,13 @@ const FALLBACK_PROPERTIES: Property[] = [
     images: ['https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=600&fit=crop'],
     status: 'active',
     developerId: 'fallback-dev-6',
+    developer: {
+      id: 'fallback-dev-6',
+      firstName: 'Sarah',
+      lastName: 'Mwangi',
+      companyName: 'Mwangi Homes',
+      phone: '+254 767 890 123'
+    },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   }
@@ -115,6 +157,13 @@ const convertProjectToProperty = (project: any): Property => ({
   images: [project.hero, ...project.gallery],
   status: 'active',
   developerId: 'project-dev',
+  developer: {
+    id: 'project-dev',
+    firstName: 'Project',
+    lastName: 'Developer',
+    companyName: 'Real Estate Projects Ltd',
+    phone: '+254 700 000 000'
+  },
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString()
 })
@@ -200,7 +249,14 @@ class PropertiesService {
           status,
           developer_id,
           created_at,
-          updated_at
+          updated_at,
+          developer:profiles!properties_developer_id_fkey(
+            id,
+            first_name,
+            last_name,
+            company_name,
+            phone
+          )
         `)
         .order('created_at', { ascending: false })
         .limit(100)
@@ -292,7 +348,14 @@ class PropertiesService {
           status,
           developer_id,
           created_at,
-          updated_at
+          updated_at,
+          developer:profiles!properties_developer_id_fkey(
+            id,
+            first_name,
+            last_name,
+            company_name,
+            phone
+          )
         `)
         .eq('id', id)
         .single()

@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTheme } from './ThemeContext';
 import { useAuth } from './contexts/AuthContext';
 import { propertiesService, Property } from './services/propertiesService';
+import { scheduledVisitsService } from './services/scheduledVisitsService';
 
 // Helper function to get icon for fact type
 const getFactIcon = (factIndex: number, isDarkMode: boolean = true) => {
@@ -92,6 +93,9 @@ export default function PropertyDetails() {
   const [selectedTime, setSelectedTime] = useState('');
   const [visitorName, setVisitorName] = useState('');
   const [visitorEmail, setVisitorEmail] = useState('');
+  const [developerInfoModalOpen, setDeveloperInfoModalOpen] = useState(false);
+  const [isSubmittingVisit, setIsSubmittingVisit] = useState(false);
+  const [visitSubmissionMessage, setVisitSubmissionMessage] = useState('');
   
   // Helper function to convert database property to display format
   const convertPropertyToDisplay = (dbProperty: Property) => ({
@@ -106,7 +110,8 @@ export default function PropertyDetails() {
     images: dbProperty.images && dbProperty.images.length > 0 ? dbProperty.images : [
       "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600"
     ],
-    facts: ["1–2 Beds", "From KSh 3.7M", "ROI 10–12%"]
+    facts: ["1–2 Beds", "From KSh 3.7M", "ROI 10–12%"],
+    developer: dbProperty.developer
   });
 
   useEffect(() => {
@@ -657,11 +662,12 @@ export default function PropertyDetails() {
                 {/* Action Buttons */}
                 <div className="space-y-3">
                   <motion.button 
+                    onClick={() => setDeveloperInfoModalOpen(true)}
                     className="w-full px-6 py-3 bg-[#C7A667] text-black font-medium rounded-lg hover:bg-[#B89657] transition-colors flex items-center justify-center gap-2"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    📞 Call Sale Rep.
+                    📞 Call Developer
                   </motion.button>
                   
                   <motion.button 
@@ -674,19 +680,22 @@ export default function PropertyDetails() {
                   </motion.button>
                   
                   <motion.button 
+                    onClick={() => {
+                      if (property.developer?.phone) {
+                        // Remove any non-digit characters and add country code if not present
+                        const phoneNumber = property.developer.phone.replace(/\D/g, '');
+                        const formattedPhone = phoneNumber.startsWith('254') ? phoneNumber : `254${phoneNumber}`;
+                        const whatsappUrl = `https://wa.me/${formattedPhone}?text=Hi, I'm interested in the property "${property.name}" at ${property.location}. Could you please provide more information?`;
+                        window.open(whatsappUrl, '_blank');
+                      } else {
+                        alert('Developer contact information not available');
+                      }
+                    }}
                     className="w-full px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     💬 Chat on WhatsApp
-                  </motion.button>
-                  
-                  <motion.button 
-                    className="w-full px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    📄 Download Brochure
                   </motion.button>
                 </div>
 
@@ -915,11 +924,47 @@ export default function PropertyDetails() {
             </div>
 
             {/* Scheduling Form */}
-            <form className="space-y-6" onSubmit={(e) => {
+            <form className="space-y-6" onSubmit={async (e) => {
               e.preventDefault();
-              // Handle scheduling logic here
-              console.log('Schedule visit:', { selectedDate, selectedTime, visitorName, visitorEmail });
+              setIsSubmittingVisit(true);
+              setVisitSubmissionMessage('');
+              
+              try {
+                if (!propertyId) {
+                  setVisitSubmissionMessage('Property ID not found');
+                  return;
+                }
+
+                const { visit, error } = await scheduledVisitsService.createScheduledVisit({
+                  propertyId,
+                  scheduledDate: selectedDate,
+                  scheduledTime: selectedTime,
+                  visitorName,
+                  visitorEmail,
+                  message: `Visit request for ${property.name}`
+                });
+
+                if (error) {
+                  setVisitSubmissionMessage(`Error: ${error}`);
+                } else if (visit) {
+                  setVisitSubmissionMessage('Visit scheduled successfully! The developer will contact you soon.');
+                  // Reset form
+                  setSelectedDate('');
+                  setSelectedTime('');
+                  setVisitorName('');
+                  setVisitorEmail('');
+                  // Close modal after a delay
+                  setTimeout(() => {
               setScheduleModalOpen(false);
+                    setVisitSubmissionMessage('');
+                  }, 2000);
+                }
+              } catch (err) {
+                console.error('Error scheduling visit:', err);
+                setVisitSubmissionMessage('An unexpected error occurred. Please try again.');
+              } finally {
+                setIsSubmittingVisit(false);
+              }
             }}>
               {/* Date Selection */}
               <div>
@@ -1013,14 +1058,30 @@ export default function PropertyDetails() {
                 />
               </div>
 
+              {/* Submission Message */}
+              {visitSubmissionMessage && (
+                <div className={`p-3 rounded-lg text-sm ${
+                  visitSubmissionMessage.includes('Error') || visitSubmissionMessage.includes('not found')
+                    ? 'bg-red-100 text-red-700 border border-red-200'
+                    : 'bg-green-100 text-green-700 border border-green-200'
+                }`}>
+                  {visitSubmissionMessage}
+                </div>
+              )}
+
               {/* Submit Button */}
               <motion.button
                 type="submit"
-                className="w-full py-3 rounded-lg bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                disabled={isSubmittingVisit}
+                className={`w-full py-3 rounded-lg font-medium transition-colors ${
+                  isSubmittingVisit
+                    ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                    : 'bg-[#C7A667] text-black hover:bg-[#B89657]'
+                }`}
+                whileHover={!isSubmittingVisit ? { scale: 1.02 } : {}}
+                whileTap={!isSubmittingVisit ? { scale: 0.98 } : {}}
               >
-                Schedule Visit
+                {isSubmittingVisit ? 'Scheduling...' : 'Schedule Visit'}
               </motion.button>
             </form>
 
@@ -1031,6 +1092,114 @@ export default function PropertyDetails() {
               }`}>
                 We'll confirm your appointment within 24 hours
               </p>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Developer Info Modal */}
+      {developerInfoModalOpen && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          {/* Backdrop */}
+          <motion.div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            onClick={() => setDeveloperInfoModalOpen(false)}
+          />
+          
+          {/* Modal Content */}
+          <motion.div
+            className={`relative w-full max-w-sm rounded-2xl border p-6 ${
+              isDarkMode 
+                ? 'border-white/10 bg-[#111217]' 
+                : 'border-gray-200 bg-white'
+            }`}
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setDeveloperInfoModalOpen(false)}
+              className={`absolute top-4 right-4 p-2 rounded-full hover:bg-opacity-10 transition-colors ${
+                isDarkMode 
+                  ? 'hover:bg-white text-white/60 hover:text-white' 
+                  : 'hover:bg-gray-900 text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Developer Info */}
+            <div className="text-center">
+              <div className={`w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl ${
+                isDarkMode ? 'bg-[#C7A667]/20 text-[#C7A667]' : 'bg-[#C7A667]/10 text-[#C7A667]'
+              }`}>
+                👨‍💼
+              </div>
+              
+              <h3 className={`text-xl font-heading mb-2 transition-colors duration-300 ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`} style={{ 
+                fontFamily: "'Cinzel', 'Playfair Display', serif",
+                fontWeight: 500,
+                letterSpacing: '0.05em'
+              }}>
+                {property.developer ? `${property.developer.firstName} ${property.developer.lastName}` : 'Developer'}
+              </h3>
+              
+              {property.developer?.companyName && (
+                <p className={`text-sm mb-4 transition-colors duration-300 ${
+                  isDarkMode ? 'text-white/70' : 'text-gray-600'
+                }`}>
+                  {property.developer.companyName}
+                </p>
+              )}
+              
+              {property.developer?.phone && (
+                <div className="space-y-3">
+                  <div className={`p-3 rounded-lg border transition-colors duration-300 ${
+                    isDarkMode ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-gray-50'
+                  }`}>
+                    <p className={`text-sm font-medium mb-1 transition-colors duration-300 ${
+                      isDarkMode ? 'text-white/80' : 'text-gray-700'
+                    }`}>
+                      Phone Number
+                    </p>
+                    <p className={`text-lg font-mono transition-colors duration-300 ${
+                      isDarkMode ? 'text-[#C7A667]' : 'text-[#C7A667]'
+                    }`}>
+                      {property.developer.phone}
+                    </p>
+                  </div>
+                  
+                  <motion.a
+                    href={`tel:${property.developer.phone}`}
+                    className="w-full inline-block px-6 py-3 bg-[#C7A667] text-black font-medium rounded-lg hover:bg-[#B89657] transition-colors text-center"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    📞 Call Now
+                  </motion.a>
+                </div>
+              )}
+              
+              {!property.developer?.phone && (
+                <p className={`text-sm transition-colors duration-300 ${
+                  isDarkMode ? 'text-white/50' : 'text-gray-500'
+                }`}>
+                  Contact information not available
+                </p>
+              )}
             </div>
           </motion.div>
         </motion.div>

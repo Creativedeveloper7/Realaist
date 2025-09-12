@@ -246,14 +246,14 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({ isDarkMo
               </div>
             ) : (
               myProperties.map((property, index) => (
-                <motion.div
-                  key={property.id}
-                  className="p-4 rounded-lg border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.5 + index * 0.1 }}
-                >
-                  <div className="flex items-start gap-4">
+              <motion.div
+                key={property.id}
+                className="p-4 rounded-lg border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5 + index * 0.1 }}
+              >
+                <div className="flex items-start gap-4">
                     <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0 overflow-hidden">
                       {property.images && property.images.length > 0 ? (
                         <img
@@ -267,54 +267,54 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({ isDarkMo
                         </div>
                       )}
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-medium text-sm">{property.title}</h4>
-                        <div className="flex gap-2">
-                          <button className="p-1 text-gray-400 hover:text-blue-500">
-                            <Edit size={14} />
-                          </button>
-                          <button className="p-1 text-gray-400 hover:text-red-500">
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="font-medium text-sm">{property.title}</h4>
+                      <div className="flex gap-2">
+                        <button className="p-1 text-gray-400 hover:text-blue-500">
+                          <Edit size={14} />
+                        </button>
+                        <button className="p-1 text-gray-400 hover:text-red-500">
+                          <Trash2 size={14} />
+                        </button>
                       </div>
-                      <p className="text-gray-500 text-xs mb-2">{property.location}</p>
-                      <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
-                        <span className="flex items-center gap-1">
+                    </div>
+                    <p className="text-gray-500 text-xs mb-2">{property.location}</p>
+                    <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
+                      <span className="flex items-center gap-1">
                           <DollarSign size={12} />
                           ${property.price.toLocaleString()}
-                        </span>
+                      </span>
                         {property.bedrooms && (
-                          <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1">
                             <Building2 size={12} />
                             {property.bedrooms} beds
-                          </span>
+                      </span>
                         )}
                         {property.bathrooms && (
-                          <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1">
                             <Building2 size={12} />
                             {property.bathrooms} baths
-                          </span>
+                      </span>
                         )}
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className={`px-2 py-1 rounded-full text-xs ${
                           property.status === 'active' 
-                            ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300'
+                          ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300'
                             : property.status === 'draft'
                             ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300'
                             : 'bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-300'
-                        }`}>
+                      }`}>
                           {property.status.charAt(0).toUpperCase() + property.status.slice(1)}
                         </span>
                         <span className="text-xs text-gray-500">
                           {new Date(property.updatedAt).toLocaleDateString()}
-                        </span>
+                      </span>
                       </div>
-                    </div>
                   </div>
-                </motion.div>
+                </div>
+              </motion.div>
               ))
             )}
           </div>

@@ -12,7 +12,7 @@ import { DeveloperDashboard } from './pages/DeveloperDashboard';
 import { BuyerDashboard } from './pages/BuyerDashboard';
 import { HomePage } from './pages/HomePage';
 import { MyProperties } from './pages/MyProperties';
-import { ScheduledVisits } from './pages/ScheduledVisits';
+import ScheduledVisits from './pages/ScheduledVisits';
 import { Documents } from './pages/Documents';
 import { Analytics } from './pages/Analytics';
 import { Blogs } from './pages/Blogs';

@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import { useRef } from 'react';
 import { motion } from 'framer-motion';
 
 interface HeroProps {
@@ -70,18 +70,144 @@ export function Hero({ isDarkMode }: HeroProps) {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.2 }}
-          className="mb-16"
+          className="mb-16 max-w-6xl mx-auto"
         >
           <h1 
-            className="font-heading text-5xl md:text-7xl lg:text-8xl leading-none tracking-tight text-white hero-text-shadow"
+            className="font-heading text-5xl md:text-7xl lg:text-8xl leading-none tracking-tight text-white hero-text-shadow mb-8"
             style={{ 
               fontFamily: "'Cinzel', 'Playfair Display', serif",
               fontWeight: 500,
               letterSpacing: '0.05em'
             }}
           >
-            {/* Intentionally empty title as per excerpt */}
+            REALAIST
           </h1>
+          
+          {/* Platform Description */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.4 }}
+            className="mb-12"
+          >
+            <p 
+              className="font-heading text-base md:text-lg lg:text-xl text-white/90 leading-relaxed mb-6"
+              style={{ 
+                fontFamily: "'Cinzel', 'Playfair Display', serif",
+                fontWeight: 400,
+                letterSpacing: '0.02em'
+              }}
+            >
+              Realaist is an AI-powered platform that connects investors with vetted real estate opportunities from trusted developers and companies.
+            </p>
+            <p 
+              className="font-heading text-sm md:text-base lg:text-lg text-white/80 leading-relaxed"
+              style={{ 
+                fontFamily: "'Cinzel', 'Playfair Display', serif",
+                fontWeight: 400,
+                letterSpacing: '0.02em'
+              }}
+            >
+              Our AI agent verifies property ownership, legal compliance, and the track record of each developer — ensuring a secure and trustworthy investment experience.
+            </p>
+          </motion.div>
+
+          {/* How It Works Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.6 }}
+            className="p-8 md:p-12"
+          >
+            <h2 
+              className="font-heading text-2xl md:text-3xl lg:text-4xl text-white mb-8"
+              style={{ 
+                fontFamily: "'Cinzel', 'Playfair Display', serif",
+                fontWeight: 500,
+                letterSpacing: '0.05em'
+              }}
+            >
+              
+            </h2>
+            
+            <div className="grid md:grid-cols-3 gap-8">
+              {/* Step 1 */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.8 }}
+                className="text-center"
+              >
+                <div className="w-16 h-16 bg-[#C7A667] rounded-full flex items-center justify-center text-black font-bold text-xl mx-auto mb-4">
+                  1
+                </div>
+                <h3 
+                  className="font-heading text-lg md:text-xl text-white mb-3"
+                  style={{ 
+                    fontFamily: "'Cinzel', 'Playfair Display', serif",
+                    fontWeight: 500,
+                    letterSpacing: '0.02em'
+                  }}
+                >
+                  Discover Opportunities
+                </h3>
+                <p className="text-white/80 text-sm md:text-base">
+                  Explore top investment properties
+                </p>
+              </motion.div>
+
+              {/* Step 2 */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 1.0 }}
+                className="text-center"
+              >
+                <div className="w-16 h-16 bg-[#C7A667] rounded-full flex items-center justify-center text-black font-bold text-xl mx-auto mb-4">
+                  2
+                </div>
+                <h3 
+                  className="font-heading text-lg md:text-xl text-white mb-3"
+                  style={{ 
+                    fontFamily: "'Cinzel', 'Playfair Display', serif",
+                    fontWeight: 500,
+                    letterSpacing: '0.02em'
+                  }}
+                >
+                  AI Verification
+                </h3>
+                <p className="text-white/80 text-sm md:text-base">
+                  Use our AI tool to verify ownership & legal compliance
+                </p>
+              </motion.div>
+
+              {/* Step 3 */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 1.2 }}
+                className="text-center"
+              >
+                <div className="w-16 h-16 bg-[#C7A667] rounded-full flex items-center justify-center text-black font-bold text-xl mx-auto mb-4">
+                  3
+                </div>
+                <h3 
+                  className="font-heading text-lg md:text-xl text-white mb-3"
+                  style={{ 
+                    fontFamily: "'Cinzel', 'Playfair Display', serif",
+                    fontWeight: 500,
+                    letterSpacing: '0.02em'
+                  }}
+                >
+                  Connect with Developers
+                </h3>
+                <p className="text-white/80 text-sm md:text-base">
+                  Contact sellers directly, leave your details for a callback or schedule a visit
+                </p>
+              </motion.div>
+            </div>
+          </motion.div>
+
         </motion.div>
       </motion.div>
 

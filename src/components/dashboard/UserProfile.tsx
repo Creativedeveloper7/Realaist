@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
@@ -23,11 +23,14 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
   const { user, updateProfile, updatePreferences } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
     email: user?.email || '',
     phone: user?.phone || '',
+    companyName: user?.companyName || '',
+    licenseNumber: user?.licenseNumber || '',
   });
   const [preferences, setPreferences] = useState({
     notifications: user?.preferences?.notifications || true,
@@ -35,15 +38,36 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
     language: user?.preferences?.language || 'en',
   });
 
+  // Update form data when user changes
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        companyName: user.companyName || '',
+        licenseNumber: user.licenseNumber || '',
+      });
+    }
+  }, [user]);
+
   const handleSaveProfile = async () => {
     setIsLoading(true);
+    setMessage(null);
     try {
       const result = await updateProfile(formData);
       if (result.success) {
+        setMessage({ type: 'success', text: 'Profile updated successfully!' });
         setIsEditing(false);
+        // Clear message after 3 seconds
+        setTimeout(() => setMessage(null), 3000);
+      } else {
+        setMessage({ type: 'error', text: result.error || 'Failed to update profile' });
       }
     } catch (error) {
       console.error('Failed to update profile:', error);
+      setMessage({ type: 'error', text: 'Failed to update profile. Please try again.' });
     } finally {
       setIsLoading(false);
     }
@@ -97,6 +121,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
               {user?.firstName} {user?.lastName}
             </h2>
             <p className="text-gray-600 mb-2">{user?.email}</p>
+            {user?.userType === 'developer' && user?.companyName && (
+              <p className="text-gray-600 mb-2 flex items-center gap-1">
+                <Globe size={16} />
+                {user.companyName}
+              </p>
+            )}
             <div className="flex items-center gap-4 text-sm text-gray-500">
               <span className="flex items-center gap-1">
                 <Calendar size={16} />
@@ -104,8 +134,14 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
               </span>
               <span className="flex items-center gap-1">
                 <Shield size={16} />
-                {user?.role === 'admin' ? 'Administrator' : 'User'}
+                {user?.userType === 'developer' ? 'Developer' : 'Buyer'}
               </span>
+              {user?.userType === 'developer' && user?.licenseNumber && (
+                <span className="flex items-center gap-1">
+                  <Shield size={16} />
+                  License: {user.licenseNumber}
+                </span>
+              )}
             </div>
           </div>
           <motion.button
@@ -221,6 +257,75 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
                 />
               </div>
             </div>
+
+            {/* Developer-specific fields */}
+            {user?.userType === 'developer' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Company Name</label>
+                  <div className="relative">
+                    <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      name="companyName"
+                      value={formData.companyName}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      placeholder="Enter your company name"
+                      className={`w-full pl-12 pr-4 py-3 rounded-lg border transition-colors ${
+                        isEditing
+                          ? isDarkMode
+                            ? 'bg-white/5 border-white/15 text-white'
+                            : 'bg-white border-gray-300 text-gray-900'
+                          : isDarkMode
+                            ? 'bg-white/5 border-white/10 text-white/70'
+                            : 'bg-gray-50 border-gray-200 text-gray-500'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">License Number</label>
+                  <div className="relative">
+                    <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      name="licenseNumber"
+                      value={formData.licenseNumber}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      placeholder="Enter your license number"
+                      className={`w-full pl-12 pr-4 py-3 rounded-lg border transition-colors ${
+                        isEditing
+                          ? isDarkMode
+                            ? 'bg-white/5 border-white/15 text-white'
+                            : 'bg-white border-gray-300 text-gray-900'
+                          : isDarkMode
+                            ? 'bg-white/5 border-white/10 text-white/70'
+                            : 'bg-gray-50 border-gray-200 text-gray-500'
+                      }`}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Success/Error Message */}
+            {message && (
+              <motion.div
+                className={`p-3 rounded-lg text-sm ${
+                  message.type === 'success'
+                    ? 'bg-green-100 text-green-700 border border-green-200'
+                    : 'bg-red-100 text-red-700 border border-red-200'
+                }`}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                {message.text}
+              </motion.div>
+            )}
 
             {isEditing && (
               <motion.button

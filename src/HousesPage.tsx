@@ -56,21 +56,28 @@ const getFactIcon = (factIndex: number, isDarkMode: boolean = true) => {
 
 
 // Helper function to convert database property to display format
-const convertPropertyToHouse = (property: Property) => ({
-  id: property.id,
-  name: property.title,
-  location: property.location,
-  price: `KSh ${(property.price / 1000000).toFixed(1)}M`,
-  facts: [
-    property.bedrooms?.toString() || "N/A",
-    property.bathrooms?.toString() || "N/A", 
-    property.squareFeet ? `${property.squareFeet.toLocaleString()} sq ft` : "N/A"
-  ],
-  factLabels: ["Beds", "Baths", "Square Feet"],
-  image: property.images && property.images.length > 0 ? property.images[0] : "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600",
-  status: property.status.charAt(0).toUpperCase() + property.status.slice(1),
-  type: property.propertyType
-});
+const convertPropertyToHouse = (property: Property) => {
+  // Format price with commas using normal numbering system
+  const formatPrice = (price: number) => {
+    return `KSh ${price.toLocaleString()}`;
+  };
+
+  return {
+    id: property.id,
+    name: property.title,
+    location: property.location,
+    price: formatPrice(property.price),
+    facts: [
+      property.bedrooms?.toString() || "N/A",
+      property.bathrooms?.toString() || "N/A", 
+      property.squareFeet ? `${property.squareFeet.toLocaleString()} sq ft` : "N/A"
+    ],
+    factLabels: ["Beds", "Baths", "Square Feet"],
+    image: property.images && property.images.length > 0 ? property.images[0] : "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    status: property.status.charAt(0).toUpperCase() + property.status.slice(1),
+    type: property.propertyType
+  };
+};
 
 // Houses data - will be replaced with database data
 const houses = [
@@ -281,7 +288,7 @@ export default function HousesPage() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filteredHouses, setFilteredHouses] = useState<any[]>([]);
-  const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const [, setIsOfflineMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('All');
   const [selectedStatus, setSelectedStatus] = useState('All');
@@ -293,7 +300,6 @@ export default function HousesPage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [themeWidgetOpen, setThemeWidgetOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const propertiesPerPage = 12;
 
@@ -309,19 +315,12 @@ export default function HousesPage() {
     const loadProperties = async () => {
       setIsLoading(true);
       
-      // Check if we're already in offline mode
-      const isOfflineMode = localStorage.getItem('offline_mode') === 'true';
-      if (isOfflineMode) {
-        console.log('HousesPage: Already in offline mode, using fallback data');
-        setFilteredHouses(houses);
-        setIsOfflineMode(true);
-        setIsLoading(false);
-        return;
-      }
-      
       try {
+        console.log('HousesPage: Attempting to fetch properties from database...');
         const { properties: fetchedProperties, error: fetchError } = await propertiesService.getProperties();
-        if (!fetchError && fetchedProperties) {
+        
+        if (!fetchError && fetchedProperties && fetchedProperties.length > 0) {
+          console.log('HousesPage: Successfully fetched', fetchedProperties.length, 'properties from database');
           setProperties(fetchedProperties);
           const convertedHouses = fetchedProperties.map(convertPropertyToHouse);
           // Remove duplicates by ID
@@ -329,15 +328,16 @@ export default function HousesPage() {
             index === self.findIndex(h => h.id === house.id)
           );
           setFilteredHouses(uniqueHouses);
-          // Check if we're using fallback data (properties with fallback IDs)
-          const isUsingFallback = fetchedProperties.some(p => p.id.startsWith('fallback-') || p.id.startsWith('project-'));
-          setIsOfflineMode(isUsingFallback);
-          if (isUsingFallback) {
-            localStorage.setItem('offline_mode', 'true');
-          }
+          setIsOfflineMode(false);
+          // Clear offline mode flag since we successfully fetched data
+          localStorage.removeItem('offline_mode');
+        } else {
+          console.log('HousesPage: No properties found in database or error occurred, using fallback data');
+          setFilteredHouses(houses);
+          setIsOfflineMode(true);
         }
       } catch (err) {
-        console.error('Error loading properties:', err);
+        console.error('HousesPage: Error loading properties:', err);
         // Use hardcoded houses data as fallback
         setFilteredHouses(houses);
         setIsOfflineMode(true);
@@ -389,13 +389,16 @@ export default function HousesPage() {
     // Filter by price range
     if (selectedPriceRange !== 'All') {
       filtered = filtered.filter(house => {
-        const price = parseInt(house.price.replace(/[^\d]/g, ''));
+        // Find the original property to get the actual price value
+        const originalProperty = properties.find(p => p.id === house.id);
+        const priceValue = originalProperty ? originalProperty.price : 0;
+        
         switch (selectedPriceRange) {
-          case 'Under KSh 5M': return price < 5000000;
-          case 'KSh 5M - 10M': return price >= 5000000 && price < 10000000;
-          case 'KSh 10M - 20M': return price >= 10000000 && price < 20000000;
-          case 'KSh 20M - 50M': return price >= 20000000 && price < 50000000;
-          case 'Over KSh 50M': return price >= 50000000;
+          case 'Under KSh 5M': return priceValue < 5000000;
+          case 'KSh 5M - 10M': return priceValue >= 5000000 && priceValue < 10000000;
+          case 'KSh 10M - 20M': return priceValue >= 10000000 && priceValue < 20000000;
+          case 'KSh 20M - 50M': return priceValue >= 20000000 && priceValue < 50000000;
+          case 'Over KSh 50M': return priceValue >= 50000000;
           default: return true;
         }
       });
@@ -1103,7 +1106,7 @@ export default function HousesPage() {
                         </div>
                         
                         <div className="flex flex-wrap gap-2 mb-6">
-                          {house.facts.map((fact, factIndex) => (
+                          {house.facts.map((fact: string, factIndex: number) => (
                             <span key={fact} className={`text-xs px-3 py-1 rounded-full border flex items-center gap-1 transition-colors duration-300 ${
                               isDarkMode 
                                 ? 'border-white/20 bg-white/5 text-white' 
