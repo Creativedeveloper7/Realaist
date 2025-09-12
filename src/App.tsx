@@ -6,6 +6,7 @@ import { AuthModal } from './components/auth/AuthModal';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { DashboardLayout } from './components/dashboard/DashboardLayout';
 import { UserProfile } from './components/dashboard/UserProfile';
+import { DeveloperCacheTools } from './components/CacheClearButton';
 import { Dashboard } from './pages/Dashboard';
 import { DeveloperDashboard } from './pages/DeveloperDashboard';
 import { BuyerDashboard } from './pages/BuyerDashboard';
@@ -129,6 +130,9 @@ function AppContent() {
         onClose={() => setLoginModalOpen(false)}
         isDarkMode={isDarkMode}
       />
+
+      {/* Developer Cache Tools */}
+      <DeveloperCacheTools isDarkMode={isDarkMode} />
     </>
   );
 }

@@ -7,7 +7,14 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "clear-cache": "node scripts/clear-cache.js --all",
+    "clear-build": "node scripts/clear-cache.js --build",
+    "clear-npm": "node scripts/clear-cache.js --npm",
+    "clear-vite": "node scripts/clear-cache.js --vite",
+    "fresh-install": "node scripts/clear-cache.js --deps",
+    "dev-clean": "npm run clear-cache && npm run dev",
+    "build-clean": "npm run clear-cache && npm run build"
   },
   "dependencies": {
     "@supabase/auth-helpers-react": "^0.5.0",
