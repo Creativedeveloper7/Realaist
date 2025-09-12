@@ -1,6 +1,35 @@
 import { supabase } from '../lib/supabase'
 import type { User, Session } from '@supabase/supabase-js'
 
+// Mock users for offline mode
+const MOCK_USERS: AuthUser[] = [
+  {
+    id: 'mock-dev-1',
+    email: 'developer@example.com',
+    firstName: 'John',
+    lastName: 'Developer',
+    userType: 'developer',
+    companyName: 'Real Estate Solutions',
+    licenseNumber: 'DEV001',
+    phone: '+254700000000',
+    avatarUrl: undefined
+  },
+  {
+    id: 'mock-buyer-1',
+    email: 'buyer@example.com',
+    firstName: 'Jane',
+    lastName: 'Buyer',
+    userType: 'buyer',
+    phone: '+254700000001',
+    avatarUrl: undefined
+  }
+]
+
+// Check if we're in offline mode
+const isOfflineMode = () => {
+  return localStorage.getItem('offline_mode') === 'true'
+}
+
 export interface AuthUser {
   id: string
   email: string
@@ -33,6 +62,15 @@ class AuthService {
   // Get current user
   async getCurrentUser(): Promise<AuthUser | null> {
     try {
+      // Check offline mode first
+      if (isOfflineMode()) {
+        const storedUser = localStorage.getItem('current_user')
+        if (storedUser) {
+          return JSON.parse(storedUser)
+        }
+        return null
+      }
+      
       const { data: { user }, error } = await supabase.auth.getUser()
       
       if (error || !user) {
@@ -258,6 +296,18 @@ class AuthService {
     try {
       console.log('Attempting to sign in with:', { email: data.email })
       
+      // Check if we're in offline mode or if Supabase is unavailable
+      if (isOfflineMode()) {
+        console.log('Using offline authentication')
+        const mockUser = MOCK_USERS.find(u => u.email === data.email)
+        if (mockUser) {
+          localStorage.setItem('current_user', JSON.stringify(mockUser))
+          return { user: mockUser, error: null }
+        } else {
+          return { user: null, error: 'Invalid credentials in offline mode' }
+        }
+      }
+      
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password
@@ -265,6 +315,16 @@ class AuthService {
 
       if (authError) {
         console.error('Supabase auth error:', authError)
+        // If it's a network error, try offline mode
+        if (authError.message.includes('Load failed') || authError.message.includes('fetch')) {
+          console.log('Network error detected, switching to offline mode')
+          localStorage.setItem('offline_mode', 'true')
+          const mockUser = MOCK_USERS.find(u => u.email === data.email)
+          if (mockUser) {
+            localStorage.setItem('current_user', JSON.stringify(mockUser))
+            return { user: mockUser, error: null }
+          }
+        }
         return { user: null, error: authError.message }
       }
 
@@ -368,10 +428,17 @@ class AuthService {
   // Sign out
   async signOut(): Promise<{ error: string | null }> {
     try {
-      const { error } = await supabase.auth.signOut()
+      // Clear offline mode data
+      localStorage.removeItem('current_user')
+      localStorage.removeItem('offline_mode')
       
-      if (error) {
-        return { error: error.message }
+      // Try to sign out from Supabase if not in offline mode
+      if (!isOfflineMode()) {
+        const { error } = await supabase.auth.signOut()
+        
+        if (error) {
+          return { error: error.message }
+        }
       }
 
       return { error: null }

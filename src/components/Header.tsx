@@ -37,18 +37,18 @@ export function Header({ isDarkMode, toggleTheme, onLoginClick }: HeaderProps) {
         
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-8 text-sm">
-          <a href="/houses" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Investors</a>
+          <a href="/houses" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Developers</a>
           <a href="/blogs" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Blogs</a>
           <a href="#contact" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
               <motion.button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate(user?.userType === 'developer' ? '/developer-dashboard' : '/buyer-dashboard')}
                 className="px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                Dashboard
+                Welcome, {user?.firstName}
               </motion.button>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-[#C7A667] rounded-full flex items-center justify-center text-black font-bold text-sm">
@@ -120,18 +120,18 @@ export function Header({ isDarkMode, toggleTheme, onLoginClick }: HeaderProps) {
         transition={{ duration: 0.3, ease: "easeInOut" }}
       >
         <div className="px-4 py-6 space-y-4">
-          <a href="/houses" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Investors</a>
+          <a href="/houses" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Developers</a>
           <a href="/blogs" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Blogs</a>
           <a href="#contact" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
           {isAuthenticated ? (
             <div className="space-y-3">
               <motion.button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate(user?.userType === 'developer' ? '/developer-dashboard' : '/buyer-dashboard')}
                 className="w-full px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                Dashboard
+                Welcome, {user?.firstName}
               </motion.button>
               <div className="flex items-center gap-3 py-2">
                 <div className="w-8 h-8 bg-[#C7A667] rounded-full flex items-center justify-center text-black font-bold text-sm">

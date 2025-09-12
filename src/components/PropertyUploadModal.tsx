@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   X, 
@@ -13,13 +13,20 @@ import {
   FileText,
   Image as ImageIcon,
   Plus,
-  Trash2
+  Trash2,
+  Loader2,
+  CheckCircle,
+  AlertCircle
 } from 'lucide-react';
+import { propertiesService, CreatePropertyData, Property } from '../services/propertiesService';
+import { storageService } from '../services/storageService';
 
 interface PropertyUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   isDarkMode: boolean;
+  onPropertyCreated?: () => void;
+  editingProperty?: Property | null;
 }
 
 interface PropertyFormData {
@@ -41,7 +48,9 @@ interface PropertyFormData {
 export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
   isOpen,
   onClose,
-  isDarkMode
+  isDarkMode,
+  onPropertyCreated,
+  editingProperty
 }) => {
   const [formData, setFormData] = useState<PropertyFormData>({
     title: '',
@@ -62,6 +71,76 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
   const [currentStep, setCurrentStep] = useState(1);
   const [newAmenity, setNewAmenity] = useState('');
   const [newFeature, setNewFeature] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // Reset states when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      console.log('PropertyUploadModal: Resetting states on open');
+      // Force reset all states
+      setIsSubmitting(false);
+      setSubmitStatus('idle');
+      setErrorMessage('');
+      setCurrentStep(1);
+      
+      // Also reset form data to ensure clean state
+      setFormData({
+        title: '',
+        description: '',
+        price: '',
+        location: '',
+        propertyType: '',
+        bedrooms: 0,
+        bathrooms: 0,
+        area: 0,
+        units: 1,
+        status: 'Draft',
+        images: [],
+        amenities: [],
+        features: []
+      });
+    }
+  }, [isOpen]);
+
+  // Debug: Log state changes
+  useEffect(() => {
+    console.log('PropertyUploadModal: isSubmitting changed to:', isSubmitting);
+  }, [isSubmitting]);
+
+  // Safety net: Force reset isSubmitting if it gets stuck
+  useEffect(() => {
+    if (isSubmitting) {
+      console.log('PropertyUploadModal: isSubmitting is true, setting safety timeout');
+      const timeout = setTimeout(() => {
+        console.log('PropertyUploadModal: Safety timeout triggered, resetting isSubmitting');
+        setIsSubmitting(false);
+      }, 10000); // 10 second timeout
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [isSubmitting]);
+
+  // Pre-fill form when editing a property
+  useEffect(() => {
+    if (editingProperty && isOpen) {
+      console.log('PropertyUploadModal: Pre-filling form for editing property:', editingProperty);
+      setFormData({
+        title: editingProperty.title,
+        description: editingProperty.description,
+        price: editingProperty.price.toString(),
+        location: editingProperty.location,
+        propertyType: editingProperty.propertyType,
+        bedrooms: editingProperty.bedrooms?.toString() || '',
+        bathrooms: editingProperty.bathrooms?.toString() || '',
+        squareFeet: editingProperty.squareFeet?.toString() || '',
+        images: [], // Will be handled separately for existing images
+        amenities: [], // Default empty for now
+        features: [] // Default empty for now
+      });
+    }
+  }, [editingProperty, isOpen]);
 
   const propertyTypes = [
     'Apartment Complex',
@@ -108,9 +187,29 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
+    
+    // Validate files
+    const validFiles: File[] = [];
+    const errors: string[] = [];
+    
+    files.forEach(file => {
+      const validation = storageService.validateImageFile(file, 10); // 10MB max
+      if (validation.isValid) {
+        validFiles.push(file);
+      } else {
+        errors.push(`${file.name}: ${validation.error}`);
+      }
+    });
+    
+    if (errors.length > 0) {
+      setErrorMessage(errors.join(', '));
+      setSubmitStatus('error');
+      return;
+    }
+    
     setFormData(prev => ({
       ...prev,
-      images: [...prev.images, ...files]
+      images: [...prev.images, ...validFiles]
     }));
   };
 
@@ -157,15 +256,156 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('PropertyUploadModal: Form submitted, isSubmitting:', isSubmitting, 'currentStep:', currentStep);
+    
+    // Only allow submission on step 3
+    if (currentStep !== 3) {
+      console.log('PropertyUploadModal: Form submitted but not on step 3, ignoring');
+      return;
+    }
+    
+    // Prevent double submission
+    if (isSubmitting) {
+      console.log('PropertyUploadModal: Already submitting, ignoring');
+      return;
+    }
+    
+    // Check if required fields are filled
+    if (!formData.title || !formData.description || !formData.price || !formData.location || !formData.propertyType) {
+      console.log('PropertyUploadModal: Required fields missing, not submitting');
+      setErrorMessage('Please fill in all required fields');
+      setSubmitStatus('error');
+      return;
+    }
+    
+    if (editingProperty) {
+      console.log('PropertyUploadModal: Starting property update...');
+    } else {
+      console.log('PropertyUploadModal: Starting property creation...');
+    }
+    setIsSubmitting(true);
+    setSubmitStatus('idle');
+    setErrorMessage('');
+
     try {
-      // TODO: Implement actual property upload with Supabase
-      console.log('Property data:', formData);
-      // await propertiesService.createProperty(formData);
+      // Parse price (remove currency symbols and commas)
+      const numericPrice = parseFloat(formData.price.replace(/[$,]/g, ''));
+      if (isNaN(numericPrice) || numericPrice <= 0) {
+        throw new Error('Please enter a valid price');
+      }
+
+      let property;
+      let propertyError;
+
+      if (editingProperty) {
+        // Update existing property
+        const updateData = {
+          id: editingProperty.id,
+          title: formData.title,
+          description: formData.description,
+          price: numericPrice,
+          location: formData.location,
+          propertyType: formData.propertyType,
+          bedrooms: formData.bedrooms || undefined,
+          bathrooms: formData.bathrooms || undefined,
+          squareFeet: formData.area || undefined,
+        };
+
+        const result = await propertiesService.updateProperty(updateData);
+        property = result.property;
+        propertyError = result.error;
+      } else {
+        // Create new property
+        const propertyData: CreatePropertyData = {
+          title: formData.title,
+          description: formData.description,
+          price: numericPrice,
+          location: formData.location,
+          propertyType: formData.propertyType,
+          bedrooms: formData.bedrooms || undefined,
+          bathrooms: formData.bathrooms || undefined,
+          squareFeet: formData.area || undefined,
+          status: formData.status.toLowerCase() as 'active' | 'draft' | 'pending',
+          images: [] // Will be populated after upload
+        };
+
+        const result = await propertiesService.createProperty(propertyData);
+        property = result.property;
+        propertyError = result.error;
+      }
+      
+      if (propertyError || !property) {
+        throw new Error(propertyError || (editingProperty ? 'Failed to update property' : 'Failed to create property'));
+      }
+
+      // Upload images if any
+      const imageUrls: string[] = [];
+      if (formData.images.length > 0) {
+        for (const imageFile of formData.images) {
+          try {
+            // Compress image before upload
+            const compressedImage = await storageService.compressImage(imageFile, 1920, 0.8);
+            const { url, error: uploadError } = await storageService.uploadPropertyImage(compressedImage, property.id);
+            
+            if (uploadError || !url) {
+              console.warn(`Failed to upload image ${imageFile.name}:`, uploadError);
+              continue;
+            }
+            
+            imageUrls.push(url);
+          } catch (uploadError) {
+            console.warn(`Error uploading image ${imageFile.name}:`, uploadError);
+            continue;
+          }
+        }
+
+        // Update property with image URLs
+        if (imageUrls.length > 0) {
+          await propertiesService.updateProperty({
+            id: property.id,
+            images: imageUrls
+          });
+        }
+      }
+
+      setSubmitStatus('success');
+      console.log(`PropertyUploadModal: Property ${editingProperty ? 'updated' : 'created'} successfully:`, property);
+      
+      // Call the callback to refresh the properties list
+      if (onPropertyCreated) {
+        console.log('PropertyUploadModal: Calling onPropertyCreated callback');
+        onPropertyCreated();
+      }
+      
+      setTimeout(() => {
       onClose();
-      // Show success message
+        // Reset form
+        setFormData({
+          title: '',
+          description: '',
+          price: '',
+          location: '',
+          propertyType: '',
+          bedrooms: 0,
+          bathrooms: 0,
+          area: 0,
+          units: 1,
+          status: 'Draft',
+          images: [],
+          amenities: [],
+          features: []
+        });
+        setCurrentStep(1);
+        setSubmitStatus('idle');
+        setErrorMessage('');
+      }, 2000);
+
     } catch (error) {
       console.error('Error uploading property:', error);
-      // Show error message
+      setErrorMessage(error instanceof Error ? error.message : 'An unexpected error occurred');
+      setSubmitStatus('error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -178,6 +418,8 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
   };
 
   if (!isOpen) return null;
+
+  console.log('PropertyUploadModal: Rendering modal, isSubmitting:', isSubmitting);
 
   return (
     <motion.div
@@ -200,7 +442,9 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
         <div className="sticky top-0 p-6 border-b border-white/10 bg-inherit rounded-t-2xl">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-2xl font-bold">Add New Property</h3>
+              <h3 className="text-2xl font-bold">
+                {editingProperty ? 'Edit Property' : 'Add New Property'}
+              </h3>
               <p className="text-gray-600 mt-1">Step {currentStep} of 3</p>
             </div>
             <button
@@ -234,7 +478,67 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6">
+        <form onSubmit={handleSubmit} className="p-6" onKeyDown={(e) => {
+          // Prevent form submission on Enter key
+          if (e.key === 'Enter' && e.target !== e.currentTarget) {
+            e.preventDefault();
+            console.log('PropertyUploadModal: Enter key pressed, preventing form submission');
+          }
+        }}>
+          {/* Status Messages */}
+          {submitStatus === 'success' && (
+            <motion.div
+              className="mb-6 p-4 bg-green-100 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-3"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <CheckCircle className="text-green-600 dark:text-green-400" size={20} />
+              <span className="text-green-800 dark:text-green-200 font-medium">
+                Property {editingProperty ? 'updated' : 'created'} successfully! Redirecting...
+              </span>
+            </motion.div>
+          )}
+
+          {submitStatus === 'error' && (
+            <motion.div
+              className="mb-6 p-4 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-3"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <AlertCircle className="text-red-600 dark:text-red-400" size={20} />
+              <div>
+                <span className="text-red-800 dark:text-red-200 font-medium block">
+                  Error creating property
+                </span>
+                {errorMessage && (
+                  <span className="text-red-700 dark:text-red-300 text-sm">
+                    {errorMessage}
+                  </span>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Debug: Show current state */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mb-4 p-2 bg-blue-100 dark:bg-blue-900/20 rounded text-xs">
+              <strong>Debug Info:</strong> isSubmitting: {isSubmitting.toString()}, 
+              submitStatus: {submitStatus}, currentStep: {currentStep}
+              {isSubmitting && (
+                <button
+                  onClick={() => {
+                    console.log('PropertyUploadModal: Manual reset triggered');
+                    setIsSubmitting(false);
+                    setSubmitStatus('idle');
+                    setErrorMessage('');
+                  }}
+                  className="ml-2 px-2 py-1 bg-blue-500 text-white rounded text-xs"
+                >
+                  Reset State
+                </button>
+              )}
+            </div>
+          )}
           {/* Step 1: Basic Information */}
           {currentStep === 1 && (
             <motion.div
@@ -644,12 +948,34 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
                 </motion.button>
               ) : (
                 <motion.button
-                  type="submit"
-                  className="px-6 py-3 bg-[#C7A667] text-black rounded-lg font-medium hover:bg-[#B8965A] transition-colors"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  type="button"
+                  disabled={isSubmitting}
+                  className={`px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                    isSubmitting
+                      ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                      : 'bg-[#C7A667] text-black hover:bg-[#B8965A]'
+                  }`}
+                  whileHover={!isSubmitting ? { scale: 1.02 } : {}}
+                  whileTap={!isSubmitting ? { scale: 0.98 } : {}}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    console.log('PropertyUploadModal: Save button clicked, isSubmitting:', isSubmitting);
+                    if (isSubmitting) {
+                      console.log('PropertyUploadModal: Button clicked but already submitting, ignoring');
+                      return;
+                    }
+                    // Manually trigger form submission
+                    handleSubmit(e);
+                  }}
                 >
-                  Save Property
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="animate-spin" size={20} />
+                      Creating Property...
+                    </>
+                  ) : (
+                    editingProperty ? 'Update Property' : 'Save Property'
+                  )}
                 </motion.button>
               )}
             </div>

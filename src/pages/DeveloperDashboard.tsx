@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { 
@@ -14,6 +14,8 @@ import {
   Calendar,
   Users
 } from 'lucide-react';
+import { PropertyUploadModal } from '../components/PropertyUploadModal';
+import { propertiesService, Property } from '../services/propertiesService';
 
 interface DeveloperDashboardProps {
   isDarkMode: boolean;
@@ -21,11 +23,37 @@ interface DeveloperDashboardProps {
 
 export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({ isDarkMode }) => {
   const { user } = useAuth();
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [myProperties, setMyProperties] = useState<Property[]>([]);
+  const [isLoadingProperties, setIsLoadingProperties] = useState(true);
+
+  // Load developer's properties
+  useEffect(() => {
+    const loadProperties = async () => {
+      if (!user?.id) return;
+      
+      setIsLoadingProperties(true);
+      try {
+        const { properties, error } = await propertiesService.getDeveloperProperties(user.id);
+        if (error) {
+          console.error('Error loading properties:', error);
+        } else {
+          setMyProperties(properties);
+        }
+      } catch (error) {
+        console.error('Error loading properties:', error);
+      } finally {
+        setIsLoadingProperties(false);
+      }
+    };
+
+    loadProperties();
+  }, [user?.id]);
 
   const stats = [
     {
       title: 'Total Properties',
-      value: '12',
+      value: myProperties.length.toString(),
       change: '+2',
       icon: Building2,
       color: 'text-blue-500'
@@ -46,54 +74,27 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({ isDarkMo
     },
     {
       title: 'Active Listings',
-      value: '8',
+      value: myProperties.filter(p => p.status === 'active').length.toString(),
       change: '+1',
       icon: Building2,
       color: 'text-orange-500'
     }
   ];
 
-  const myProperties = [
-    {
-      id: 1,
-      title: 'Luxury Apartments - Westlands',
-      price: '$450,000',
-      location: 'Westlands, Nairobi',
-      image: '/api/placeholder/300/200',
-      type: 'Apartment Complex',
-      units: 24,
-      status: 'Active',
-      views: 156,
-      inquiries: 8,
-      lastUpdated: '2 days ago'
-    },
-    {
-      id: 2,
-      title: 'Modern Villas - Karen',
-      price: '$1,200,000',
-      location: 'Karen, Nairobi',
-      image: '/api/placeholder/300/200',
-      type: 'Villa Development',
-      units: 12,
-      status: 'Active',
-      views: 89,
-      inquiries: 5,
-      lastUpdated: '1 week ago'
-    },
-    {
-      id: 3,
-      title: 'Townhouses - Runda',
-      price: '$800,000',
-      location: 'Runda, Nairobi',
-      image: '/api/placeholder/300/200',
-      type: 'Townhouse Complex',
-      units: 18,
-      status: 'Draft',
-      views: 0,
-      inquiries: 0,
-      lastUpdated: '3 days ago'
+  const handlePropertyCreated = async () => {
+    // Reload properties after a new one is created
+    if (!user?.id) return;
+    
+    try {
+      const { properties, error } = await propertiesService.getDeveloperProperties(user.id);
+      if (!error) {
+        setMyProperties(properties);
+      }
+    } catch (error) {
+      console.error('Error reloading properties:', error);
     }
-  ];
+  };
+
 
   const recentScheduledVisits = [
     {
@@ -173,6 +174,7 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({ isDarkMo
             </p>
           </div>
           <motion.button
+            onClick={() => setIsUploadModalOpen(true)}
             className="px-6 py-3 bg-[#C7A667] text-black rounded-lg font-medium flex items-center gap-2"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -225,57 +227,96 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({ isDarkMo
             <button className="text-[#C7A667] text-sm font-medium">View All</button>
           </div>
           <div className="space-y-4">
-            {myProperties.map((property, index) => (
-              <motion.div
-                key={property.id}
-                className="p-4 rounded-lg border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 + index * 0.1 }}
-              >
-                <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0"></div>
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-medium text-sm">{property.title}</h4>
-                      <div className="flex gap-2">
-                        <button className="p-1 text-gray-400 hover:text-blue-500">
-                          <Edit size={14} />
-                        </button>
-                        <button className="p-1 text-gray-400 hover:text-red-500">
-                          <Trash2 size={14} />
-                        </button>
+            {isLoadingProperties ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#C7A667] mx-auto"></div>
+                <p className="text-gray-500 mt-2">Loading properties...</p>
+              </div>
+            ) : myProperties.length === 0 ? (
+              <div className="text-center py-8">
+                <Building2 className="mx-auto text-gray-400 mb-4" size={48} />
+                <h4 className="text-lg font-medium text-gray-600 mb-2">No properties yet</h4>
+                <p className="text-gray-500 mb-4">Start by adding your first property to the platform</p>
+                <button
+                  onClick={() => setIsUploadModalOpen(true)}
+                  className="px-4 py-2 bg-[#C7A667] text-black rounded-lg font-medium hover:bg-[#B8965A] transition-colors"
+                >
+                  Add Your First Property
+                </button>
+              </div>
+            ) : (
+              myProperties.map((property, index) => (
+                <motion.div
+                  key={property.id}
+                  className="p-4 rounded-lg border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.5 + index * 0.1 }}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0 overflow-hidden">
+                      {property.images && property.images.length > 0 ? (
+                        <img
+                          src={property.images[0]}
+                          alt={property.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Building2 className="text-gray-400" size={24} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="font-medium text-sm">{property.title}</h4>
+                        <div className="flex gap-2">
+                          <button className="p-1 text-gray-400 hover:text-blue-500">
+                            <Edit size={14} />
+                          </button>
+                          <button className="p-1 text-gray-400 hover:text-red-500">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-gray-500 text-xs mb-2">{property.location}</p>
+                      <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
+                        <span className="flex items-center gap-1">
+                          <DollarSign size={12} />
+                          ${property.price.toLocaleString()}
+                        </span>
+                        {property.bedrooms && (
+                          <span className="flex items-center gap-1">
+                            <Building2 size={12} />
+                            {property.bedrooms} beds
+                          </span>
+                        )}
+                        {property.bathrooms && (
+                          <span className="flex items-center gap-1">
+                            <Building2 size={12} />
+                            {property.bathrooms} baths
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          property.status === 'active' 
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300'
+                            : property.status === 'draft'
+                            ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300'
+                            : 'bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-300'
+                        }`}>
+                          {property.status.charAt(0).toUpperCase() + property.status.slice(1)}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {new Date(property.updatedAt).toLocaleDateString()}
+                        </span>
                       </div>
                     </div>
-                    <p className="text-gray-500 text-xs mb-2">{property.location}</p>
-                    <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
-                      <span className="flex items-center gap-1">
-                        <Building2 size={12} />
-                        {property.units} units
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Eye size={12} />
-                        {property.views} views
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <MessageSquare size={12} />
-                        {property.inquiries} inquiries
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        property.status === 'Active' 
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300'
-                          : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300'
-                      }`}>
-                        {property.status}
-                      </span>
-                      <span className="text-xs text-gray-500">Updated {property.lastUpdated}</span>
-                    </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              ))
+            )}
           </div>
         </motion.div>
 
@@ -362,6 +403,7 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({ isDarkMo
         <h3 className="text-xl font-bold mb-4">Quick Actions</h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <motion.button
+            onClick={() => setIsUploadModalOpen(true)}
             className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 dark:border-white/20 hover:border-[#C7A667] transition-colors"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -395,6 +437,14 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({ isDarkMo
           </motion.button>
         </div>
       </motion.div>
+
+      {/* Property Upload Modal */}
+      <PropertyUploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        isDarkMode={isDarkMode}
+        onPropertyCreated={handlePropertyCreated}
+      />
     </div>
   );
 };

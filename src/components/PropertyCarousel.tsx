@@ -79,7 +79,7 @@ export function PropertyCarousel({ title, projects, isDarkMode }: PropertyCarous
                       </div>
                       <div className="mt-6 flex gap-3">
                         <a 
-                          href={`/property/${p.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`}
+                          href={`/property/${p.id}`}
                           className="px-5 py-2.5 rounded-full bg-[#C7A667] text-black text-sm font-medium relative z-50 inline-block text-center hover:bg-[#B89657] transition-colors"
                         >
                           View Details

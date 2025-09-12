@@ -1,141 +1,73 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Plus, 
   Eye, 
   Edit,
   Trash2,
-  Upload,
   MapPin,
-  DollarSign,
-  Calendar,
   Building2,
   MessageSquare,
-  Filter,
   Search,
   Grid3X3,
   List,
   MoreVertical
 } from 'lucide-react';
 import { PropertyUploadModal } from '../components/PropertyUploadModal';
+import { useAuth } from '../contexts/AuthContext';
+import { propertiesService, Property } from '../services/propertiesService';
 
 interface MyPropertiesProps {
   isDarkMode: boolean;
 }
 
-interface Property {
-  id: number;
-  title: string;
-  price: string;
-  location: string;
-  image: string;
-  type: string;
-  units: number;
-  status: 'Active' | 'Draft' | 'Sold' | 'Pending';
-  views: number;
-  visits: number;
-  lastUpdated: string;
-  description: string;
-  bedrooms: number;
-  bathrooms: number;
-  area: number;
-}
-
 export const MyProperties: React.FC<MyPropertiesProps> = ({ isDarkMode }) => {
+  const { user } = useAuth();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
   const [deletingProperty, setDeletingProperty] = useState<Property | null>(null);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [isLoadingProperties, setIsLoadingProperties] = useState(true);
 
-  const properties: Property[] = [
-    {
-      id: 1,
-      title: 'Luxury Apartments - Westlands',
-      price: '$450,000',
-      location: 'Westlands, Nairobi',
-      image: '/api/placeholder/400/300',
-      type: 'Apartment Complex',
-      units: 24,
-      status: 'Active',
-      views: 156,
-      visits: 8,
-      lastUpdated: '2 days ago',
-      description: 'Modern luxury apartments in the heart of Westlands with premium amenities.',
-      bedrooms: 3,
-      bathrooms: 2,
-      area: 1200
-    },
-    {
-      id: 2,
-      title: 'Modern Villas - Karen',
-      price: '$1,200,000',
-      location: 'Karen, Nairobi',
-      image: '/api/placeholder/400/300',
-      type: 'Villa Development',
-      units: 12,
-      status: 'Active',
-      views: 89,
-      visits: 5,
-      lastUpdated: '1 week ago',
-      description: 'Exclusive villa development in Karen with private gardens and modern design.',
-      bedrooms: 4,
-      bathrooms: 3,
-      area: 2500
-    },
-    {
-      id: 3,
-      title: 'Townhouses - Runda',
-      price: '$800,000',
-      location: 'Runda, Nairobi',
-      image: '/api/placeholder/400/300',
-      type: 'Townhouse Complex',
-      units: 18,
-      status: 'Draft',
-      views: 0,
-      visits: 0,
-      lastUpdated: '3 days ago',
-      description: 'Contemporary townhouses with shared amenities and modern finishes.',
-      bedrooms: 3,
-      bathrooms: 2,
-      area: 1800
-    },
-    {
-      id: 4,
-      title: 'Penthouse Suites - Kilimani',
-      price: '$2,500,000',
-      location: 'Kilimani, Nairobi',
-      image: '/api/placeholder/400/300',
-      type: 'Penthouse',
-      units: 6,
-      status: 'Sold',
-      views: 234,
-      visits: 15,
-      lastUpdated: '1 month ago',
-      description: 'Ultra-luxury penthouse suites with panoramic city views.',
-      bedrooms: 5,
-      bathrooms: 4,
-      area: 3500
-    },
-    {
-      id: 5,
-      title: 'Studio Apartments - CBD',
-      price: '$180,000',
-      location: 'CBD, Nairobi',
-      image: '/api/placeholder/400/300',
-      type: 'Studio Complex',
-      units: 48,
-      status: 'Pending',
-      views: 67,
-      visits: 12,
-      lastUpdated: '5 days ago',
-      description: 'Compact studio apartments perfect for young professionals.',
-      bedrooms: 1,
-      bathrooms: 1,
-      area: 450
+  // Load developer's properties
+  useEffect(() => {
+    const loadProperties = async () => {
+      if (!user?.id) return;
+      
+      setIsLoadingProperties(true);
+      try {
+        const { properties: fetchedProperties, error } = await propertiesService.getDeveloperProperties(user.id);
+        if (error) {
+          console.error('Error loading properties:', error);
+        } else {
+          setProperties(fetchedProperties);
+        }
+      } catch (error) {
+        console.error('Error loading properties:', error);
+      } finally {
+        setIsLoadingProperties(false);
+      }
+    };
+
+    loadProperties();
+  }, [user?.id]);
+
+  const handlePropertyCreated = async () => {
+    // Reload properties after a new one is created
+    if (!user?.id) return;
+    
+    try {
+      const { properties: fetchedProperties, error } = await propertiesService.getDeveloperProperties(user.id);
+      if (!error) {
+        setProperties(fetchedProperties);
+      }
+    } catch (error) {
+      console.error('Error reloading properties:', error);
     }
-  ];
+  };
 
   const filteredProperties = properties.filter(property => {
     const matchesSearch = property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -145,14 +77,14 @@ export const MyProperties: React.FC<MyPropertiesProps> = ({ isDarkMode }) => {
   });
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Active':
+    switch (status.toLowerCase()) {
+      case 'active':
         return 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300';
-      case 'Draft':
+      case 'draft':
         return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300';
-      case 'Sold':
+      case 'sold':
         return 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300';
-      case 'Pending':
+      case 'pending':
         return 'bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300';
       default:
         return 'bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-300';
@@ -202,10 +134,22 @@ export const MyProperties: React.FC<MyPropertiesProps> = ({ isDarkMode }) => {
       animate={{ opacity: 1, y: 0 }}
     >
       <div className="relative mb-4">
-        <div className="w-full h-48 bg-gray-200 rounded-lg mb-4"></div>
+        <div className="w-full h-48 bg-gray-200 rounded-lg mb-4 overflow-hidden">
+          {property.images && property.images.length > 0 ? (
+            <img
+              src={property.images[0]}
+              alt={property.title}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Building2 className="text-gray-400" size={48} />
+            </div>
+          )}
+        </div>
         <div className="absolute top-3 right-3">
           <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(property.status)}`}>
-            {property.status}
+            {property.status.charAt(0).toUpperCase() + property.status.slice(1)}
           </span>
         </div>
         <div className="absolute top-3 left-3">
@@ -225,21 +169,21 @@ export const MyProperties: React.FC<MyPropertiesProps> = ({ isDarkMode }) => {
         </div>
 
         <div className="flex items-center justify-between">
-          <span className="text-2xl font-bold text-[#C7A667]">{property.price}</span>
-          <span className="text-sm text-gray-500">{property.type}</span>
+          <span className="text-2xl font-bold text-[#C7A667]">${property.price.toLocaleString()}</span>
+          <span className="text-sm text-gray-500">{property.propertyType}</span>
         </div>
 
         <div className="grid grid-cols-3 gap-4 text-sm">
           <div className="text-center">
-            <div className="font-semibold">{property.bedrooms}</div>
+            <div className="font-semibold">{property.bedrooms || 'N/A'}</div>
             <div className="text-gray-500">Bedrooms</div>
           </div>
           <div className="text-center">
-            <div className="font-semibold">{property.bathrooms}</div>
+            <div className="font-semibold">{property.bathrooms || 'N/A'}</div>
             <div className="text-gray-500">Bathrooms</div>
           </div>
           <div className="text-center">
-            <div className="font-semibold">{property.area} sq ft</div>
+            <div className="font-semibold">{property.squareFeet ? `${property.squareFeet} sq ft` : 'N/A'}</div>
             <div className="text-gray-500">Area</div>
           </div>
         </div>
@@ -248,14 +192,14 @@ export const MyProperties: React.FC<MyPropertiesProps> = ({ isDarkMode }) => {
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
               <Eye size={14} />
-              {property.views} views
+              0 views
             </span>
             <span className="flex items-center gap-1">
               <MessageSquare size={14} />
-              {property.visits} visits
+              0 visits
             </span>
           </div>
-          <span>Updated {property.lastUpdated}</span>
+          <span>Updated {new Date(property.updatedAt).toLocaleDateString()}</span>
         </div>
 
         <div className="flex gap-2 pt-2">
@@ -301,7 +245,19 @@ export const MyProperties: React.FC<MyPropertiesProps> = ({ isDarkMode }) => {
       animate={{ opacity: 1, x: 0 }}
     >
       <div className="flex items-center gap-4">
-        <div className="w-20 h-20 bg-gray-200 rounded-lg flex-shrink-0"></div>
+        <div className="w-20 h-20 bg-gray-200 rounded-lg flex-shrink-0 overflow-hidden">
+          {property.images && property.images.length > 0 ? (
+            <img
+              src={property.images[0]}
+              alt={property.title}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Building2 className="text-gray-400" size={24} />
+            </div>
+          )}
+        </div>
         
         <div className="flex-1">
           <div className="flex items-start justify-between mb-2">
@@ -314,7 +270,7 @@ export const MyProperties: React.FC<MyPropertiesProps> = ({ isDarkMode }) => {
             </div>
             <div className="flex items-center gap-2">
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(property.status)}`}>
-                {property.status}
+                {property.status.charAt(0).toUpperCase() + property.status.slice(1)}
               </span>
               <button className="p-1 text-gray-400 hover:text-gray-600">
                 <MoreVertical size={16} />
@@ -326,20 +282,20 @@ export const MyProperties: React.FC<MyPropertiesProps> = ({ isDarkMode }) => {
             <div className="flex items-center gap-6 text-sm text-gray-500">
               <span className="flex items-center gap-1">
                 <Building2 size={14} />
-                {property.units} units
+                {property.propertyType}
               </span>
               <span className="flex items-center gap-1">
                 <Eye size={14} />
-                {property.views} views
+                0 views
               </span>
               <span className="flex items-center gap-1">
                 <MessageSquare size={14} />
-                {property.visits} visits
+                0 visits
               </span>
-              <span>Updated {property.lastUpdated}</span>
+              <span>Updated {new Date(property.updatedAt).toLocaleDateString()}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xl font-bold text-[#C7A667]">{property.price}</span>
+              <span className="text-xl font-bold text-[#C7A667]">${property.price.toLocaleString()}</span>
               <div className="flex gap-1">
                 <button 
                   className="p-2 text-gray-400 hover:text-blue-500"
@@ -460,6 +416,18 @@ export const MyProperties: React.FC<MyPropertiesProps> = ({ isDarkMode }) => {
       </motion.div>
 
       {/* Properties Grid/List */}
+      {isLoadingProperties ? (
+        <motion.div
+          className={`p-12 rounded-2xl text-center ${
+            isDarkMode ? 'bg-[#0E0E10] border border-white/10' : 'bg-white border border-gray-200'
+          }`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C7A667] mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading your properties...</p>
+        </motion.div>
+      ) : (
       <motion.div
         className={viewMode === 'grid' 
           ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' 
@@ -469,7 +437,7 @@ export const MyProperties: React.FC<MyPropertiesProps> = ({ isDarkMode }) => {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
       >
-        {filteredProperties.map((property, index) => (
+          {filteredProperties.map((property) => (
           viewMode === 'grid' ? (
             <PropertyCard key={property.id} property={property} />
           ) : (
@@ -477,6 +445,7 @@ export const MyProperties: React.FC<MyPropertiesProps> = ({ isDarkMode }) => {
           )
         ))}
       </motion.div>
+      )}
 
       {/* Empty State */}
       {filteredProperties.length === 0 && (
@@ -517,6 +486,8 @@ export const MyProperties: React.FC<MyPropertiesProps> = ({ isDarkMode }) => {
           setEditingProperty(null);
         }}
         isDarkMode={isDarkMode}
+          onPropertyCreated={handlePropertyCreated}
+          editingProperty={editingProperty}
       />
 
       {/* Delete Confirmation Modal */}

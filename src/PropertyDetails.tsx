@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTheme } from './ThemeContext';
+import { useAuth } from './contexts/AuthContext';
+import { propertiesService, Property } from './services/propertiesService';
 
 // Helper function to get icon for fact type
 const getFactIcon = (factIndex: number, isDarkMode: boolean = true) => {
@@ -51,112 +53,6 @@ const getFactIcon = (factIndex: number, isDarkMode: boolean = true) => {
   }
 };
 
-// Property data - you can expand this or fetch from an API
-const propertyData = {
-  "escada": {
-    name: "Escada",
-    location: "Gigiri / Westlands",
-    description: "4 Spacious Bedrooms - Plenty of room for family, guests, or a home office. 3 Full Bathrooms - Including a luxurious master ensuite with double vanities and walk-in shower. Modern Kitchen - Fully equipped with premium appliances and granite countertops. Open Living Area - Perfect for entertaining with high ceilings and large windows. Private Balcony - Enjoy stunning city views from your own outdoor space. Secure Parking - 2 covered parking spaces included. 24/7 Security - Gated community with professional security staff.",
-    price: "KSh 3,700,000",
-    estimatedIncome: "KSh 45,000/month",
-    beds: 2,
-    baths: 2,
-    sqft: "1,200",
-    images: [
-      "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600",
-      "https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=1200",
-      "https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=1200",
-      "https://images.pexels.com/photos/1571467/pexels-photo-1571467.jpeg?auto=compress&cs=tinysrgb&w=1200"
-    ],
-    facts: ["1–2 Beds", "From KSh 3.7M", "ROI 10–12%"]
-  },
-  "azure-bay-villas": {
-    name: "Azure Bay Villas",
-    location: "Diani Beach",
-    description: "4 Spacious Bedrooms - Plenty of room for family, guests, or a home office. 3 Full Bathrooms - Including a luxurious master ensuite with double vanities and walk-in shower. Modern Kitchen - Fully equipped with premium appliances and granite countertops. Open Living Area - Perfect for entertaining with high ceilings and large windows. Private Balcony - Enjoy stunning ocean views from your own outdoor space. Secure Parking - 2 covered parking spaces included. 24/7 Security - Gated community with professional security staff.",
-    price: "KSh 28,000,000",
-    estimatedIncome: "KSh 300,000/month",
-    beds: 4,
-    baths: 3,
-    sqft: "20,000",
-    images: [
-      "https://images.pexels.com/photos/1029599/pexels-photo-1029599.jpeg?auto=compress&cs=tinysrgb&w=1600",
-      "https://images.pexels.com/photos/1571453/pexels-photo-1571453.jpeg?auto=compress&cs=tinysrgb&w=1200",
-      "https://images.pexels.com/photos/1643384/pexels-photo-1643384.jpeg?auto=compress&cs=tinysrgb&w=1200",
-      "https://images.pexels.com/photos/1396132/pexels-photo-1396132.jpeg?auto=compress&cs=tinysrgb&w=1200"
-    ],
-    facts: ["3–4 Beds", "From KSh 28M", "ROI 12–14%"]
-  },
-  "the-grove": {
-    name: "The Grove",
-    location: "Karen – Gated Community",
-    description: "4 Spacious Bedrooms - Plenty of room for family, guests, or a home office. 3 Full Bathrooms - Including a luxurious master ensuite with double vanities and walk-in shower. Modern Kitchen - Fully equipped with premium appliances and granite countertops. Open Living Area - Perfect for entertaining with high ceilings and large windows. Private Garden - Enjoy stunning garden views from your own outdoor space. Secure Parking - 2 covered parking spaces included. 24/7 Security - Gated community with professional security staff.",
-    price: "KSh 42,000,000",
-    estimatedIncome: "KSh 450,000/month",
-    beds: 4,
-    baths: 3,
-    sqft: "25,000",
-    images: [
-      "https://images.pexels.com/photos/1396132/pexels-photo-1396132.jpeg?auto=compress&cs=tinysrgb&w=1600",
-      "https://images.pexels.com/photos/1571467/pexels-photo-1571467.jpeg?auto=compress&cs=tinysrgb&w=1200",
-      "https://images.pexels.com/photos/1643389/pexels-photo-1643389.jpeg?auto=compress&cs=tinysrgb&w=1200",
-      "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1200"
-    ],
-    facts: ["4 Beds", "From KSh 42M", "ROI 9–11%"]
-  },
-  "skyline-heights": {
-    name: "Skyline Heights",
-    location: "Westlands",
-    description: "Luxurious 2-3 bedroom apartments in the heart of Westlands. Modern design with premium finishes and amenities. Perfect for young professionals and small families seeking convenience and style.",
-    price: "KSh 15,000,000",
-    estimatedIncome: "KSh 180,000/month",
-    beds: 3,
-    baths: 2,
-    sqft: "1,800",
-    images: [
-      "https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=1600",
-      "https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=1200",
-      "https://images.pexels.com/photos/1571453/pexels-photo-1571453.jpeg?auto=compress&cs=tinysrgb&w=1200",
-      "https://images.pexels.com/photos/1643384/pexels-photo-1643384.jpeg?auto=compress&cs=tinysrgb&w=1200"
-    ],
-    facts: ["2-3 Beds", "From KSh 15M", "ROI 11-13%"]
-  },
-  "ocean-view-residences": {
-    name: "Ocean View Residences",
-    location: "Mombasa",
-    description: "Stunning ocean-view residences with 3-5 bedrooms. Perfect for families seeking luxury coastal living with breathtaking views and premium amenities.",
-    price: "KSh 35,000,000",
-    estimatedIncome: "KSh 400,000/month",
-    beds: 5,
-    baths: 4,
-    sqft: "3,200",
-    images: [
-      "https://images.pexels.com/photos/1571453/pexels-photo-1571453.jpeg?auto=compress&cs=tinysrgb&w=1600",
-      "https://images.pexels.com/photos/1643384/pexels-photo-1643384.jpeg?auto=compress&cs=tinysrgb&w=1200",
-      "https://images.pexels.com/photos/1396132/pexels-photo-1396132.jpeg?auto=compress&cs=tinysrgb&w=1200",
-      "https://images.pexels.com/photos/1571467/pexels-photo-1571467.jpeg?auto=compress&cs=tinysrgb&w=1200"
-    ],
-    facts: ["3-5 Beds", "From KSh 35M", "ROI 13-15%"]
-  },
-  "green-valley-estate": {
-    name: "Green Valley Estate",
-    location: "Karen",
-    description: "Exclusive gated community with spacious 4-6 bedroom homes. Perfect for large families seeking privacy, security, and luxury in a serene environment.",
-    price: "KSh 55,000,000",
-    estimatedIncome: "KSh 600,000/month",
-    beds: 6,
-    baths: 5,
-    sqft: "4,500",
-    images: [
-      "https://images.pexels.com/photos/1571467/pexels-photo-1571467.jpeg?auto=compress&cs=tinysrgb&w=1600",
-      "https://images.pexels.com/photos/1643389/pexels-photo-1643389.jpeg?auto=compress&cs=tinysrgb&w=1200",
-      "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1200",
-      "https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=1200"
-    ],
-    facts: ["4-6 Beds", "From KSh 55M", "ROI 8-10%"]
-  }
-};
-
 function FloatingLogo({ isDarkMode = true }: { isDarkMode?: boolean }) {
   return (
     <motion.a 
@@ -184,8 +80,11 @@ export default function PropertyDetails() {
   const { propertyId } = useParams();
   const navigate = useNavigate();
   const { isDarkMode, toggleTheme } = useTheme();
+  const { user, isAuthenticated, logout } = useAuth();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [property, setProperty] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
@@ -194,21 +93,150 @@ export default function PropertyDetails() {
   const [visitorName, setVisitorName] = useState('');
   const [visitorEmail, setVisitorEmail] = useState('');
   
-
+  // Helper function to convert database property to display format
+  const convertPropertyToDisplay = (dbProperty: Property) => ({
+    name: dbProperty.title,
+    location: dbProperty.location,
+    description: dbProperty.description,
+    price: `KSh ${dbProperty.price.toLocaleString()}`,
+    estimatedIncome: "KES 350,000/mo",
+    beds: dbProperty.bedrooms || 2,
+    baths: dbProperty.bathrooms || 2,
+    sqft: dbProperty.squareFeet?.toString() || "1,200",
+    images: dbProperty.images && dbProperty.images.length > 0 ? dbProperty.images : [
+      "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600"
+    ],
+    facts: ["1–2 Beds", "From KSh 3.7M", "ROI 10–12%"]
+  });
 
   useEffect(() => {
-    if (propertyId && propertyData[propertyId as keyof typeof propertyData]) {
-      setProperty(propertyData[propertyId as keyof typeof propertyData]);
-    } else {
-      // Redirect to home if property not found
+    const loadProperty = async () => {
+      if (!propertyId) {
+        console.log('PropertyDetails: No propertyId, redirecting to home');
       navigate('/');
-    }
+        return;
+      }
+
+      // Check if propertyId is a valid UUID, fallback ID, or project ID
+      const isValidId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(propertyId) || 
+                       propertyId.startsWith('fallback-') ||
+                       propertyId.startsWith('project-');
+      
+      if (!isValidId) {
+        console.log('PropertyDetails: Invalid propertyId format, redirecting to properties page');
+        navigate('/houses');
+        return;
+      }
+
+      console.log('PropertyDetails: Loading property with ID:', propertyId);
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        // First, try to get from properties list (which includes fallback data)
+        console.log('PropertyDetails: Trying to get property from properties list first...');
+        const { properties: allProperties, error: listError } = await propertiesService.getProperties();
+        if (!listError && allProperties) {
+          const foundProperty = allProperties.find(p => p.id === propertyId);
+          if (foundProperty) {
+            console.log('PropertyDetails: Found property in properties list');
+            setProperty(convertPropertyToDisplay(foundProperty));
+            setIsLoading(false);
+            return;
+          }
+        }
+        
+        // If not found in properties list, try individual fetch
+        console.log('PropertyDetails: Property not found in list, trying individual fetch...');
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout')), 5000)
+        );
+        
+        const fetchPromise = propertiesService.getPropertyById(propertyId);
+        
+        const { property: dbProperty, error: fetchError } = await Promise.race([
+          fetchPromise,
+          timeoutPromise
+        ]) as any;
+        
+        console.log('PropertyDetails: Fetch result:', { dbProperty: !!dbProperty, error: fetchError });
+        
+        if (fetchError) {
+          // Try to get from properties list as fallback
+          console.log('Individual fetch failed, trying properties list...');
+          const { properties: allProperties, error: listError } = await propertiesService.getProperties();
+          if (!listError && allProperties) {
+            const foundProperty = allProperties.find(p => p.id === propertyId);
+            if (foundProperty) {
+              setProperty(convertPropertyToDisplay(foundProperty));
+              return;
+            }
+          }
+          setError('Property not found');
+        } else if (dbProperty) {
+          setProperty(convertPropertyToDisplay(dbProperty));
+        } else {
+          setError('Property not found');
+        }
+      } catch (err) {
+        console.error('Error loading property:', err);
+        // Try to get from properties list as final fallback
+        try {
+          const { properties: allProperties, error: listError } = await propertiesService.getProperties();
+          if (!listError && allProperties) {
+            const foundProperty = allProperties.find(p => p.id === propertyId);
+            if (foundProperty) {
+              setProperty(convertPropertyToDisplay(foundProperty));
+              return;
+            }
+          }
+        } catch (fallbackErr) {
+          console.error('Fallback also failed:', fallbackErr);
+        }
+        
+        if (err instanceof Error && err.message === 'Request timeout') {
+          setError('Request timed out. Please try again.');
+        } else {
+          setError('Failed to load property. Please check your connection.');
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProperty();
   }, [propertyId, navigate]);
 
-  if (!property) {
+  if (isLoading) {
     return <div className={`min-h-screen flex items-center justify-center transition-colors duration-300 ${
       isDarkMode ? 'bg-[#111217] text-white' : 'bg-white text-gray-900'
     }`}>Loading...</div>;
+  }
+
+  if (error || !property) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center transition-colors duration-300 ${
+        isDarkMode ? 'bg-[#111217] text-white' : 'bg-white text-gray-900'
+      }`}>
+        <div className="text-center">
+          <p className="text-red-500 mb-4">{error || 'Property not found'}</p>
+          <div className="flex gap-3 justify-center">
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-[#C7A667] text-black rounded-lg hover:bg-[#B8965A] transition-colors"
+            >
+              Retry
+            </button>
+            <button 
+              onClick={() => navigate('/houses')}
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Back to Properties
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const nextImage = () => {
@@ -262,9 +290,31 @@ export default function PropertyDetails() {
             
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-8 text-sm">
-              <a href="/houses" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Investors</a>
+              <a href="/houses" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Developers</a>
               <a href="/blogs" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Blogs</a>
               <a href="/#contact" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
+              
+              {/* Auth Status */}
+              {isAuthenticated ? (
+                <div className="flex items-center gap-3">
+                  <motion.button
+                    onClick={() => navigate(user?.userType === 'developer' ? '/developer-dashboard' : '/buyer-dashboard')}
+                    className="px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Welcome, {user?.firstName}
+                  </motion.button>
+                  <motion.button
+                    onClick={logout}
+                    className="px-4 py-2 rounded-full border border-white/30 text-white font-medium hover:bg-white/10 transition-colors"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Logout
+                  </motion.button>
+                </div>
+              ) : (
               <motion.button
                 onClick={() => setLoginModalOpen(true)}
                 className="ml-2 px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
@@ -273,6 +323,8 @@ export default function PropertyDetails() {
               >
                 Login/Signup
               </motion.button>
+              )}
+              
               <motion.button
                 onClick={toggleTheme}
                 className={`p-2 rounded-full border transition-all ${
@@ -342,7 +394,7 @@ export default function PropertyDetails() {
                   className="block text-lg font-medium text-white hover:text-[#C7A667] transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Investors
+                  Developers
                 </a>
                 <a 
                   href="/blogs" 
@@ -359,7 +411,33 @@ export default function PropertyDetails() {
                   Contact
                 </a>
                 
-                {/* Investor Login Button */}
+                {/* Auth Status */}
+                {isAuthenticated ? (
+                  <div className="space-y-3">
+                    <motion.button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        navigate(user?.userType === 'developer' ? '/developer-dashboard' : '/buyer-dashboard');
+                      }}
+                      className="w-full px-6 py-3 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors text-lg"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      Welcome, {user?.firstName}
+                    </motion.button>
+                    <motion.button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        logout();
+                      }}
+                      className="w-full px-6 py-3 rounded-full border border-white/30 hover:border-[#C7A667] hover:text-[#C7A667] transition-all text-lg font-medium"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      Logout
+                    </motion.button>
+                  </div>
+                ) : (
                 <motion.button
                   onClick={() => {
                     setMobileMenuOpen(false);
@@ -371,6 +449,7 @@ export default function PropertyDetails() {
                 >
                   Login
                 </motion.button>
+                )}
               </div>
             </motion.div>
           </motion.div>

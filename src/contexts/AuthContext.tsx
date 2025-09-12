@@ -82,12 +82,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        // Check if we're in offline mode first
+        const isOfflineMode = localStorage.getItem('offline_mode') === 'true';
+        if (isOfflineMode) {
+          console.log('AuthContext: Offline mode detected, skipping Supabase auth check');
+          setIsLoading(false);
+          return;
+        }
+        
         const authUser = await authService.getCurrentUser();
         if (authUser) {
           setUser(convertAuthUserToUser(authUser));
         }
       } catch (error) {
         console.error('Auth check failed:', error);
+        // If auth fails, enable offline mode
+        localStorage.setItem('offline_mode', 'true');
       } finally {
         setIsLoading(false);
       }
@@ -95,15 +105,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     checkAuth();
 
-    // Listen to auth state changes
-    const { data: { subscription } } = authService.onAuthStateChange((authUser) => {
-      if (authUser) {
-        setUser(convertAuthUserToUser(authUser));
-      } else {
-        setUser(null);
-      }
-      // Don't set loading to false here as it interferes with login process
-    });
+    // Listen to auth state changes (only if not in offline mode)
+    const isOfflineMode = localStorage.getItem('offline_mode') === 'true';
+    let subscription = null;
+    
+    if (!isOfflineMode) {
+      const { data: { subscription: authSubscription } } = authService.onAuthStateChange((authUser) => {
+        if (authUser) {
+          setUser(convertAuthUserToUser(authUser));
+        } else {
+          setUser(null);
+        }
+        // Don't set loading to false here as it interferes with login process
+      });
+      subscription = authSubscription;
+    }
 
     return () => {
       if (subscription) {

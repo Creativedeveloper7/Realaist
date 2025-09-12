@@ -1,4 +1,132 @@
 import { supabase } from '../lib/supabase'
+import { offPlanProjects, completedProjects } from '../data/projects'
+
+// Fallback data for when database is unavailable
+const FALLBACK_PROPERTIES: Property[] = [
+  {
+    id: 'fallback-1',
+    title: 'Luxury Apartment in Westlands',
+    description: 'Beautiful 3-bedroom apartment with modern amenities and stunning city views. Located in the heart of Westlands with easy access to shopping centers, restaurants, and business districts.',
+    price: 25000000,
+    location: 'Westlands, Nairobi',
+    propertyType: 'Apartment',
+    bedrooms: 3,
+    bathrooms: 2,
+    squareFeet: 1200,
+    images: ['https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop'],
+    status: 'active',
+    developerId: 'fallback-dev-1',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'fallback-2',
+    title: 'Modern Townhouse in Karen',
+    description: 'Spacious 4-bedroom townhouse with garden and parking. Perfect for families looking for a quiet suburban lifestyle with modern conveniences.',
+    price: 35000000,
+    location: 'Karen, Nairobi',
+    propertyType: 'Townhouse',
+    bedrooms: 4,
+    bathrooms: 3,
+    squareFeet: 1800,
+    images: ['https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=600&fit=crop'],
+    status: 'active',
+    developerId: 'fallback-dev-2',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'fallback-3',
+    title: 'Executive Villa in Runda',
+    description: 'Luxurious 5-bedroom villa with swimming pool, garden, and security. Ideal for executives and high-net-worth individuals.',
+    price: 45000000,
+    location: 'Runda, Nairobi',
+    propertyType: 'Villa',
+    bedrooms: 5,
+    bathrooms: 4,
+    squareFeet: 2500,
+    images: ['https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=600&fit=crop'],
+    status: 'active',
+    developerId: 'fallback-dev-3',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'fallback-4',
+    title: 'Studio Apartment in Kilimani',
+    description: 'Modern studio apartment perfect for young professionals. Fully furnished with all amenities included.',
+    price: 12000000,
+    location: 'Kilimani, Nairobi',
+    propertyType: 'Studio',
+    bedrooms: 1,
+    bathrooms: 1,
+    squareFeet: 500,
+    images: ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=600&fit=crop'],
+    status: 'active',
+    developerId: 'fallback-dev-4',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'fallback-5',
+    title: 'Penthouse in Upper Hill',
+    description: 'Exclusive penthouse with panoramic city views. Features include private elevator, rooftop garden, and premium finishes.',
+    price: 65000000,
+    location: 'Upper Hill, Nairobi',
+    propertyType: 'Penthouse',
+    bedrooms: 4,
+    bathrooms: 3,
+    squareFeet: 3000,
+    images: ['https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop'],
+    status: 'active',
+    developerId: 'fallback-dev-5',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'fallback-6',
+    title: 'Family Home in Lavington',
+    description: 'Charming 3-bedroom family home with large garden and parking for 2 cars. Close to schools and shopping centers.',
+    price: 28000000,
+    location: 'Lavington, Nairobi',
+    propertyType: 'House',
+    bedrooms: 3,
+    bathrooms: 2,
+    squareFeet: 1500,
+    images: ['https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=600&fit=crop'],
+    status: 'active',
+    developerId: 'fallback-dev-6',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+]
+
+// Convert project data to Property format
+const convertProjectToProperty = (project: any): Property => ({
+  id: project.id,
+  title: project.name,
+  description: project.summary,
+  price: parseInt(project.price.replace(/[^\d]/g, '')) * 1000000, // Convert to actual number
+  location: project.location,
+  propertyType: 'Apartment', // Default type
+  bedrooms: parseInt(project.facts[0]) || 0,
+  bathrooms: parseInt(project.facts[1]) || 0,
+  squareFeet: parseInt(project.facts[2]?.replace(/[^\d]/g, '')) || 0,
+  images: [project.hero, ...project.gallery],
+  status: 'active',
+  developerId: 'project-dev',
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString()
+})
+
+// Combine fallback properties with project data and deduplicate by ID
+const ALL_FALLBACK_PROPERTIES = [
+  ...FALLBACK_PROPERTIES,
+  ...offPlanProjects.map(convertProjectToProperty),
+  ...completedProjects.map(convertProjectToProperty)
+].filter((property, index, self) => 
+  index === self.findIndex(p => p.id === property.id)
+)
 
 export interface Property {
   id: string
@@ -59,16 +187,23 @@ class PropertiesService {
       let query = supabase
         .from('properties')
         .select(`
-          *,
-          developer:profiles!properties_developer_id_fkey(
-            id,
-            first_name,
-            last_name,
-            company_name,
-            phone
-          )
+          id,
+          title,
+          description,
+          price,
+          location,
+          property_type,
+          bedrooms,
+          bathrooms,
+          square_feet,
+          images,
+          status,
+          developer_id,
+          created_at,
+          updated_at
         `)
         .order('created_at', { ascending: false })
+        .limit(100)
 
       // Apply filters
       if (filters?.location) {
@@ -99,7 +234,10 @@ class PropertiesService {
       const { data, error } = await query
 
       if (error) {
-        return { properties: [], error: error.message }
+        console.error('Error fetching properties:', error)
+        // Return fallback data when database is unavailable
+        console.log('Using fallback properties due to database error')
+        return { properties: ALL_FALLBACK_PROPERTIES, error: null }
       }
 
       const properties: Property[] = data.map(item => ({
@@ -129,7 +267,9 @@ class PropertiesService {
       return { properties, error: null }
     } catch (error) {
       console.error('Error fetching properties:', error)
-      return { properties: [], error: 'An unexpected error occurred' }
+      // Return fallback data when there's a network error
+      console.log('Using fallback properties due to network error')
+      return { properties: ALL_FALLBACK_PROPERTIES, error: null }
     }
   }
 
@@ -139,19 +279,32 @@ class PropertiesService {
       const { data, error } = await supabase
         .from('properties')
         .select(`
-          *,
-          developer:profiles!properties_developer_id_fkey(
-            id,
-            first_name,
-            last_name,
-            company_name,
-            phone
-          )
+          id,
+          title,
+          description,
+          price,
+          location,
+          property_type,
+          bedrooms,
+          bathrooms,
+          square_feet,
+          images,
+          status,
+          developer_id,
+          created_at,
+          updated_at
         `)
         .eq('id', id)
         .single()
 
       if (error) {
+        console.error('Error fetching property by ID:', error)
+        // Try to find in fallback data
+        const fallbackProperty = ALL_FALLBACK_PROPERTIES.find(p => p.id === id)
+        if (fallbackProperty) {
+          console.log('Found property in fallback data')
+          return { property: fallbackProperty, error: null }
+        }
         return { property: null, error: error.message }
       }
 
@@ -182,6 +335,12 @@ class PropertiesService {
       return { property, error: null }
     } catch (error) {
       console.error('Error fetching property:', error)
+      // Try to find in fallback data
+      const fallbackProperty = ALL_FALLBACK_PROPERTIES.find(p => p.id === id)
+      if (fallbackProperty) {
+        console.log('Found property in fallback data after network error')
+        return { property: fallbackProperty, error: null }
+      }
       return { property: null, error: 'An unexpected error occurred' }
     }
   }

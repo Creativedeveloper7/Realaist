@@ -7,6 +7,8 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { DashboardLayout } from './components/dashboard/DashboardLayout';
 import { UserProfile } from './components/dashboard/UserProfile';
 import { Dashboard } from './pages/Dashboard';
+import { DeveloperDashboard } from './pages/DeveloperDashboard';
+import { BuyerDashboard } from './pages/BuyerDashboard';
 import { HomePage } from './pages/HomePage';
 import { MyProperties } from './pages/MyProperties';
 import { ScheduledVisits } from './pages/ScheduledVisits';
@@ -14,6 +16,7 @@ import { Documents } from './pages/Documents';
 import { Analytics } from './pages/Analytics';
 import { Blogs } from './pages/Blogs';
 import PropertyDetails from './PropertyDetails';
+import HousesPage from './HousesPage';
 
 // Import styles
 import './styles/global.css';
@@ -39,11 +42,31 @@ function AppContent() {
           <PropertyDetails />
         } />
         
+        <Route path="/houses" element={
+          <HousesPage />
+        } />
+        
         {/* Protected Dashboard Routes */}
         <Route path="/dashboard" element={
           <ProtectedRoute>
             <DashboardLayout isDarkMode={isDarkMode}>
               <Dashboard isDarkMode={isDarkMode} />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/developer-dashboard" element={
+          <ProtectedRoute>
+            <DashboardLayout isDarkMode={isDarkMode}>
+              <DeveloperDashboard isDarkMode={isDarkMode} />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/buyer-dashboard" element={
+          <ProtectedRoute>
+            <DashboardLayout isDarkMode={isDarkMode}>
+              <BuyerDashboard isDarkMode={isDarkMode} />
             </DashboardLayout>
           </ProtectedRoute>
         } />

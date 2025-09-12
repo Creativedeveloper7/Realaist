@@ -1,4 +1,5 @@
 export interface Project {
+  id: string;
   name: string;
   price: string;
   location: string;
@@ -11,6 +12,7 @@ export interface Project {
 
 export const offPlanProjects: Project[] = [
   {
+    id: "project-escada",
     name: "Escada",
     price: "KSh 3.7M",
     location: "Gigiri / Westlands",
@@ -25,6 +27,7 @@ export const offPlanProjects: Project[] = [
     ],
   },
   {
+    id: "project-azure-bay",
     name: "Azure Bay Villas",
     price: "KSh 28M",
     location: "Diani Beach",
@@ -42,6 +45,7 @@ export const offPlanProjects: Project[] = [
 
 export const completedProjects: Project[] = [
   {
+    id: "project-the-grove",
     name: "The Grove",
     price: "KSh 42M",
     location: "Karen – Gated Community",
@@ -56,6 +60,7 @@ export const completedProjects: Project[] = [
     ],
   },
   {
+    id: "project-skyline-heights",
     name: "Skyline Heights",
     price: "KSh 18M",
     location: "Westlands",

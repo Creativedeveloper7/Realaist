@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from './ThemeContext';
+import { useAuth } from './contexts/AuthContext';
+import { propertiesService, Property } from './services/propertiesService';
 
 // Helper function to get icon for fact type
 const getFactIcon = (factIndex: number, isDarkMode: boolean = true) => {
@@ -53,10 +55,27 @@ const getFactIcon = (factIndex: number, isDarkMode: boolean = true) => {
 
 
 
-// Houses data
+// Helper function to convert database property to display format
+const convertPropertyToHouse = (property: Property) => ({
+  id: property.id,
+  name: property.title,
+  location: property.location,
+  price: `KSh ${(property.price / 1000000).toFixed(1)}M`,
+  facts: [
+    property.bedrooms?.toString() || "N/A",
+    property.bathrooms?.toString() || "N/A", 
+    property.squareFeet ? `${property.squareFeet.toLocaleString()} sq ft` : "N/A"
+  ],
+  factLabels: ["Beds", "Baths", "Square Feet"],
+  image: property.images && property.images.length > 0 ? property.images[0] : "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600",
+  status: property.status.charAt(0).toUpperCase() + property.status.slice(1),
+  type: property.propertyType
+});
+
+// Houses data - will be replaced with database data
 const houses = [
   {
-    id: 1,
+    id: "hardcoded-1",
     name: "Escada",
     location: "Gigiri / Westlands",
     price: "KSh 3.7M",
@@ -67,7 +86,7 @@ const houses = [
     type: "Apartments"
   },
   {
-    id: 2,
+    id: "hardcoded-2",
     name: "Azure Bay Villas",
     location: "Diani Beach",
     price: "KSh 28M",
@@ -78,7 +97,7 @@ const houses = [
     type: "Beach Villas"
   },
   {
-    id: 3,
+    id: "hardcoded-3",
     name: "The Grove",
     location: "Karen – Gated Community",
     price: "KSh 42M",
@@ -89,7 +108,7 @@ const houses = [
     type: "Townhouses"
   },
   {
-    id: 4,
+    id: "hardcoded-4",
     name: "Skyline Heights",
     location: "Westlands",
     price: "KSh 18M",
@@ -100,7 +119,7 @@ const houses = [
     type: "Apartments"
   },
   {
-    id: 5,
+    id: "hardcoded-5",
     name: "Ocean View Residences",
     location: "Mombasa",
     price: "KSh 35M",
@@ -111,7 +130,7 @@ const houses = [
     type: "Beach Villas"
   },
   {
-    id: 6,
+    id: "hardcoded-6",
     name: "Green Valley Estate",
     location: "Karen",
     price: "KSh 55M",
@@ -122,7 +141,7 @@ const houses = [
     type: "Gated Communities"
   },
   {
-    id: 7,
+    id: "hardcoded-7",
     name: "Sunset Ridge",
     location: "Lavington",
     price: "KSh 25M",
@@ -133,7 +152,7 @@ const houses = [
     type: "Apartments"
   },
   {
-    id: 8,
+    id: "hardcoded-8",
     name: "Marina Heights",
     location: "Mombasa",
     price: "KSh 45M",
@@ -144,7 +163,7 @@ const houses = [
     type: "Beach Villas"
   },
   {
-    id: 9,
+    id: "hardcoded-9",
     name: "The Pines",
     location: "Karen",
     price: "KSh 38M",
@@ -155,7 +174,7 @@ const houses = [
     type: "Townhouses"
   },
   {
-    id: 10,
+    id: "hardcoded-10",
     name: "Riverside Gardens",
     location: "Westlands",
     price: "KSh 22M",
@@ -166,7 +185,7 @@ const houses = [
     type: "Apartments"
   },
   {
-    id: 11,
+    id: "hardcoded-11",
     name: "Coral Bay",
     location: "Diani Beach",
     price: "KSh 65M",
@@ -177,7 +196,7 @@ const houses = [
     type: "Beach Villas"
   },
   {
-    id: 12,
+    id: "hardcoded-12",
     name: "Highland Park",
     location: "Karen",
     price: "KSh 48M",
@@ -188,7 +207,7 @@ const houses = [
     type: "Gated Communities"
   },
   {
-    id: 13,
+    id: "hardcoded-13",
     name: "Urban Heights",
     location: "Westlands",
     price: "KSh 15M",
@@ -199,7 +218,7 @@ const houses = [
     type: "Apartments"
   },
   {
-    id: 14,
+    id: "hardcoded-14",
     name: "Palm Springs",
     location: "Mombasa",
     price: "KSh 52M",
@@ -210,7 +229,7 @@ const houses = [
     type: "Beach Villas"
   },
   {
-    id: 15,
+    id: "hardcoded-15",
     name: "The Meadows",
     location: "Karen",
     price: "KSh 35M",
@@ -221,7 +240,7 @@ const houses = [
     type: "Townhouses"
   },
   {
-    id: 16,
+    id: "hardcoded-16",
     name: "Sky Gardens",
     location: "Westlands",
     price: "KSh 28M",
@@ -232,7 +251,7 @@ const houses = [
     type: "Apartments"
   },
   {
-    id: 17,
+    id: "hardcoded-17",
     name: "Ocean Paradise",
     location: "Diani Beach",
     price: "KSh 75M",
@@ -243,7 +262,7 @@ const houses = [
     type: "Beach Villas"
   },
   {
-    id: 18,
+    id: "hardcoded-18",
     name: "Eden Gardens",
     location: "Karen",
     price: "KSh 42M",
@@ -258,7 +277,11 @@ const houses = [
 export default function HousesPage() {
   const navigate = useNavigate();
   const { isDarkMode, toggleTheme } = useTheme();
-  const [filteredHouses, setFilteredHouses] = useState(houses);
+  const { user, isAuthenticated, logout } = useAuth();
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [filteredHouses, setFilteredHouses] = useState<any[]>([]);
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('All');
   const [selectedStatus, setSelectedStatus] = useState('All');
@@ -281,6 +304,51 @@ export default function HousesPage() {
   const bedrooms = ['All', '1', '2', '3', '4', '5+'];
   const bathrooms = ['All', '1', '2', '3', '4', '5+'];
 
+  // Load properties from database
+  useEffect(() => {
+    const loadProperties = async () => {
+      setIsLoading(true);
+      
+      // Check if we're already in offline mode
+      const isOfflineMode = localStorage.getItem('offline_mode') === 'true';
+      if (isOfflineMode) {
+        console.log('HousesPage: Already in offline mode, using fallback data');
+        setFilteredHouses(houses);
+        setIsOfflineMode(true);
+        setIsLoading(false);
+        return;
+      }
+      
+      try {
+        const { properties: fetchedProperties, error: fetchError } = await propertiesService.getProperties();
+        if (!fetchError && fetchedProperties) {
+          setProperties(fetchedProperties);
+          const convertedHouses = fetchedProperties.map(convertPropertyToHouse);
+          // Remove duplicates by ID
+          const uniqueHouses = convertedHouses.filter((house, index, self) => 
+            index === self.findIndex(h => h.id === house.id)
+          );
+          setFilteredHouses(uniqueHouses);
+          // Check if we're using fallback data (properties with fallback IDs)
+          const isUsingFallback = fetchedProperties.some(p => p.id.startsWith('fallback-') || p.id.startsWith('project-'));
+          setIsOfflineMode(isUsingFallback);
+          if (isUsingFallback) {
+            localStorage.setItem('offline_mode', 'true');
+          }
+        }
+      } catch (err) {
+        console.error('Error loading properties:', err);
+        // Use hardcoded houses data as fallback
+        setFilteredHouses(houses);
+        setIsOfflineMode(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProperties();
+  }, []);
+
   useEffect(() => {
     // Get search term from URL if present
     const urlParams = new URLSearchParams(window.location.search);
@@ -291,7 +359,13 @@ export default function HousesPage() {
   }, []);
 
   useEffect(() => {
-    let filtered = houses;
+    if (properties.length === 0) return; // Don't filter until properties are loaded
+    
+    let filtered = properties.map(convertPropertyToHouse);
+    // Remove duplicates by ID
+    filtered = filtered.filter((house, index, self) => 
+      index === self.findIndex(h => h.id === house.id)
+    );
 
     // Filter by search term
     if (searchTerm) {
@@ -365,7 +439,7 @@ export default function HousesPage() {
 
     setFilteredHouses(filtered);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [searchTerm, selectedType, selectedStatus, selectedPriceRange, selectedSquareFootage, selectedBedrooms, selectedBathrooms]);
+  }, [properties, searchTerm, selectedType, selectedStatus, selectedPriceRange, selectedSquareFootage, selectedBedrooms, selectedBathrooms]);
 
   const handleBackToHome = () => {
     navigate('/');
@@ -377,7 +451,9 @@ export default function HousesPage() {
     
     const suggestions = new Set<string>();
     
-    houses.forEach(house => {
+    const housesToSearch = properties.length > 0 ? properties.map(convertPropertyToHouse) : houses;
+    
+    housesToSearch.forEach(house => {
       // Add property names
       if (house.name.toLowerCase().includes(query.toLowerCase())) {
         suggestions.add(house.name);
@@ -427,6 +503,19 @@ export default function HousesPage() {
     setCurrentPage(pageNumber);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  if (isLoading) {
+    return (
+      <div className={`min-h-screen ${isDarkMode ? 'bg-[#0A0A0B]' : 'bg-gray-50'}`}>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C7A667] mx-auto mb-4"></div>
+            <p className={`${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Loading properties...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -507,9 +596,41 @@ export default function HousesPage() {
             </div>
             <nav className="hidden md:flex items-center gap-8 text-sm">
               <a href="/" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Home</a>
-              <a href="/houses" className="text-[#C7A667]">Investors</a>
+              <a href="/houses" className="text-[#C7A667]">Developers</a>
               <a href="/blogs" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Blogs</a>
               <a href="/" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
+              
+              {/* Auth Status */}
+              {isAuthenticated ? (
+                <div className="flex items-center gap-3">
+                  <motion.button
+                    onClick={() => navigate(user?.userType === 'developer' ? '/developer-dashboard' : '/buyer-dashboard')}
+                    className="px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Welcome, {user?.firstName}
+                  </motion.button>
+                  <motion.button
+                    onClick={logout}
+                    className="px-4 py-2 rounded-full border border-white/30 text-white font-medium hover:bg-white/10 transition-colors"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Logout
+                  </motion.button>
+                </div>
+              ) : (
+                <motion.button
+                  onClick={() => navigate('/login')}
+                  className="px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Login/Signup
+                </motion.button>
+              )}
+              
               <motion.button
                 onClick={toggleTheme}
                 className={`p-2 rounded-full border transition-all ${
@@ -566,7 +687,7 @@ export default function HousesPage() {
                 className="text-[#C7A667]"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Investors
+                Developers
               </a>
               <a 
                 href="/blogs" 
@@ -582,6 +703,46 @@ export default function HousesPage() {
               >
                 Contact
               </a>
+              
+              {/* Auth Status */}
+              {isAuthenticated ? (
+                <div className="space-y-3 mt-4">
+                  <motion.button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      navigate(user?.userType === 'developer' ? '/developer-dashboard' : '/buyer-dashboard');
+                    }}
+                    className="w-full px-6 py-3 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors text-lg"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Welcome, {user?.firstName}
+                  </motion.button>
+                  <motion.button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      logout();
+                    }}
+                    className="w-full px-6 py-3 rounded-full border border-white/30 hover:border-[#C7A667] hover:text-[#C7A667] transition-all text-lg font-medium"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Logout
+                  </motion.button>
+                </div>
+              ) : (
+                <motion.button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    navigate('/login');
+                  }}
+                  className="w-full px-6 py-3 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors text-lg mt-4"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Login/Signup
+                </motion.button>
+              )}
             </nav>
             
             <div className="mt-auto">
@@ -617,6 +778,7 @@ export default function HousesPage() {
         >
           {isDarkMode ? '☀️' : '🌙'}
         </motion.button>
+
 
         {/* Main Content */}
         <div className={`pt-16 transition-colors duration-300 ${
@@ -955,7 +1117,7 @@ export default function HousesPage() {
 
                         <div className="flex gap-3">
                           <motion.a 
-                            href={`/property/${house.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`}
+                            href={`/property/${house.id}`}
                             className="btn-3d flex-1 px-4 py-2 rounded-lg bg-[#C7A667] text-black font-medium text-sm inline-block text-center"
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
