@@ -67,11 +67,11 @@ function FloatingLogo({ isDarkMode = true }: { isDarkMode?: boolean }) {
           ? 'border-white/60 bg-black/20' 
           : 'border-gray-400 bg-white/20'
       }`}>
-        <span className={`font-logo tracking-[0.25em] text-sm md:text-base transition-colors duration-300 ${
-          isDarkMode ? 'text-white/90' : 'text-gray-900/90'
-        }`}>
-          REALAIST
-        </span>
+        <img 
+          src="/logos/realaistlogo.png" 
+          alt="Realaist Logo" 
+          className="h-12 w-auto md:h-15"
+        />
       </div>
     </motion.a>
   );
@@ -767,9 +767,11 @@ export default function PropertyDetails() {
             {/* Header */}
             <div className="text-center mb-8">
               <div className="border border-dashed rounded-md px-4 py-3 mb-4 inline-block">
-                <span className="font-logo tracking-[0.25em] text-sm text-white/90">
-                  REALAIST
-                </span>
+                <img 
+                  src="/logos/realaistlogo.png" 
+                  alt="Realaist Logo" 
+                  className="h-12 w-auto"
+                />
               </div>
               <h2 className="font-heading text-2xl font-medium text-white">
                 Investor Portal
@@ -905,11 +907,11 @@ export default function PropertyDetails() {
               <div className={`border border-dashed rounded-md px-4 py-3 mb-4 inline-block ${
                 isDarkMode ? 'border-white/20' : 'border-gray-300'
               }`}>
-                <span className={`font-logo tracking-[0.25em] text-sm ${
-                  isDarkMode ? 'text-white/90' : 'text-gray-700'
-                }`}>
-                  REALAIST
-                </span>
+                <img 
+                  src="/logos/realaistlogo.png" 
+                  alt="Realaist Logo" 
+                  className="h-12 w-auto"
+                />
               </div>
               <h2 className={`font-heading text-2xl font-medium transition-colors duration-300 ${
                 isDarkMode ? 'text-white' : 'text-gray-900'

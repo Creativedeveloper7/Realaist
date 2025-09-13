@@ -29,7 +29,7 @@ export function AboutSection({ isDarkMode }: AboutSectionProps) {
           <p className={`mt-4 max-w-prose transition-colors duration-300 ${
             isDarkMode ? 'text-white/70' : 'text-gray-600'
           }`}>
-            REALAIST curates high-performance properties across Kenya for hybrid investors seeking dependable returns and elevated living. We combine design excellence with rigorous underwriting and transparent reporting.
+            REALAIST is an AI-powered platform that connects investors with vetted real estate opportunities from trusted developers and companies.Our AI agent verifies property ownership, legal compliance, and the track record of each developer — ensuring a secure and trustworthy investment experience.
           </p>
           <div className="mt-8 grid grid-cols-3 gap-8">
             {[

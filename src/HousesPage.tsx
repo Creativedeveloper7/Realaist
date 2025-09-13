@@ -589,12 +589,14 @@ export default function HousesPage() {
         >
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={`border border-dashed rounded px-2.5 py-1 transition-colors duration-300 ${
+              <div className={`border border-dashed rounded px-2 py-1 transition-colors duration-300 ${
                 isDarkMode ? 'border-white/60' : 'border-gray-400'
               }`}>
-                <span className={`font-logo tracking-[0.25em] text-sm transition-colors duration-300 ${
-                  isDarkMode ? 'text-white' : 'text-gray-900'
-                }`}>REALAIST</span>
+                <img 
+                  src="/logos/realaistlogo.png" 
+                  alt="Realaist Logo" 
+                  className="h-9 w-auto"
+                />
               </div>
             </div>
             <nav className="hidden md:flex items-center gap-8 text-sm">

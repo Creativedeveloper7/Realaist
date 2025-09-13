@@ -5,7 +5,7 @@
  * and optimized performance for production use.
  */
 
-const CACHE_VERSION = '2.0.1757721910655';
+const CACHE_VERSION = '2.0.0';
 const STATIC_CACHE_NAME = `realaist-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE_NAME = `realaist-dynamic-${CACHE_VERSION}`;
 const API_CACHE_NAME = `realaist-api-${CACHE_VERSION}`;

@@ -179,9 +179,11 @@ export default function SingleBlogPost() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <span className={`font-logo tracking-[0.25em] text-sm transition-colors duration-300 ${
-                  isDarkMode ? 'text-white' : 'text-gray-900'
-                }`}>REALAIST</span>
+                <img 
+                  src="/logos/realaistlogo.png" 
+                  alt="Realaist Logo" 
+                  className="h-9 w-auto"
+                />
               </motion.div>
             </div>
             
