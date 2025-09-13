@@ -5,26 +5,19 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   build: {
-    // Generate unique file names for cache busting
+    // Optimize for production caching
     rollupOptions: {
       output: {
-        // Add timestamp to chunk names for cache busting
-        chunkFileNames: (chunkInfo) => {
-          const timestamp = Date.now();
-          return `assets/[name]-${timestamp}-[hash].js`;
-        },
-        entryFileNames: (chunkInfo) => {
-          const timestamp = Date.now();
-          return `assets/[name]-${timestamp}-[hash].js`;
-        },
-        assetFileNames: (assetInfo) => {
-          const timestamp = Date.now();
-          return `assets/[name]-${timestamp}-[hash].[ext]`;
-        }
+        // Use content hash for proper cache busting without timestamps
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]'
       }
     },
     // Clear cache before build
-    emptyOutDir: true
+    emptyOutDir: true,
+    // Optimize chunk size
+    chunkSizeWarningLimit: 1000
   },
   server: {
     // Force reload on file changes
@@ -33,5 +26,9 @@ export default defineConfig({
     }
   },
   // Clear cache on dev server start
-  clearScreen: true
+  clearScreen: true,
+  // Optimize dependencies
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'framer-motion', 'lucide-react']
+  }
 })

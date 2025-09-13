@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase'
 import { offPlanProjects, completedProjects } from '../data/projects'
+import { apiCacheService } from './apiCacheService'
 
 // Fallback data for when database is unavailable
 const FALLBACK_PROPERTIES: Property[] = [
@@ -232,180 +233,197 @@ export interface PropertyFilters {
 class PropertiesService {
   // Get all properties with optional filters
   async getProperties(filters?: PropertyFilters): Promise<{ properties: Property[]; error: string | null }> {
-    try {
-      let query = supabase
-        .from('properties')
-        .select(`
-          id,
-          title,
-          description,
-          price,
-          location,
-          property_type,
-          bedrooms,
-          bathrooms,
-          square_feet,
-          images,
-          status,
-          developer_id,
-          created_at,
-          updated_at,
-          developer:profiles!properties_developer_id_fkey(
-            id,
-            first_name,
-            last_name,
-            company_name,
-            phone
-          )
-        `)
-        .order('created_at', { ascending: false })
-        .limit(100)
+    // Create cache key based on filters
+    const cacheKey = `properties-${JSON.stringify(filters || {})}`;
+    
+    return apiCacheService.get(
+      cacheKey,
+      async () => {
+        try {
+          let query = supabase
+            .from('properties')
+            .select(`
+              id,
+              title,
+              description,
+              price,
+              location,
+              property_type,
+              bedrooms,
+              bathrooms,
+              square_feet,
+              images,
+              status,
+              developer_id,
+              created_at,
+              updated_at,
+              developer:profiles!properties_developer_id_fkey(
+                id,
+                first_name,
+                last_name,
+                company_name,
+                phone
+              )
+            `)
+            .order('created_at', { ascending: false })
+            .limit(100)
 
-      // Apply filters
-      if (filters?.location) {
-        query = query.ilike('location', `%${filters.location}%`)
-      }
-      if (filters?.propertyType) {
-        query = query.eq('property_type', filters.propertyType)
-      }
-      if (filters?.minPrice) {
-        query = query.gte('price', filters.minPrice)
-      }
-      if (filters?.maxPrice) {
-        query = query.lte('price', filters.maxPrice)
-      }
-      if (filters?.bedrooms) {
-        query = query.eq('bedrooms', filters.bedrooms)
-      }
-      if (filters?.bathrooms) {
-        query = query.eq('bathrooms', filters.bathrooms)
-      }
-      if (filters?.status) {
-        query = query.eq('status', filters.status)
-      }
-      if (filters?.developerId) {
-        query = query.eq('developer_id', filters.developerId)
-      }
+          // Apply filters
+          if (filters?.location) {
+            query = query.ilike('location', `%${filters.location}%`)
+          }
+          if (filters?.propertyType) {
+            query = query.eq('property_type', filters.propertyType)
+          }
+          if (filters?.minPrice) {
+            query = query.gte('price', filters.minPrice)
+          }
+          if (filters?.maxPrice) {
+            query = query.lte('price', filters.maxPrice)
+          }
+          if (filters?.bedrooms) {
+            query = query.eq('bedrooms', filters.bedrooms)
+          }
+          if (filters?.bathrooms) {
+            query = query.eq('bathrooms', filters.bathrooms)
+          }
+          if (filters?.status) {
+            query = query.eq('status', filters.status)
+          }
+          if (filters?.developerId) {
+            query = query.eq('developer_id', filters.developerId)
+          }
 
-      const { data, error } = await query
+          const { data, error } = await query
 
-      if (error) {
-        console.error('Error fetching properties:', error)
-        // Return fallback data when database is unavailable
-        console.log('Using fallback properties due to database error')
-        return { properties: ALL_FALLBACK_PROPERTIES, error: null }
-      }
+          if (error) {
+            console.error('Error fetching properties:', error)
+            // Return fallback data when database is unavailable
+            console.log('Using fallback properties due to database error')
+            return { properties: ALL_FALLBACK_PROPERTIES, error: null }
+          }
 
-      const properties: Property[] = data.map(item => ({
-        id: item.id,
-        title: item.title,
-        description: item.description,
-        price: item.price,
-        location: item.location,
-        propertyType: item.property_type,
-        bedrooms: item.bedrooms,
-        bathrooms: item.bathrooms,
-        squareFeet: item.square_feet,
-        images: item.images || [],
-        status: item.status,
-        developerId: item.developer_id,
-        developer: item.developer ? {
-          id: item.developer.id,
-          firstName: item.developer.first_name,
-          lastName: item.developer.last_name,
-          companyName: item.developer.company_name,
-          phone: item.developer.phone
-        } : undefined,
-        createdAt: item.created_at,
-        updatedAt: item.updated_at
-      }))
+          const properties: Property[] = data.map(item => ({
+            id: item.id,
+            title: item.title,
+            description: item.description,
+            price: item.price,
+            location: item.location,
+            propertyType: item.property_type,
+            bedrooms: item.bedrooms,
+            bathrooms: item.bathrooms,
+            squareFeet: item.square_feet,
+            images: item.images || [],
+            status: item.status,
+            developerId: item.developer_id,
+            developer: item.developer ? {
+              id: item.developer.id,
+              firstName: item.developer.first_name,
+              lastName: item.developer.last_name,
+              companyName: item.developer.company_name,
+              phone: item.developer.phone
+            } : undefined,
+            createdAt: item.created_at,
+            updatedAt: item.updated_at
+          }))
 
-      return { properties, error: null }
-    } catch (error) {
-      console.error('Error fetching properties:', error)
-      // Return fallback data when there's a network error
-      console.log('Using fallback properties due to network error')
-      return { properties: ALL_FALLBACK_PROPERTIES, error: null }
-    }
+          return { properties, error: null }
+        } catch (error) {
+          console.error('Error fetching properties:', error)
+          // Return fallback data when there's a network error
+          console.log('Using fallback properties due to network error')
+          return { properties: ALL_FALLBACK_PROPERTIES, error: null }
+        }
+      },
+      { ttl: 5 * 60 * 1000 } // Cache for 5 minutes
+    );
   }
 
   // Get property by ID
   async getPropertyById(id: string): Promise<{ property: Property | null; error: string | null }> {
-    try {
-      const { data, error } = await supabase
-        .from('properties')
-        .select(`
-          id,
-          title,
-          description,
-          price,
-          location,
-          property_type,
-          bedrooms,
-          bathrooms,
-          square_feet,
-          images,
-          status,
-          developer_id,
-          created_at,
-          updated_at,
-          developer:profiles!properties_developer_id_fkey(
-            id,
-            first_name,
-            last_name,
-            company_name,
-            phone
-          )
-        `)
-        .eq('id', id)
-        .single()
+    const cacheKey = `property-${id}`;
+    
+    return apiCacheService.get(
+      cacheKey,
+      async () => {
+        try {
+          const { data, error } = await supabase
+            .from('properties')
+            .select(`
+              id,
+              title,
+              description,
+              price,
+              location,
+              property_type,
+              bedrooms,
+              bathrooms,
+              square_feet,
+              images,
+              status,
+              developer_id,
+              created_at,
+              updated_at,
+              developer:profiles!properties_developer_id_fkey(
+                id,
+                first_name,
+                last_name,
+                company_name,
+                phone
+              )
+            `)
+            .eq('id', id)
+            .single()
 
-      if (error) {
-        console.error('Error fetching property by ID:', error)
-        // Try to find in fallback data
-        const fallbackProperty = ALL_FALLBACK_PROPERTIES.find(p => p.id === id)
-        if (fallbackProperty) {
-          console.log('Found property in fallback data')
-          return { property: fallbackProperty, error: null }
+          if (error) {
+            console.error('Error fetching property by ID:', error)
+            // Try to find in fallback data
+            const fallbackProperty = ALL_FALLBACK_PROPERTIES.find(p => p.id === id)
+            if (fallbackProperty) {
+              console.log('Found property in fallback data')
+              return { property: fallbackProperty, error: null }
+            }
+            return { property: null, error: error.message }
+          }
+
+          const property: Property = {
+            id: data.id,
+            title: data.title,
+            description: data.description,
+            price: data.price,
+            location: data.location,
+            propertyType: data.property_type,
+            bedrooms: data.bedrooms,
+            bathrooms: data.bathrooms,
+            squareFeet: data.square_feet,
+            images: data.images || [],
+            status: data.status,
+            developerId: data.developer_id,
+            developer: data.developer ? {
+              id: data.developer.id,
+              firstName: data.developer.first_name,
+              lastName: data.developer.last_name,
+              companyName: data.developer.company_name,
+              phone: data.developer.phone
+            } : undefined,
+            createdAt: data.created_at,
+            updatedAt: data.updated_at
+          }
+
+          return { property, error: null }
+        } catch (error) {
+          console.error('Error fetching property:', error)
+          // Try to find in fallback data
+          const fallbackProperty = ALL_FALLBACK_PROPERTIES.find(p => p.id === id)
+          if (fallbackProperty) {
+            console.log('Found property in fallback data after network error')
+            return { property: fallbackProperty, error: null }
+          }
+          return { property: null, error: 'An unexpected error occurred' }
         }
-        return { property: null, error: error.message }
-      }
-
-      const property: Property = {
-        id: data.id,
-        title: data.title,
-        description: data.description,
-        price: data.price,
-        location: data.location,
-        propertyType: data.property_type,
-        bedrooms: data.bedrooms,
-        bathrooms: data.bathrooms,
-        squareFeet: data.square_feet,
-        images: data.images || [],
-        status: data.status,
-        developerId: data.developer_id,
-        developer: data.developer ? {
-          id: data.developer.id,
-          firstName: data.developer.first_name,
-          lastName: data.developer.last_name,
-          companyName: data.developer.company_name,
-          phone: data.developer.phone
-        } : undefined,
-        createdAt: data.created_at,
-        updatedAt: data.updated_at
-      }
-
-      return { property, error: null }
-    } catch (error) {
-      console.error('Error fetching property:', error)
-      // Try to find in fallback data
-      const fallbackProperty = ALL_FALLBACK_PROPERTIES.find(p => p.id === id)
-      if (fallbackProperty) {
-        console.log('Found property in fallback data after network error')
-        return { property: fallbackProperty, error: null }
-      }
-      return { property: null, error: 'An unexpected error occurred' }
-    }
+      },
+      { ttl: 10 * 60 * 1000 } // Cache for 10 minutes
+    );
   }
 
   // Create new property

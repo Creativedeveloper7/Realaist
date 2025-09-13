@@ -14,7 +14,7 @@ export interface CacheInfo {
 export class CacheManager {
   private static instance: CacheManager;
   private serviceWorker: ServiceWorker | null = null;
-  private readonly CACHE_VERSION = '1.0.0';
+  private readonly CACHE_VERSION = '2.0.0';
   private readonly CACHE_KEY = 'realaist_cache_info';
 
   private constructor() {
@@ -36,14 +36,15 @@ export class CacheManager {
         
         console.log('🔧 Cache Manager: Service Worker registered');
         
-        // Listen for service worker updates
+        // Listen for service worker updates (disabled automatic notifications)
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing;
           if (newWorker) {
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                console.log('🔄 Cache Manager: New version available');
-                this.showUpdateNotification();
+                console.log('🔄 Cache Manager: New version available (auto-update disabled)');
+                // Automatically update without showing notification
+                this.updateServiceWorker();
               }
             });
           }
@@ -106,6 +107,56 @@ export class CacheManager {
       
       this.serviceWorker!.postMessage(
         { action: 'CLEAR_CACHE' },
+        [messageChannel.port2]
+      );
+    });
+  }
+
+  /**
+   * Clear API cache only
+   */
+  public async clearApiCache(): Promise<boolean> {
+    try {
+      console.log('🧹 Cache Manager: Clearing API cache...');
+      
+      // Clear service worker API cache
+      if (this.serviceWorker) {
+        await this.clearServiceWorkerApiCache();
+      }
+      
+      // Clear in-memory API cache
+      if (typeof window !== 'undefined' && (window as any).apiCacheService) {
+        (window as any).apiCacheService.clearAll();
+      }
+      
+      console.log('✅ Cache Manager: API cache cleared successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Cache Manager: API cache clearing failed', error);
+      return false;
+    }
+  }
+
+  /**
+   * Clear service worker API cache
+   */
+  private async clearServiceWorkerApiCache(): Promise<void> {
+    if (!this.serviceWorker) return;
+    
+    return new Promise((resolve, reject) => {
+      const messageChannel = new MessageChannel();
+      
+      messageChannel.port1.onmessage = (event) => {
+        if (event.data.success) {
+          console.log('✅ Cache Manager: Service Worker API cache cleared');
+          resolve();
+        } else {
+          reject(new Error(event.data.error));
+        }
+      };
+      
+      this.serviceWorker!.postMessage(
+        { action: 'CLEAR_API_CACHE' },
         [messageChannel.port2]
       );
     });
@@ -228,7 +279,8 @@ export class CacheManager {
   private updateServiceWorker(): void {
     if (this.serviceWorker) {
       this.serviceWorker.postMessage({ action: 'SKIP_WAITING' });
-      window.location.reload();
+      // Don't automatically reload - let the user continue using the app
+      console.log('🔄 Cache Manager: Service worker updated, will take effect on next page load');
     }
   }
 

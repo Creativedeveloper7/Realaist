@@ -1,26 +1,33 @@
 /**
- * Service Worker for Automatic Cache Management
+ * Optimized Service Worker for Realaist
  * 
- * This service worker automatically handles cache clearing and updates
- * to ensure users always get the latest version of the website.
+ * This service worker provides intelligent caching with proper cache invalidation
+ * and optimized performance for production use.
  */
 
-const CACHE_NAME = 'realaist-v1.0.0';
-const STATIC_CACHE_NAME = 'realaist-static-v1.0.0';
-const DYNAMIC_CACHE_NAME = 'realaist-dynamic-v1.0.0';
+const CACHE_VERSION = '2.0.1757721910655';
+const STATIC_CACHE_NAME = `realaist-static-${CACHE_VERSION}`;
+const DYNAMIC_CACHE_NAME = `realaist-dynamic-${CACHE_VERSION}`;
+const API_CACHE_NAME = `realaist-api-${CACHE_VERSION}`;
 
-// Files to cache for offline functionality
+// Static files to cache immediately
 const STATIC_FILES = [
   '/',
   '/index.html',
-  '/manifest.json',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png'
+  '/manifest.json'
 ];
+
+// Cache duration settings (in milliseconds)
+const CACHE_DURATIONS = {
+  STATIC: 365 * 24 * 60 * 60 * 1000, // 1 year
+  DYNAMIC: 24 * 60 * 60 * 1000,      // 1 day
+  API: 5 * 60 * 1000,                // 5 minutes
+  IMAGES: 7 * 24 * 60 * 60 * 1000    // 1 week
+};
 
 // Install event - cache static files
 self.addEventListener('install', (event) => {
-  console.log('🔧 Service Worker: Installing...');
+  console.log('🔧 Service Worker: Installing v' + CACHE_VERSION);
   
   event.waitUntil(
     caches.open(STATIC_CACHE_NAME)
@@ -40,7 +47,7 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('🚀 Service Worker: Activating...');
+  console.log('🚀 Service Worker: Activating v' + CACHE_VERSION);
   
   event.waitUntil(
     caches.keys()
@@ -48,9 +55,7 @@ self.addEventListener('activate', (event) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
             // Delete old caches that don't match current version
-            if (cacheName !== STATIC_CACHE_NAME && 
-                cacheName !== DYNAMIC_CACHE_NAME &&
-                cacheName !== CACHE_NAME) {
+            if (!cacheName.includes(CACHE_VERSION)) {
               console.log('🗑️ Service Worker: Deleting old cache:', cacheName);
               return caches.delete(cacheName);
             }
@@ -67,7 +72,40 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event - serve from cache or network
+// Helper function to determine cache strategy
+function getCacheStrategy(url, request) {
+  const pathname = url.pathname;
+  
+  // Skip authentication requests entirely
+  if (pathname.includes('/auth/') || pathname.includes('/user') || pathname.includes('/token')) {
+    return { strategy: 'network-only', cacheName: null, duration: 0 };
+  }
+  
+  // API calls - short cache (but not auth)
+  if (pathname.includes('/api/') || url.hostname.includes('supabase')) {
+    return { strategy: 'api', cacheName: API_CACHE_NAME, duration: CACHE_DURATIONS.API };
+  }
+  
+  // Static assets - long cache
+  if (pathname.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
+    return { strategy: 'static', cacheName: STATIC_CACHE_NAME, duration: CACHE_DURATIONS.STATIC };
+  }
+  
+  // Images - medium cache
+  if (pathname.match(/\.(png|jpg|jpeg|gif|webp|svg)$/)) {
+    return { strategy: 'images', cacheName: DYNAMIC_CACHE_NAME, duration: CACHE_DURATIONS.IMAGES };
+  }
+  
+  // HTML pages - network first
+  if (request.destination === 'document') {
+    return { strategy: 'network-first', cacheName: DYNAMIC_CACHE_NAME, duration: CACHE_DURATIONS.DYNAMIC };
+  }
+  
+  // Default - cache first
+  return { strategy: 'cache-first', cacheName: DYNAMIC_CACHE_NAME, duration: CACHE_DURATIONS.DYNAMIC };
+}
+
+// Fetch event - intelligent caching strategy
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -82,53 +120,88 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
+  const { strategy, cacheName, duration } = getCacheStrategy(url, request);
+  
   event.respondWith(
-    caches.match(request)
-      .then((cachedResponse) => {
-        // If we have a cached version, check if it's still fresh
-        if (cachedResponse) {
-          // For HTML files, always try to get fresh version
-          if (request.destination === 'document') {
-            return fetch(request)
-              .then((networkResponse) => {
-                // Update cache with fresh response
-                if (networkResponse.ok) {
-                  const responseClone = networkResponse.clone();
-                  caches.open(DYNAMIC_CACHE_NAME)
-                    .then((cache) => {
-                      cache.put(request, responseClone);
-                    });
-                }
-                return networkResponse;
-              })
-              .catch(() => {
-                // If network fails, serve cached version
+    (async () => {
+      try {
+        switch (strategy) {
+          case 'network-first':
+            // Try network first, fallback to cache
+            try {
+              const networkResponse = await fetch(request);
+              if (networkResponse.ok) {
+                const cache = await caches.open(cacheName);
+                cache.put(request, networkResponse.clone());
+              }
+              return networkResponse;
+            } catch (error) {
+              const cachedResponse = await caches.match(request);
+              if (cachedResponse) {
                 return cachedResponse;
-              });
-          }
-          
-          // For other files, serve cached version immediately
-          return cachedResponse;
-        }
-        
-        // No cached version, fetch from network
-        return fetch(request)
-          .then((networkResponse) => {
-            // Only cache successful responses
+              }
+              throw error;
+            }
+            
+          case 'cache-first':
+            // Try cache first, fallback to network
+            const cachedResponse = await caches.match(request);
+            if (cachedResponse) {
+              return cachedResponse;
+            }
+            
+            const networkResponse = await fetch(request);
             if (networkResponse.ok) {
-              const responseClone = networkResponse.clone();
-              caches.open(DYNAMIC_CACHE_NAME)
-                .then((cache) => {
-                  cache.put(request, responseClone);
-                });
+              const cache = await caches.open(cacheName);
+              cache.put(request, networkResponse.clone());
             }
             return networkResponse;
-          })
-          .catch((error) => {
-            console.error('❌ Service Worker: Fetch failed', error);
-            throw error;
-          });
-      })
+            
+          case 'api':
+            // API calls with short cache - but skip authentication requests
+            if (url.pathname.includes('/auth/') || url.pathname.includes('/user')) {
+              // Don't cache authentication requests
+              return fetch(request);
+            }
+            
+            const apiCached = await caches.match(request);
+            if (apiCached) {
+              // Check if cache is still fresh
+              const cacheTime = apiCached.headers.get('sw-cache-time');
+              if (cacheTime && Date.now() - parseInt(cacheTime) < duration) {
+                return apiCached;
+              }
+            }
+            
+            const apiResponse = await fetch(request);
+            if (apiResponse.ok) {
+              const cache = await caches.open(cacheName);
+              // Create a new response with cache time header
+              const responseBody = await apiResponse.clone().text();
+              const newResponse = new Response(responseBody, {
+                status: apiResponse.status,
+                statusText: apiResponse.statusText,
+                headers: {
+                  ...Object.fromEntries(apiResponse.headers.entries()),
+                  'sw-cache-time': Date.now().toString()
+                }
+              });
+              cache.put(request, newResponse);
+            }
+            return apiResponse;
+            
+          case 'network-only':
+            // Always fetch from network, no caching
+            return fetch(request);
+            
+          default:
+            return fetch(request);
+        }
+      } catch (error) {
+        console.error('❌ Service Worker: Fetch failed', error);
+        throw error;
+      }
+    })()
   );
 });
 
@@ -164,35 +237,23 @@ self.addEventListener('message', (event) => {
       break;
       
     case 'GET_VERSION':
-      event.ports[0].postMessage({ version: CACHE_NAME });
+      event.ports[0].postMessage({ version: CACHE_VERSION });
+      break;
+      
+    case 'CLEAR_API_CACHE':
+      console.log('🧹 Service Worker: Clearing API cache...');
+      caches.delete(API_CACHE_NAME)
+        .then(() => {
+          console.log('✅ Service Worker: API cache cleared');
+          event.ports[0].postMessage({ success: true });
+        })
+        .catch((error) => {
+          console.error('❌ Service Worker: API cache clearing failed', error);
+          event.ports[0].postMessage({ success: false, error: error.message });
+        });
       break;
       
     default:
       console.log('❓ Service Worker: Unknown message action:', action);
   }
 });
-
-// Periodic cache cleanup (every 24 hours)
-setInterval(() => {
-  console.log('🧹 Service Worker: Running periodic cache cleanup...');
-  
-  caches.keys()
-    .then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== STATIC_CACHE_NAME && 
-              cacheName !== DYNAMIC_CACHE_NAME &&
-              cacheName !== CACHE_NAME) {
-            console.log('🗑️ Service Worker: Cleaning up old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
-    .then(() => {
-      console.log('✅ Service Worker: Periodic cleanup complete');
-    })
-    .catch((error) => {
-      console.error('❌ Service Worker: Periodic cleanup failed', error);
-    });
-}, 24 * 60 * 60 * 1000); // 24 hours
