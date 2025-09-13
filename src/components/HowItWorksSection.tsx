@@ -30,7 +30,7 @@ export function HowItWorksSection({ isDarkMode, onLoginClick }: HowItWorksSectio
           <h2 className={`font-heading text-4xl md:text-5xl font-bold mb-6 transition-colors duration-300 ${
             isDarkMode ? 'text-white' : 'text-gray-900'
           }`}>
-            How It Works
+            How It Works.
           </h2>
           <p className={`text-lg max-w-3xl mx-auto transition-colors duration-300 ${
             isDarkMode ? 'text-white/70' : 'text-gray-600'
