@@ -13,6 +13,25 @@ import './index.css';
 // Import debug utility for development
 import './utils/authDebug';
 
+// Import cache invalidation utility
+import { initializeCacheVersion, checkForUpdates } from './utils/cacheInvalidation';
+
+// Initialize cache version check
+initializeCacheVersion();
+
+// Service Worker cache invalidation
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'FORCE_RELOAD') {
+      console.log('🔄 Service Worker: Force reloading page for cache invalidation');
+      window.location.reload();
+    }
+  });
+  
+  // Check for updates periodically
+  setInterval(checkForUpdates, 30000); // Check every 30 seconds
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>

@@ -17,7 +17,10 @@ export default defineConfig({
     // Clear cache before build
     emptyOutDir: true,
     // Optimize chunk size
-    chunkSizeWarningLimit: 1000
+    chunkSizeWarningLimit: 1000,
+    // Force cache busting
+    sourcemap: false,
+    minify: 'terser'
   },
   server: {
     // Force reload on file changes

@@ -5,7 +5,7 @@
  * and optimized performance for production use.
  */
 
-const CACHE_VERSION = '2.0.0';
+const CACHE_VERSION = '3.0.0';
 const STATIC_CACHE_NAME = `realaist-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE_NAME = `realaist-dynamic-${CACHE_VERSION}`;
 const API_CACHE_NAME = `realaist-api-${CACHE_VERSION}`;
@@ -65,6 +65,14 @@ self.addEventListener('activate', (event) => {
       .then(() => {
         console.log('✅ Service Worker: Activation complete');
         return self.clients.claim();
+      })
+      .then(() => {
+        // Force refresh all clients to get the new version
+        return self.clients.matchAll().then(clients => {
+          clients.forEach(client => {
+            client.postMessage({ type: 'FORCE_RELOAD' });
+          });
+        });
       })
       .catch((error) => {
         console.error('❌ Service Worker: Activation failed', error);
