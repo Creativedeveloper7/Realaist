@@ -1,45 +1,15 @@
 import { supabase } from '../lib/supabase'
-import type { User, Session } from '@supabase/supabase-js'
-
-// Mock users for offline mode
-const MOCK_USERS: AuthUser[] = [
-  {
-    id: 'mock-dev-1',
-    email: 'developer@example.com',
-    firstName: 'John',
-    lastName: 'Developer',
-    userType: 'developer',
-    companyName: 'Real Estate Solutions',
-    licenseNumber: 'DEV001',
-    phone: '+254700000000',
-    avatarUrl: undefined
-  },
-  {
-    id: 'mock-buyer-1',
-    email: 'buyer@example.com',
-    firstName: 'Jane',
-    lastName: 'Buyer',
-    userType: 'buyer',
-    phone: '+254700000001',
-    avatarUrl: undefined
-  }
-]
-
-// Check if we're in offline mode
-const isOfflineMode = () => {
-  return localStorage.getItem('offline_mode') === 'true'
-}
 
 export interface AuthUser {
   id: string
   email: string
   firstName: string
   lastName: string
+  phone?: string
+  avatarUrl?: string
   userType: 'buyer' | 'developer'
   companyName?: string
   licenseNumber?: string
-  phone?: string
-  avatarUrl?: string
 }
 
 export interface SignUpData {
@@ -48,15 +18,42 @@ export interface SignUpData {
   firstName: string
   lastName: string
   userType: 'buyer' | 'developer'
+  phone?: string
   companyName?: string
   licenseNumber?: string
-  phone?: string
 }
 
 export interface SignInData {
   email: string
   password: string
 }
+
+// Helper function to check offline mode
+const isOfflineMode = (): boolean => {
+  return localStorage.getItem('offline_mode') === 'true'
+}
+
+// Mock users for offline mode
+const MOCK_USERS: AuthUser[] = [
+  {
+    id: 'mock-user-1',
+    email: 'developer@realaist.com',
+    firstName: 'John',
+    lastName: 'Developer',
+    userType: 'developer',
+    companyName: 'Realaist Developers',
+    licenseNumber: 'DEV001',
+    phone: '+254 700 000 000'
+  },
+  {
+    id: 'mock-user-2',
+    email: 'buyer@realaist.com',
+    firstName: 'Jane',
+    lastName: 'Buyer',
+    userType: 'buyer',
+    phone: '+254 700 000 001'
+  }
+]
 
 class AuthService {
   // Get current user
@@ -109,39 +106,8 @@ class AuthService {
           .single()
 
         if (createError) {
-          // If it's a duplicate key error, the profile already exists, try to fetch it
-          if (createError.code === '23505') {
-            console.log('Profile already exists, fetching it...')
-            const { data: existingProfile, error: fetchError } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', user.id)
-              .single()
-
-            if (fetchError || !existingProfile) {
-              console.error('Error fetching existing profile:', fetchError)
-              return null
-            }
-
-            return {
-              id: existingProfile.id,
-              email: existingProfile.email,
-              firstName: existingProfile.first_name,
-              lastName: existingProfile.last_name,
-              userType: existingProfile.user_type,
-              companyName: existingProfile.company_name,
-              licenseNumber: existingProfile.license_number,
-              phone: existingProfile.phone,
-              avatarUrl: existingProfile.avatar_url
-            }
-          } else {
-            console.error('Error creating profile:', createError)
-            return null
-          }
-        }
-
-        if (!newProfile) {
-        return null
+          console.error('Failed to create profile:', createError)
+          return null
         }
 
         return {
@@ -149,11 +115,11 @@ class AuthService {
           email: newProfile.email,
           firstName: newProfile.first_name,
           lastName: newProfile.last_name,
+          phone: newProfile.phone,
+          avatarUrl: newProfile.avatar_url,
           userType: newProfile.user_type,
           companyName: newProfile.company_name,
-          licenseNumber: newProfile.license_number,
-          phone: newProfile.phone,
-          avatarUrl: newProfile.avatar_url
+          licenseNumber: newProfile.license_number
         }
       }
 
@@ -162,11 +128,11 @@ class AuthService {
         email: profile.email,
         firstName: profile.first_name,
         lastName: profile.last_name,
+        phone: profile.phone,
+        avatarUrl: profile.avatar_url,
         userType: profile.user_type,
         companyName: profile.company_name,
-        licenseNumber: profile.license_number,
-        phone: profile.phone,
-        avatarUrl: profile.avatar_url
+        licenseNumber: profile.license_number
       }
     } catch (error) {
       console.error('Error getting current user:', error)
@@ -177,15 +143,24 @@ class AuthService {
   // Sign up with email and password
   async signUp(data: SignUpData): Promise<{ user: AuthUser | null; error: string | null }> {
     try {
-      console.log('Attempting to sign up with:', { 
-        email: data.email, 
-        userType: data.userType,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        phone: data.phone,
-        companyName: data.companyName,
-        licenseNumber: data.licenseNumber
-      })
+      console.log('Attempting to sign up with:', { email: data.email, userType: data.userType })
+      
+      // Check if we're in offline mode or if Supabase is unavailable
+      if (isOfflineMode()) {
+        console.log('Using offline authentication for signup')
+        const mockUser: AuthUser = {
+          id: `mock-user-${Date.now()}`,
+          email: data.email,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          userType: data.userType,
+          phone: data.phone,
+          companyName: data.companyName,
+          licenseNumber: data.licenseNumber
+        }
+        localStorage.setItem('current_user', JSON.stringify(mockUser))
+        return { user: mockUser, error: null }
+      }
       
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
@@ -195,15 +170,32 @@ class AuthService {
             first_name: data.firstName,
             last_name: data.lastName,
             user_type: data.userType,
+            phone: data.phone,
             company_name: data.companyName,
-            license_number: data.licenseNumber,
-            phone: data.phone
+            license_number: data.licenseNumber
           }
         }
       })
 
       if (authError) {
-        console.error('Supabase signup error:', authError)
+        console.error('Supabase auth error:', authError)
+        // If it's a network error, try offline mode
+        if (authError.message.includes('Load failed') || authError.message.includes('fetch')) {
+          console.log('Network error detected, switching to offline mode')
+          localStorage.setItem('offline_mode', 'true')
+          const mockUser: AuthUser = {
+            id: `mock-user-${Date.now()}`,
+            email: data.email,
+            firstName: data.firstName,
+            lastName: data.lastName,
+            userType: data.userType,
+            phone: data.phone,
+            companyName: data.companyName,
+            licenseNumber: data.licenseNumber
+          }
+          localStorage.setItem('current_user', JSON.stringify(mockUser))
+          return { user: mockUser, error: null }
+        }
         return { user: null, error: authError.message }
       }
 
@@ -211,82 +203,37 @@ class AuthService {
         return { user: null, error: 'Failed to create user' }
       }
 
-      console.log('User created successfully:', authData.user)
-      console.log('User confirmed:', authData.user.email_confirmed_at)
-      console.log('User ID:', authData.user.id)
-      console.log('User email:', authData.user.email)
-
-      // Check if email confirmation is required
-      if (!authData.user.email_confirmed_at) {
-        console.log('Email confirmation required')
-        return { 
-          user: null, 
-          error: 'Please check your email and click the confirmation link before logging in.' 
-        }
-      }
-
       // The profile should be created automatically by the trigger
-      // Let's check if it exists and update it if needed
-      const { data: existingProfile, error: profileCheckError } = await supabase
+      // But let's wait a moment and then fetch it
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      // Get the created profile
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', authData.user.id)
         .single()
 
-      if (existingProfile) {
-        // Profile exists, update it with the correct user_type and other data
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({
-            first_name: data.firstName,
-            last_name: data.lastName,
-            user_type: data.userType,
-            company_name: data.companyName,
-            license_number: data.licenseNumber,
-            phone: data.phone
-          })
-          .eq('id', authData.user.id)
-
-        if (updateError) {
-          console.error('Error updating profile:', updateError)
-        }
-      } else {
-        // Profile doesn't exist, create it
-        const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          email: data.email,
-          first_name: data.firstName,
-          last_name: data.lastName,
-          user_type: data.userType,
-          company_name: data.companyName,
-          license_number: data.licenseNumber,
-          phone: data.phone
-        })
-          .select()
-          .single()
-
-      if (profileError) {
-        console.error('Error creating profile:', profileError)
-        }
+      if (profileError || !profile) {
+        console.error('Profile not found after signup:', profileError)
+        return { user: null, error: 'Profile creation failed' }
       }
 
-      return {
-        user: {
-          id: authData.user.id,
-          email: data.email,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          userType: data.userType,
-          companyName: data.companyName,
-          licenseNumber: data.licenseNumber,
-          phone: data.phone
-        },
-        error: null
+      const authUser: AuthUser = {
+        id: profile.id,
+        email: profile.email,
+        firstName: profile.first_name,
+        lastName: profile.last_name,
+        phone: profile.phone,
+        avatarUrl: profile.avatar_url,
+        userType: profile.user_type,
+        companyName: profile.company_name,
+        licenseNumber: profile.license_number
       }
+
+      return { user: authUser, error: null }
     } catch (error) {
-      console.error('Error signing up:', error)
+      console.error('Signup error:', error)
       return { user: null, error: 'An unexpected error occurred' }
     }
   }
@@ -341,7 +288,7 @@ class AuthService {
 
       if (profileError || !profile) {
         // If profile doesn't exist, try to create one
-        console.log('Profile not found during sign in, attempting to create one for user:', authData.user.id)
+        console.log('Profile not found, attempting to create one for user:', authData.user.id)
         
         // Extract name from user metadata or email
         const fullName = authData.user.user_metadata?.full_name || authData.user.user_metadata?.name || ''
@@ -357,15 +304,15 @@ class AuthService {
             email: authData.user.email!,
             first_name: firstName,
             last_name: lastName,
-            user_type: 'buyer', // Default to buyer
+            user_type: authData.user.user_metadata?.user_type || 'buyer',
             avatar_url: authData.user.user_metadata?.avatar_url || null
           })
           .select()
           .single()
 
-        if (createError || !newProfile) {
-          console.error('Error creating profile during sign in:', createError)
-          return { user: null, error: 'Failed to create user profile' }
+        if (createError) {
+          console.error('Failed to create profile:', createError)
+          return { user: null, error: 'Profile creation failed' }
         }
 
         return {
@@ -374,11 +321,11 @@ class AuthService {
             email: newProfile.email,
             firstName: newProfile.first_name,
             lastName: newProfile.last_name,
+            phone: newProfile.phone,
+            avatarUrl: newProfile.avatar_url,
             userType: newProfile.user_type,
             companyName: newProfile.company_name,
-            licenseNumber: newProfile.license_number,
-            phone: newProfile.phone,
-            avatarUrl: newProfile.avatar_url
+            licenseNumber: newProfile.license_number
           },
           error: null
         }
@@ -390,16 +337,16 @@ class AuthService {
           email: profile.email,
           firstName: profile.first_name,
           lastName: profile.last_name,
+          phone: profile.phone,
+          avatarUrl: profile.avatar_url,
           userType: profile.user_type,
           companyName: profile.company_name,
-          licenseNumber: profile.license_number,
-          phone: profile.phone,
-          avatarUrl: profile.avatar_url
+          licenseNumber: profile.license_number
         },
         error: null
       }
     } catch (error) {
-      console.error('Error signing in:', error)
+      console.error('Sign in error:', error)
       return { user: null, error: 'An unexpected error occurred' }
     }
   }
@@ -407,6 +354,10 @@ class AuthService {
   // Sign in with Google
   async signInWithGoogle(): Promise<{ error: string | null }> {
     try {
+      if (isOfflineMode()) {
+        return { error: 'Google sign-in not available in offline mode' }
+      }
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -415,12 +366,13 @@ class AuthService {
       })
 
       if (error) {
+        console.error('Google sign-in error:', error)
         return { error: error.message }
       }
 
       return { error: null }
     } catch (error) {
-      console.error('Error signing in with Google:', error)
+      console.error('Google sign-in error:', error)
       return { error: 'An unexpected error occurred' }
     }
   }
@@ -451,6 +403,17 @@ class AuthService {
   // Update user profile
   async updateProfile(updates: Partial<AuthUser>): Promise<{ user: AuthUser | null; error: string | null }> {
     try {
+      if (isOfflineMode()) {
+        const storedUser = localStorage.getItem('current_user')
+        if (storedUser) {
+          const user = JSON.parse(storedUser)
+          const updatedUser = { ...user, ...updates }
+          localStorage.setItem('current_user', JSON.stringify(updatedUser))
+          return { user: updatedUser, error: null }
+        }
+        return { user: null, error: 'No user found in offline mode' }
+      }
+
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       
       if (authError || !user) {
@@ -462,10 +425,11 @@ class AuthService {
         .update({
           first_name: updates.firstName,
           last_name: updates.lastName,
+          phone: updates.phone,
+          avatar_url: updates.avatarUrl,
           company_name: updates.companyName,
           license_number: updates.licenseNumber,
-          phone: updates.phone,
-          avatar_url: updates.avatarUrl
+          updated_at: new Date().toISOString()
         })
         .eq('id', user.id)
         .select()
@@ -475,72 +439,46 @@ class AuthService {
         return { user: null, error: profileError.message }
       }
 
-      return {
-        user: {
-          id: profile.id,
-          email: profile.email,
-          firstName: profile.first_name,
-          lastName: profile.last_name,
-          userType: profile.user_type,
-          companyName: profile.company_name,
-          licenseNumber: profile.license_number,
-          phone: profile.phone,
-          avatarUrl: profile.avatar_url
-        },
-        error: null
+      const authUser: AuthUser = {
+        id: profile.id,
+        email: profile.email,
+        firstName: profile.first_name,
+        lastName: profile.last_name,
+        phone: profile.phone,
+        avatarUrl: profile.avatar_url,
+        userType: profile.user_type,
+        companyName: profile.company_name,
+        licenseNumber: profile.license_number
       }
+
+      return { user: authUser, error: null }
     } catch (error) {
-      console.error('Error updating profile:', error)
+      console.error('Profile update error:', error)
       return { user: null, error: 'An unexpected error occurred' }
     }
   }
 
   // Listen to auth state changes
   onAuthStateChange(callback: (user: AuthUser | null) => void) {
+    if (isOfflineMode()) {
+      // In offline mode, just return a dummy subscription
+      return {
+        data: {
+          subscription: {
+            unsubscribe: () => {}
+          }
+        }
+      }
+    }
+
     return supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        const user = await this.getCurrentUser()
-        callback(user)
-      } else if (event === 'SIGNED_OUT') {
+      if (session?.user) {
+        const authUser = await this.getCurrentUser()
+        callback(authUser)
+      } else {
         callback(null)
       }
     })
-  }
-
-  // Get current session
-  async getSession(): Promise<Session | null> {
-    try {
-      const { data: { session }, error } = await supabase.auth.getSession()
-      
-      if (error) {
-        console.error('Error getting session:', error)
-        return null
-      }
-
-      return session
-    } catch (error) {
-      console.error('Error getting session:', error)
-      return null
-    }
-  }
-
-  // Resend email confirmation
-  async resendConfirmation(email: string): Promise<{ error: string | null }> {
-    try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: email
-      })
-
-      if (error) {
-        return { error: error.message }
-      }
-
-      return { error: null }
-    } catch (error) {
-      console.error('Error resending confirmation:', error)
-      return { error: 'Failed to resend confirmation email' }
-    }
   }
 }
 

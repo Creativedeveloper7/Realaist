@@ -20,14 +20,13 @@ export interface User {
 
 export interface AuthContextType {
   user: User | null;
-  isAuthenticated: boolean;
   isLoading: boolean;
+  isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (userData: SignupData) => Promise<{ success: boolean; error?: string }>;
   signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
-  logout: () => void;
+  logout: () => Promise<void>;
   updateProfile: (userData: Partial<User>) => Promise<{ success: boolean; error?: string }>;
-  updatePreferences: (preferences: Partial<User['preferences']>) => Promise<{ success: boolean; error?: string }>;
 }
 
 export interface SignupData {
@@ -35,18 +34,17 @@ export interface SignupData {
   password: string;
   firstName: string;
   lastName: string;
-  phone?: string;
   userType: 'buyer' | 'developer';
-  // Developer-specific fields
+  phone?: string;
   companyName?: string;
   licenseNumber?: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => {
+export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
@@ -212,20 +210,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     try {
-      await authService.signOut();
+      // Clear user state immediately
       setUser(null);
+      
+      // Sign out from service
+      await authService.signOut();
+      
+      // Clear any cached data
+      localStorage.removeItem('current_user');
+      localStorage.removeItem('offline_mode');
+      
+      // Force reload to clear any cached state
+      window.location.reload();
     } catch (error) {
       console.error('Logout error:', error);
+      // Even if logout fails, clear the user state
       setUser(null);
+      localStorage.removeItem('current_user');
+      localStorage.removeItem('offline_mode');
+      window.location.reload();
     }
   };
 
   const updateProfile = async (userData: Partial<User>): Promise<{ success: boolean; error?: string }> => {
     try {
       if (!user) {
-        return { success: false, error: 'Not authenticated' };
+        return { success: false, error: 'No user logged in' };
       }
-      
+
       const result = await authService.updateProfile({
         firstName: userData.firstName,
         lastName: userData.lastName,
@@ -234,7 +246,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         companyName: userData.companyName,
         licenseNumber: userData.licenseNumber
       });
-      
+
       if (result.user) {
         setUser(convertAuthUserToUser(result.user));
         return { success: true };
@@ -243,43 +255,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       console.error('Profile update error:', error);
-      return { success: false, error: 'Profile update failed' };
+      return { success: false, error: 'Profile update failed. Please try again.' };
     }
   };
 
-  const updatePreferences = async (preferences: Partial<User['preferences']>): Promise<{ success: boolean; error?: string }> => {
-    try {
-      if (!user) {
-        return { success: false, error: 'Not authenticated' };
-      }
-      
-      const updatedUser = {
-        ...user,
-        preferences: { ...user.preferences, ...preferences }
-      };
-      localStorage.setItem('user_data', JSON.stringify(updatedUser));
-      setUser(updatedUser);
-      
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: 'Preferences update failed' };
-    }
-  };
-
-  const value: AuthContextType = {
+  const contextValue: AuthContextType = {
     user,
-    isAuthenticated: !!user,
     isLoading,
+    isAuthenticated: !!user,
     login,
     signup,
     signInWithGoogle,
     logout,
-    updateProfile,
-    updatePreferences
+    updateProfile
   };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
