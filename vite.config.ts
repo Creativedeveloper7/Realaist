@@ -20,7 +20,8 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     // Force cache busting
     sourcemap: false,
-    minify: 'terser'
+    // Use esbuild (default) to avoid requiring terser on Vercel
+    minify: 'esbuild'
   },
   server: {
     // Force reload on file changes

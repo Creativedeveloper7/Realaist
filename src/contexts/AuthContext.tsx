@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authService, type AuthUser } from '../services/authService';
+import { apiCacheService } from '../services/apiCacheService';
+import { cacheManager } from '../utils/cacheManager';
 
 export interface User {
   id: string;
@@ -91,6 +93,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const authUser = await authService.getCurrentUser();
         if (authUser) {
           setUser(convertAuthUserToUser(authUser));
+        } else {
+          // No session: proactively clear caches to avoid stale views
+          await clearAllAppCaches();
+          setUser(null);
         }
       } catch (error) {
         console.error('Auth check failed:', error);
@@ -105,14 +111,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // Listen to auth state changes (only if not in offline mode)
     const isOfflineMode = localStorage.getItem('offline_mode') === 'true';
-    let subscription = null;
+    let subscription = null as any;
     
     if (!isOfflineMode) {
-      const { data: { subscription: authSubscription } } = authService.onAuthStateChange((authUser) => {
+      const { data: { subscription: authSubscription } } = authService.onAuthStateChange(async (authUser) => {
         if (authUser) {
           setUser(convertAuthUserToUser(authUser));
         } else {
           setUser(null);
+          await clearAllAppCaches();
         }
         // Don't set loading to false here as it interferes with login process
       });
@@ -125,6 +132,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
   }, []);
+
+  const clearAllAppCaches = async () => {
+    try {
+      apiCacheService.clearAll();
+      // Clear SW/browser/local caches asynchronously; no need to block UI
+      cacheManager.clearAllCaches();
+    } catch (e) {
+      console.warn('Cache clear skipped due to error:', e);
+    }
+  };
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
@@ -140,6 +157,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       clearTimeout(timeoutId);
       
       if (result.user) {
+        // Blow away any stale caches immediately
+        await clearAllAppCaches();
         setUser(convertAuthUserToUser(result.user));
         return { success: true };
       } else {
@@ -176,6 +195,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       clearTimeout(timeoutId);
       
       if (result.user) {
+        await clearAllAppCaches();
         setUser(convertAuthUserToUser(result.user));
         return { success: true };
       } else {
@@ -199,6 +219,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return { success: false, error: result.error };
       }
       
+      // After redirect-based OAuth, caches will be cleared after session restoration.
       return { success: true };
     } catch (error) {
       console.error('Google sign-in error:', error);
@@ -217,6 +238,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await authService.signOut();
       
       // Clear any cached data
+      apiCacheService.clearAll();
       localStorage.removeItem('current_user');
       localStorage.removeItem('offline_mode');
       
@@ -226,6 +248,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Logout error:', error);
       // Even if logout fails, clear the user state
       setUser(null);
+      apiCacheService.clearAll();
       localStorage.removeItem('current_user');
       localStorage.removeItem('offline_mode');
       window.location.reload();
