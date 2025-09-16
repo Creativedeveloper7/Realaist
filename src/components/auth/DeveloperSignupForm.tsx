@@ -62,7 +62,7 @@ export const DeveloperSignupForm: React.FC<DeveloperSignupFormProps> = ({
     }
 
     if (!formData.licenseNumber.trim()) {
-      newErrors.licenseNumber = 'License number is required';
+      newErrors.licenseNumber = 'Business number is required';
     }
 
     if (!formData.password) {
@@ -303,7 +303,7 @@ export const DeveloperSignupForm: React.FC<DeveloperSignupFormProps> = ({
           <label className={`block text-sm font-medium mb-2 ${
             isDarkMode ? 'text-white' : 'text-gray-700'
           }`}>
-            License Number *
+            Business Number *
           </label>
           <input
             name="licenseNumber"
@@ -314,10 +314,10 @@ export const DeveloperSignupForm: React.FC<DeveloperSignupFormProps> = ({
               errors.licenseNumber 
                 ? 'border-red-500' 
                 : isDarkMode 
-                  ? 'bg-white/5 border-white/15 text-white placeholder-white/40' 
+                  ? 'bg-white/5 border-white/10 text-white placeholder-gray-400' 
                   : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
             }`}
-            placeholder="Enter your developer license number"
+            placeholder="Enter your business number"
             disabled={isLoading}
           />
           {errors.licenseNumber && (

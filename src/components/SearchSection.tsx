@@ -75,12 +75,12 @@ export function SearchSection({ isDarkMode, onConsultationClick }: SearchSection
     localStorage.setItem('realaist_search_history', query);
     setSearchSuggestionsVisible(false);
     // Navigate to properties page with search
-    navigate(`/houses?search=${encodeURIComponent(query)}`);
+    navigate(`/properties?search=${encodeURIComponent(query)}`);
   };
 
   const handleExploreHouses = () => {
-    console.log('Explore Houses clicked - navigating to /houses');
-    navigate('/houses');
+    console.log('Explore Houses clicked - navigating to /properties');
+    navigate('/properties');
   };
 
   return (
@@ -129,15 +129,15 @@ export function SearchSection({ isDarkMode, onConsultationClick }: SearchSection
           {/* Action Buttons */}
           <div className="flex gap-3">
             <motion.a 
-              href="/houses"
+              href="/properties"
               className="flex-1 px-4 py-2 bg-gray-900 text-white font-medium rounded-md hover:bg-gray-800 transition-colors text-base flex items-center justify-center relative z-10"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 1.05 }}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Explore Houses clicked - navigating to /houses');
-                window.location.href = '/houses';
+                console.log('Explore Houses clicked - navigating to /properties');
+                window.location.href = '/properties';
               }}
             >
               Explore Houses

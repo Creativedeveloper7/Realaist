@@ -7,9 +7,10 @@ interface HeaderProps {
   isDarkMode: boolean;
   toggleTheme: () => void;
   onLoginClick: () => void;
+  showLogo?: boolean;
 }
 
-export function Header({ isDarkMode, toggleTheme, onLoginClick }: HeaderProps) {
+export function Header({ isDarkMode, toggleTheme, onLoginClick, showLogo = true }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
@@ -32,18 +33,33 @@ export function Header({ isDarkMode, toggleTheme, onLoginClick }: HeaderProps) {
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          {/* Logo removed - using FloatingLogo component instead */}
+          {showLogo && (
+            <motion.a 
+              href="/"
+              className={`border border-dashed rounded px-2 py-1 transition-colors duration-300 ${
+                isDarkMode ? 'border-white/60' : 'border-gray-400'
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <img 
+                src="/logos/realaistlogo.png" 
+                alt="Realaist Logo" 
+                className="h-9 w-auto"
+              />
+            </motion.a>
+          )}
         </div>
         
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-8 text-sm">
-          <a href="/houses" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Developers</a>
+          <a href="/properties" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Properties</a>
           <a href="/blogs" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Blogs</a>
           <a href="#contact" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
               <motion.button
-                onClick={() => navigate(user?.userType === 'developer' ? '/developer-dashboard' : '/buyer-dashboard')}
+                onClick={() => navigate('/developer-dashboard')}
                 className="px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -120,13 +136,13 @@ export function Header({ isDarkMode, toggleTheme, onLoginClick }: HeaderProps) {
         transition={{ duration: 0.3, ease: "easeInOut" }}
       >
         <div className="px-4 py-6 space-y-4">
-          <a href="/houses" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Developers</a>
+          <a href="/properties" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Properties</a>
           <a href="/blogs" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Blogs</a>
           <a href="#contact" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
           {isAuthenticated ? (
             <div className="space-y-3">
               <motion.button
-                onClick={() => navigate(user?.userType === 'developer' ? '/developer-dashboard' : '/buyer-dashboard')}
+                onClick={() => navigate('/developer-dashboard')}
                 className="w-full px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}

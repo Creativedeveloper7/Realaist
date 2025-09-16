@@ -2,6 +2,23 @@ import { supabase } from '../lib/supabase'
 import { offPlanProjects, completedProjects } from '../data/projects'
 import { apiCacheService } from './apiCacheService'
 
+// Helpers for local fallback persistence
+function readLocalProperties(): Property[] {
+  try {
+    const raw = localStorage.getItem('local_properties')
+    if (!raw) return []
+    return JSON.parse(raw) as Property[]
+  } catch {
+    return []
+  }
+}
+
+function writeLocalProperties(props: Property[]) {
+  try {
+    localStorage.setItem('local_properties', JSON.stringify(props))
+  } catch {}
+}
+
 // Fallback data for when database is unavailable
 const FALLBACK_PROPERTIES: Property[] = [
   {
@@ -25,7 +42,9 @@ const FALLBACK_PROPERTIES: Property[] = [
       phone: '+254 712 345 678'
     },
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
+    amenities: ['Swimming Pool', 'Gym', '24/7 Security'],
+    features: ['Air Conditioning', 'Internet', 'Parking']
   },
   {
     id: 'fallback-2',
@@ -48,7 +67,9 @@ const FALLBACK_PROPERTIES: Property[] = [
       phone: '+254 723 456 789'
     },
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
+    amenities: ['Garden', 'Parking', 'Security'],
+    features: ['Internet', 'TV', 'Water Heater']
   },
   {
     id: 'fallback-3',
@@ -71,7 +92,9 @@ const FALLBACK_PROPERTIES: Property[] = [
       phone: '+254 734 567 890'
     },
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
+    amenities: ['Swimming Pool', 'Gym', 'Security'],
+    features: ['Internet', 'TV', 'Water Heater']
   },
   {
     id: 'fallback-4',
@@ -94,7 +117,9 @@ const FALLBACK_PROPERTIES: Property[] = [
       phone: '+254 745 678 901'
     },
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
+    amenities: ['Internet', 'TV', 'Water Heater'],
+    features: ['Internet', 'TV', 'Water Heater']
   },
   {
     id: 'fallback-5',
@@ -117,7 +142,9 @@ const FALLBACK_PROPERTIES: Property[] = [
       phone: '+254 756 789 012'
     },
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
+    amenities: ['Swimming Pool', 'Gym', 'Security'],
+    features: ['Internet', 'TV', 'Water Heater']
   },
   {
     id: 'fallback-6',
@@ -140,7 +167,9 @@ const FALLBACK_PROPERTIES: Property[] = [
       phone: '+254 767 890 123'
     },
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
+    amenities: ['Garden', 'Parking', 'Security'],
+    features: ['Internet', 'TV', 'Water Heater']
   }
 ]
 
@@ -166,7 +195,9 @@ const convertProjectToProperty = (project: any): Property => ({
     phone: '+254 700 000 000'
   },
   createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString()
+  updatedAt: new Date().toISOString(),
+  amenities: [], // No amenities in project data
+  features: [] // No features in project data
 })
 
 // Combine fallback properties with project data and deduplicate by ID
@@ -200,6 +231,9 @@ export interface Property {
   }
   createdAt: string
   updatedAt: string
+  // UI-only metadata (kept locally for now when DB is unreachable)
+  amenities?: string[]
+  features?: string[]
 }
 
 export interface CreatePropertyData {
@@ -213,6 +247,9 @@ export interface CreatePropertyData {
   squareFeet?: number
   images?: string[]
   status?: 'active' | 'sold' | 'pending' | 'draft'
+  // UI-only fields to persist locally on offline/timeout
+  amenities?: string[]
+  features?: string[]
 }
 
 export interface UpdatePropertyData extends Partial<CreatePropertyData> {
@@ -257,6 +294,8 @@ class PropertiesService {
               developer_id,
               created_at,
               updated_at,
+              amenities,
+              features,
               developer:profiles!properties_developer_id_fkey(
                 id,
                 first_name,
@@ -298,9 +337,10 @@ class PropertiesService {
 
           if (error) {
             console.error('Error fetching properties:', error)
-            // Return fallback data when database is unavailable
+            // Return fallback + locally created properties
             console.log('Using fallback properties due to database error')
-            return { properties: ALL_FALLBACK_PROPERTIES, error: null }
+            const local = readLocalProperties()
+            return { properties: [...local, ...ALL_FALLBACK_PROPERTIES], error: null }
           }
 
           const properties: Property[] = data.map(item => ({
@@ -324,15 +364,20 @@ class PropertiesService {
               phone: item.developer.phone
             } : undefined,
             createdAt: item.created_at,
-            updatedAt: item.updated_at
+            updatedAt: item.updated_at,
+            amenities: item.amenities || [],
+            features: item.features || []
           }))
 
-          return { properties, error: null }
+          // Merge locally created properties as well
+          const local = readLocalProperties()
+          return { properties: [...local, ...properties], error: null }
         } catch (error) {
           console.error('Error fetching properties:', error)
           // Return fallback data when there's a network error
           console.log('Using fallback properties due to network error')
-          return { properties: ALL_FALLBACK_PROPERTIES, error: null }
+          const local = readLocalProperties()
+          return { properties: [...local, ...ALL_FALLBACK_PROPERTIES], error: null }
         }
       },
       { ttl: 5 * 60 * 1000 } // Cache for 5 minutes
@@ -364,6 +409,8 @@ class PropertiesService {
               developer_id,
               created_at,
               updated_at,
+              amenities,
+              features,
               developer:profiles!properties_developer_id_fkey(
                 id,
                 first_name,
@@ -407,7 +454,9 @@ class PropertiesService {
               phone: data.developer.phone
             } : undefined,
             createdAt: data.created_at,
-            updatedAt: data.updated_at
+            updatedAt: data.updated_at,
+            amenities: data.amenities || [],
+            features: data.features || []
           }
 
           return { property, error: null }
@@ -447,8 +496,10 @@ class PropertiesService {
           bathrooms: data.bathrooms,
           square_feet: data.squareFeet,
           images: data.images || [],
-          status: data.status || 'draft',
-          developer_id: user.id
+          status: data.status || 'active',
+          developer_id: user.id,
+          amenities: data.amenities || [],
+          features: data.features || []
         })
         .select(`
           *,
@@ -487,13 +538,50 @@ class PropertiesService {
           phone: propertyData.developer.phone
         } : undefined,
         createdAt: propertyData.created_at,
-        updatedAt: propertyData.updated_at
+        updatedAt: propertyData.updated_at,
+        amenities: propertyData.amenities || [],
+        features: propertyData.features || []
       }
 
+      // Invalidate caches
+      apiCacheService.clear('properties-{}')
+      apiCacheService.clear('properties-{"status":"active"}')
+
       return { property, error: null }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating property:', error)
-      return { property: null, error: 'An unexpected error occurred' }
+      // Offline/timeout fallback: create a local property so UI can continue
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const now = new Date().toISOString()
+          const localProp: Property = {
+            id: `fallback-${Date.now()}`,
+            title: data.title,
+            description: data.description,
+            price: data.price,
+            location: data.location,
+            propertyType: data.propertyType,
+            bedrooms: data.bedrooms,
+            bathrooms: data.bathrooms,
+            squareFeet: data.squareFeet,
+            images: data.images || [],
+            status: (data.status as any) || 'active',
+            developerId: user.id,
+            createdAt: now,
+            updatedAt: now,
+            amenities: data.amenities || [],
+            features: data.features || []
+          }
+          const local = readLocalProperties()
+          writeLocalProperties([localProp, ...local])
+          // Invalidate caches so lists re-read and include local
+          apiCacheService.clear('properties-{}')
+          apiCacheService.clear('properties-{"status":"active"}')
+          return { property: localProp, error: null }
+        }
+      } catch {}
+      return { property: null, error: 'Network timeout while creating property' }
     }
   }
 
@@ -517,6 +605,8 @@ class PropertiesService {
       if (data.squareFeet !== undefined) updateData.square_feet = data.squareFeet
       if (data.images) updateData.images = data.images
       if (data.status) updateData.status = data.status
+      if (data.amenities) updateData.amenities = data.amenities
+      if (data.features) updateData.features = data.features
 
       const { data: propertyData, error } = await supabase
         .from('properties')
@@ -560,8 +650,14 @@ class PropertiesService {
           phone: propertyData.developer.phone
         } : undefined,
         createdAt: propertyData.created_at,
-        updatedAt: propertyData.updated_at
+        updatedAt: propertyData.updated_at,
+        amenities: propertyData.amenities || [],
+        features: propertyData.features || []
       }
+
+      // Invalidate caches
+      apiCacheService.clear('properties-{}')
+      apiCacheService.clear('properties-{"status":"active"}')
 
       return { property, error: null }
     } catch (error) {
@@ -588,6 +684,10 @@ class PropertiesService {
       if (error) {
         return { error: error.message }
       }
+
+      // Invalidate caches
+      apiCacheService.clear('properties-{}')
+      apiCacheService.clear('properties-{"status":"active"}')
 
       return { error: null }
     } catch (error) {
@@ -623,7 +723,9 @@ class PropertiesService {
         .order('created_at', { ascending: false })
 
       if (error) {
-        return { properties: [], error: error.message }
+        // Merge with locally created properties for this developer
+        const local = readLocalProperties().filter(p => p.developerId === targetDeveloperId)
+        return { properties: local, error: error.message }
       }
 
       const properties: Property[] = data.map(item => ({
@@ -647,13 +749,19 @@ class PropertiesService {
           phone: item.developer.phone
         } : undefined,
         createdAt: item.created_at,
-        updatedAt: item.updated_at
+        updatedAt: item.updated_at,
+        amenities: item.amenities || [],
+        features: item.features || []
       }))
 
-      return { properties, error: null }
+      // Merge with locally created properties
+      const local = readLocalProperties().filter(p => p.developerId === targetDeveloperId)
+      return { properties: [...local, ...properties], error: null }
     } catch (error) {
       console.error('Error fetching developer properties:', error)
-      return { properties: [], error: 'An unexpected error occurred' }
+      const { data: { user } } = await supabase.auth.getUser()
+      const local = user ? readLocalProperties().filter(p => p.developerId === user.id) : []
+      return { properties: local, error: 'An unexpected error occurred' }
     }
   }
 }

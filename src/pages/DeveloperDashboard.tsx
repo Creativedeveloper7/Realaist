@@ -26,6 +26,7 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({ isDarkMo
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [myProperties, setMyProperties] = useState<Property[]>([]);
   const [isLoadingProperties, setIsLoadingProperties] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Load developer's properties
   useEffect(() => {
@@ -48,6 +49,22 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({ isDarkMo
     };
 
     loadProperties();
+  }, [user?.id]);
+
+  // Listen for realtime property creation to update list without refresh
+  useEffect(() => {
+    const handler = (e: any) => {
+      const created = e?.detail?.property as Property | undefined;
+      if (!created) return;
+      if (!user?.id) return;
+      if (created.developerId !== user.id) return;
+      setMyProperties(prev => {
+        if (prev.find(p => p.id === created.id)) return prev;
+        return [created, ...prev];
+      });
+    };
+    window.addEventListener('realaist:property-created' as any, handler);
+    return () => window.removeEventListener('realaist:property-created' as any, handler);
   }, [user?.id]);
 
   const stats = [
@@ -95,6 +112,29 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({ isDarkMo
     }
   };
 
+  const handleDeleteProperty = async (id: string) => {
+    if (!id) return;
+    const confirmed = window.confirm('Delete this property? This action cannot be undone.');
+    if (!confirmed) return;
+    try {
+      setDeletingId(id);
+      // Optimistic UI
+      setMyProperties(prev => prev.filter(p => p.id !== id));
+      const { error } = await propertiesService.deleteProperty(id);
+      if (error) {
+        console.error('Delete failed:', error);
+        // Revert UI on failure
+        const { properties } = await propertiesService.getDeveloperProperties(user?.id);
+        setMyProperties(properties);
+        alert(`Failed to delete property: ${error}`);
+      }
+    } catch (e) {
+      console.error('Unexpected delete error:', e);
+      alert('Unexpected error while deleting.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const recentScheduledVisits = [
     {
@@ -170,7 +210,7 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({ isDarkMo
               Manage your property portfolio and track your listings performance.
             </p>
             <p className="text-sm text-gray-500 mt-1">
-              Company: {user?.companyName} • License: {user?.licenseNumber}
+              Company: {user?.companyName} • Business Number: {user?.licenseNumber}
             </p>
           </div>
           <motion.button
@@ -248,7 +288,7 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({ isDarkMo
               myProperties.map((property, index) => (
               <motion.div
                 key={property.id}
-                className="p-4 rounded-lg border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                className="p-4 rounded-lg border border-gray-200 dark:border:white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.5 + index * 0.1 }}
@@ -274,7 +314,12 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({ isDarkMo
                         <button className="p-1 text-gray-400 hover:text-blue-500">
                           <Edit size={14} />
                         </button>
-                        <button className="p-1 text-gray-400 hover:text-red-500">
+                        <button
+                          className={`p-1 text-gray-400 hover:text-red-500 ${deletingId === property.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          onClick={() => deletingId ? null : handleDeleteProperty(property.id)}
+                          disabled={deletingId === property.id}
+                          title={deletingId === property.id ? 'Deleting…' : 'Delete property'}
+                        >
                           <Trash2 size={14} />
                         </button>
                       </div>
@@ -285,18 +330,18 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({ isDarkMo
                           <DollarSign size={12} />
                           ${property.price.toLocaleString()}
                       </span>
-                        {property.bedrooms && (
-                      <span className="flex items-center gap-1">
-                            <Building2 size={12} />
-                            {property.bedrooms} beds
-                      </span>
-                        )}
-                        {property.bathrooms && (
-                      <span className="flex items-center gap-1">
-                            <Building2 size={12} />
-                            {property.bathrooms} baths
-                      </span>
-                        )}
+                      {property.bedrooms && (
+                        <span className="flex items-center gap-1">
+                          <Building2 size={12} />
+                          {property.bedrooms} beds
+                        </span>
+                      )}
+                      {property.bathrooms && (
+                        <span className="flex items-center gap-1">
+                          <Building2 size={12} />
+                          {property.bathrooms} baths
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center justify-between">
                       <span className={`px-2 py-1 rounded-full text-xs ${
@@ -323,7 +368,7 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({ isDarkMo
         {/* Recent Scheduled Visits */}
         <motion.div
           className={`p-6 rounded-2xl ${
-            isDarkMode ? 'bg-[#0E0E10] border border-white/10' : 'bg-white border border-gray-200'
+            isDarkMode ? 'bg-[#0E0E10] border border:white/10' : 'bg-white border border-gray-200'
           }`}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -394,7 +439,7 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({ isDarkMo
       {/* Quick Actions */}
       <motion.div
         className={`p-6 rounded-2xl ${
-          isDarkMode ? 'bg-[#0E0E10] border border-white/10' : 'bg-white border border-gray-200'
+          isDarkMode ? 'bg-[#0E0E10] border border:white/10' : 'bg-white border border-gray-200'
         }`}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -420,7 +465,7 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({ isDarkMo
             <span>Upload Media</span>
           </motion.button>
           <motion.button
-            className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 dark:border-white/20 hover:border-[#C7A667] transition-colors"
+            className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 dark:border:white/20 hover:border-[#C7A667] transition-colors"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
@@ -428,7 +473,7 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({ isDarkMo
             <span>Manage Visits</span>
           </motion.button>
           <motion.button
-            className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 dark:border-white/20 hover:border-[#C7A667] transition-colors"
+            className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 dark:border:white/20 hover:border-[#C7A667] transition-colors"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useTheme } from './ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { AuthModal } from './components/auth/AuthModal';
@@ -26,10 +26,27 @@ import './styles/global.css';
 function AppContent() {
   const { isDarkMode } = useTheme();
   const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const location = useLocation();
 
   const handleLoginClick = () => {
     setLoginModalOpen(true);
   };
+
+  // Open Auth modal when URL contains ?auth=login or ?auth=signup
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const auth = params.get('auth');
+    if (auth === 'login' || auth === 'signup' || auth === 'open') {
+      setLoginModalOpen(true);
+    }
+  }, [location.search]);
+
+  // Open Auth modal via custom event from any page
+  useEffect(() => {
+    const openHandler = () => setLoginModalOpen(true);
+    window.addEventListener('realaist:open-auth', openHandler);
+    return () => window.removeEventListener('realaist:open-auth', openHandler);
+  }, []);
 
   return (
     <>
@@ -39,11 +56,11 @@ function AppContent() {
           <HomePage onLoginClick={handleLoginClick} />
         } />
         
-        <Route path="/property/:id" element={
+        <Route path="/property/:propertyId" element={
           <PropertyDetails />
         } />
         
-        <Route path="/houses" element={
+        <Route path="/properties" element={
           <HousesPage />
         } />
         
@@ -64,13 +81,7 @@ function AppContent() {
           </ProtectedRoute>
         } />
         
-        <Route path="/buyer-dashboard" element={
-          <ProtectedRoute>
-            <DashboardLayout isDarkMode={isDarkMode}>
-              <BuyerDashboard isDarkMode={isDarkMode} />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
+        {/* Buyer dashboard removed; app runs developer-only */}
         
         <Route path="/dashboard/properties" element={
           <ProtectedRoute>
@@ -127,7 +138,12 @@ function AppContent() {
       {/* Global Auth Modal */}
       <AuthModal 
         isOpen={loginModalOpen}
-        onClose={() => setLoginModalOpen(false)}
+        onClose={() => {
+          setLoginModalOpen(false);
+          const url = new URL(window.location.href);
+          url.searchParams.delete('auth');
+          window.history.replaceState({}, '', url.toString());
+        }}
         isDarkMode={isDarkMode}
       />
 

@@ -16,6 +16,7 @@ import {
 import { PropertyUploadModal } from '../components/PropertyUploadModal';
 import { useAuth } from '../contexts/AuthContext';
 import { propertiesService, Property } from '../services/propertiesService';
+import { useNavigate } from 'react-router-dom';
 
 interface MyPropertiesProps {
   isDarkMode: boolean;
@@ -23,6 +24,7 @@ interface MyPropertiesProps {
 
 export const MyProperties: React.FC<MyPropertiesProps> = ({ isDarkMode }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -53,6 +55,22 @@ export const MyProperties: React.FC<MyPropertiesProps> = ({ isDarkMode }) => {
     };
 
     loadProperties();
+  }, [user?.id]);
+
+  // Realtime add on property creation
+  useEffect(() => {
+    const handler = (e: any) => {
+      const created = e?.detail?.property as Property | undefined;
+      if (!created) return;
+      if (!user?.id) return;
+      if (created.developerId !== user.id) return;
+      setProperties(prev => {
+        if (prev.find(p => p.id === created.id)) return prev;
+        return [created, ...prev];
+      });
+    };
+    window.addEventListener('realaist:property-created' as any, handler);
+    return () => window.removeEventListener('realaist:property-created' as any, handler);
   }, [user?.id]);
 
   const handlePropertyCreated = async () => {
@@ -116,10 +134,7 @@ export const MyProperties: React.FC<MyPropertiesProps> = ({ isDarkMode }) => {
   };
 
   const handleViewProperty = (property: Property) => {
-    // Navigate to property details page
-    console.log('Viewing property:', property.id);
-    // TODO: Implement navigation to property details
-    // navigate(`/property/${property.id}`);
+    navigate(`/property/${property.id}`);
   };
 
   const PropertyCard: React.FC<{ property: Property }> = ({ property }) => (

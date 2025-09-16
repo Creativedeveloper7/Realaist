@@ -97,6 +97,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onLoginClick }) => {
           isDarkMode={isDarkMode}
           toggleTheme={toggleTheme}
           onLoginClick={onLoginClick}
+          showLogo={false}
         />
 
         <main>

@@ -52,7 +52,7 @@ export const GoogleSignupHandler: React.FC<GoogleSignupHandlerProps> = ({
     }
 
     if (userType === 'developer' && (!additionalData.companyName || !additionalData.licenseNumber)) {
-      setError('Company name and license number are required for developers');
+      setError('Company name and business number are required for developers');
       return;
     }
 
@@ -238,19 +238,20 @@ export const GoogleSignupHandler: React.FC<GoogleSignupHandlerProps> = ({
                 <label className={`block text-sm font-medium mb-2 ${
                   isDarkMode ? 'text-white' : 'text-gray-700'
                 }`}>
-                  License Number *
+                  Business Number *
                 </label>
                 <input
+                  name="licenseNumber"
                   type="text"
                   value={additionalData.licenseNumber}
                   onChange={(e) => setAdditionalData(prev => ({ ...prev, licenseNumber: e.target.value }))}
-                  className={`w-full px-4 py-3 rounded-lg border transition-colors ${
-                    isDarkMode
-                      ? 'bg-white/5 border-white/20 text-white placeholder-white/50 focus:border-[#C7A667]'
-                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#C7A667]'
-                  } focus:outline-none focus:ring-2 focus:ring-[#C7A667]/20`}
-                  placeholder="DEV-2024-001"
-                  required
+                  className={`w-full border rounded-lg px-4 py-3 outline-none focus:border-[#C7A667] transition-colors ${
+                    isDarkMode 
+                      ? 'bg-white/5 border-white/10 text-white placeholder-gray-400' 
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                  }`}
+                  placeholder="Enter your business number"
+                  disabled={isLoading}
                 />
               </div>
             </>

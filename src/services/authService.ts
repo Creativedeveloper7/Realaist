@@ -99,7 +99,7 @@ class AuthService {
             email: user.email!,
             first_name: firstName,
             last_name: lastName,
-            user_type: user.user_metadata?.user_type || 'buyer', // Use metadata or default to buyer
+            user_type: user.user_metadata?.user_type || 'developer', // Default to developer for this app
             avatar_url: user.user_metadata?.avatar_url || null
           })
           .select()
@@ -304,7 +304,7 @@ class AuthService {
             email: authData.user.email!,
             first_name: firstName,
             last_name: lastName,
-            user_type: authData.user.user_metadata?.user_type || 'buyer',
+            user_type: authData.user.user_metadata?.user_type || 'developer',
             avatar_url: authData.user.user_metadata?.avatar_url || null
           })
           .select()

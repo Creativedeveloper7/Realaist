@@ -133,6 +133,10 @@ CREATE TABLE IF NOT EXISTS properties (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Ensure amenities/features columns exist on properties
+ALTER TABLE public.properties ADD COLUMN IF NOT EXISTS amenities TEXT[] DEFAULT '{}';
+ALTER TABLE public.properties ADD COLUMN IF NOT EXISTS features TEXT[] DEFAULT '{}';
+
 -- Create blogs table
 CREATE TABLE IF NOT EXISTS blogs (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -319,23 +323,28 @@ $$ language 'plpgsql';
 -- =====================================================
 
 -- Trigger for new user signup
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- Triggers for updated_at timestamps
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON profiles;
 CREATE TRIGGER update_profiles_updated_at 
   BEFORE UPDATE ON profiles 
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_properties_updated_at ON properties;
 CREATE TRIGGER update_properties_updated_at 
   BEFORE UPDATE ON properties 
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_blogs_updated_at ON blogs;
 CREATE TRIGGER update_blogs_updated_at 
   BEFORE UPDATE ON blogs 
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_scheduled_visits_updated_at ON scheduled_visits;
 CREATE TRIGGER update_scheduled_visits_updated_at 
   BEFORE UPDATE ON scheduled_visits 
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

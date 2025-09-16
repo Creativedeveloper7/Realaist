@@ -139,7 +139,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
               {user?.userType === 'developer' && user?.licenseNumber && (
                 <span className="flex items-center gap-1">
                   <Shield size={16} />
-                  License: {user.licenseNumber}
+                  Business Number: {user.licenseNumber}
                 </span>
               )}
             </div>
@@ -286,7 +286,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">License Number</label>
+                  <label className="block text-sm font-medium mb-2">Business Number</label>
                   <div className="relative">
                     <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
@@ -295,7 +295,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
                       value={formData.licenseNumber}
                       onChange={handleInputChange}
                       disabled={!isEditing}
-                      placeholder="Enter your license number"
+                      placeholder="Enter your business number"
                       className={`w-full pl-12 pr-4 py-3 rounded-lg border transition-colors ${
                         isEditing
                           ? isDarkMode

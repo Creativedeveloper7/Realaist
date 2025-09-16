@@ -5,6 +5,7 @@ import { useTheme } from './ThemeContext';
 import { useAuth } from './contexts/AuthContext';
 import { propertiesService, Property } from './services/propertiesService';
 import { scheduledVisitsService } from './services/scheduledVisitsService';
+import { Header } from './components/Header';
 
 // Helper function to get icon for fact type
 const getFactIcon = (factIndex: number, isDarkMode: boolean = true) => {
@@ -52,6 +53,18 @@ const getFactIcon = (factIndex: number, isDarkMode: boolean = true) => {
     default: // Est. Income (no icon)
       return null;
   }
+};
+
+// Infer a friendly land area display from square feet
+const formatLandArea = (squareFeet?: number): string => {
+  if (!squareFeet || squareFeet <= 0) return '';
+  const acres = squareFeet / 43560;
+  const hectares = squareFeet / 107639;
+  const score = (n: number) => Math.abs(n - Math.round(n * 4) / 4); // closeness to 0.25 steps
+  const useAcres = score(acres) <= score(hectares);
+  const value = useAcres ? acres : hectares;
+  const unit = useAcres ? 'Acres' : 'Hectares';
+  return `${value.toFixed(2)} ${unit}`;
 };
 
 function FloatingLogo({ isDarkMode = true }: { isDarkMode?: boolean }) {
@@ -104,14 +117,18 @@ export default function PropertyDetails() {
     description: dbProperty.description,
     price: `KSh ${dbProperty.price.toLocaleString()}`,
     estimatedIncome: "KES 350,000/mo",
-    beds: dbProperty.bedrooms || 2,
-    baths: dbProperty.bathrooms || 2,
-    sqft: dbProperty.squareFeet?.toString() || "1,200",
+    beds: dbProperty.bedrooms || 0,
+    baths: dbProperty.bathrooms || 0,
+    sqft: dbProperty.squareFeet?.toString() || "0",
     images: dbProperty.images && dbProperty.images.length > 0 ? dbProperty.images : [
       "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600"
     ],
     facts: ["1–2 Beds", "From KSh 3.7M", "ROI 10–12%"],
-    developer: dbProperty.developer
+    developer: dbProperty.developer,
+    type: dbProperty.propertyType,
+    landArea: formatLandArea(dbProperty.squareFeet),
+    amenities: (dbProperty as any).amenities || [],
+    features: (dbProperty as any).features || []
   });
 
   useEffect(() => {
@@ -122,14 +139,15 @@ export default function PropertyDetails() {
         return;
       }
 
-      // Check if propertyId is a valid UUID, fallback ID, or project ID
+      // Check if propertyId is a valid UUID or known fallback IDs
       const isValidId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(propertyId) || 
                        propertyId.startsWith('fallback-') ||
-                       propertyId.startsWith('project-');
+                       propertyId.startsWith('project-') ||
+                       propertyId.startsWith('hardcoded-');
       
       if (!isValidId) {
         console.log('PropertyDetails: Invalid propertyId format, redirecting to properties page');
-        navigate('/houses');
+        navigate('/properties');
         return;
       }
 
@@ -233,7 +251,7 @@ export default function PropertyDetails() {
               Retry
             </button>
             <button 
-              onClick={() => navigate('/houses')}
+              onClick={() => navigate('/properties')}
               className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
               Back to Properties
@@ -243,6 +261,8 @@ export default function PropertyDetails() {
       </div>
     );
   }
+
+  const isLand = (property.type || '').toLowerCase() === 'land';
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % property.images.length);
@@ -258,9 +278,7 @@ export default function PropertyDetails() {
 
   return (
     <>
-      <FloatingLogo isDarkMode={isDarkMode} />
-      
-      {/* Mobile Theme Toggle Button */}
+      {/* Floating logo hidden on details page to avoid duplicates; header provides logo */}
       <motion.button
         className={`fixed right-2 top-1/4 transform -translate-y-1/2 z-30 md:hidden w-10 h-10 rounded-full backdrop-blur-sm border flex items-center justify-center shadow-lg transition-all duration-300 opacity-60 hover:opacity-100 ${
           isDarkMode 
@@ -277,87 +295,17 @@ export default function PropertyDetails() {
       <div className={`min-h-screen transition-colors duration-300 ${
         isDarkMode ? 'bg-[#111217] text-white' : 'bg-white text-gray-900'
       }`}>
-        {/* Header */}
-        <motion.header 
-          className={`fixed top-0 inset-x-0 z-30 backdrop-blur supports-[backdrop-filter]:backdrop-blur-sm border-b transition-colors duration-300 ${
-            isDarkMode 
-              ? 'bg-black/35 border-white/10' 
-              : 'bg-white/80 border-gray-200'
-          }`}
-          initial={{ y: -100 }}
-          animate={{ y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-        >
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {/* Logo removed - using FloatingLogo component instead */}
-            </div>
-            
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-8 text-sm">
-              <a href="/houses" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Developers</a>
-              <a href="/blogs" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Blogs</a>
-              <a href="/#contact" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
-              
-              {/* Auth Status */}
-              {isAuthenticated ? (
-                <div className="flex items-center gap-3">
-                  <motion.button
-                    onClick={() => navigate(user?.userType === 'developer' ? '/developer-dashboard' : '/buyer-dashboard')}
-                    className="px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    Welcome, {user?.firstName}
-                  </motion.button>
-                  <motion.button
-                    onClick={logout}
-                    className="px-4 py-2 rounded-full border border-white/30 text-white font-medium hover:bg-white/10 transition-colors"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    Logout
-                  </motion.button>
-                </div>
-              ) : (
-              <motion.button
-                onClick={() => setLoginModalOpen(true)}
-                className="ml-2 px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Login/Signup
-              </motion.button>
-              )}
-              
-              <motion.button
-                onClick={toggleTheme}
-                className={`p-2 rounded-full border transition-all ${
-                  isDarkMode 
-                    ? 'border-white/30 hover:border-[#C7A667] hover:text-[#C7A667]' 
-                    : 'border-gray-300 hover:border-[#C7A667] hover:text-[#C7A667]'
-                }`}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                {isDarkMode ? '☀️' : '🌙'}
-              </motion.button>
-            </nav>
-
-            {/* Mobile Menu Button */}
-            <button
-              className={`md:hidden p-2 transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              <div className="w-6 h-6 flex flex-col justify-center items-center">
-                <span className={`block w-5 h-0.5 transition-all duration-300 ${mobileMenuOpen ? 'rotate-45 translate-y-1.5' : ''} ${isDarkMode ? 'bg-white' : 'bg-gray-900'}`}></span>
-                <span className={`block w-5 h-0.5 transition-all duration-300 ${mobileMenuOpen ? 'opacity-0' : 'opacity-100'} ${isDarkMode ? 'bg-white' : 'bg-gray-900'} mt-1`}></span>
-                <span className={`block w-5 h-0.5 transition-all duration-300 ${mobileMenuOpen ? '-rotate-45 -translate-y-1.5' : ''} ${isDarkMode ? 'bg-white' : 'bg-gray-900'} mt-1`}></span>
-              </div>
-            </button>
-          </div>
-        </motion.header>
-
+        <Header 
+          isDarkMode={isDarkMode}
+          toggleTheme={toggleTheme}
+          onLoginClick={() => {
+            window.dispatchEvent(new Event('realaist:open-auth'));
+            const current = new URL(window.location.href);
+            current.searchParams.set('auth', 'open');
+            navigate(`${current.pathname}${current.search}`, { replace: true });
+          }}
+        />
+        
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <motion.div
@@ -395,11 +343,11 @@ export default function PropertyDetails() {
               {/* Menu Items */}
               <div className="mt-12 space-y-6">
                 <a 
-                  href="/houses" 
+                  href="/properties" 
                   className="block text-lg font-medium text-white hover:text-[#C7A667] transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Developers
+                  Properties
                 </a>
                 <a 
                   href="/blogs" 
@@ -422,7 +370,7 @@ export default function PropertyDetails() {
                     <motion.button
                       onClick={() => {
                         setMobileMenuOpen(false);
-                        navigate(user?.userType === 'developer' ? '/developer-dashboard' : '/buyer-dashboard');
+                        navigate('/developer-dashboard');
                       }}
                       className="w-full px-6 py-3 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors text-lg"
                       whileHover={{ scale: 1.02 }}
@@ -446,7 +394,9 @@ export default function PropertyDetails() {
                 <motion.button
                   onClick={() => {
                     setMobileMenuOpen(false);
-                    setLoginModalOpen(true);
+                    const current = new URL(window.location.href);
+                    current.searchParams.set('auth', 'open');
+                    navigate(`${current.pathname}${current.search}`, { replace: true });
                   }}
                   className="w-full px-6 py-3 rounded-full border border-white/30 hover:border-[#C7A667] hover:text-[#C7A667] transition-all text-lg font-medium"
                   whileHover={{ scale: 1.02 }}
@@ -569,43 +519,47 @@ export default function PropertyDetails() {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-2xl font-medium text-[#C7A667]">{property.price}</div>
-                                                <div className={`text-sm font-medium px-3 py-1 rounded-full border transition-colors duration-300 ${
-                              isDarkMode 
-                                ? 'border-white/20 bg-white/5 text-white' 
-                                : 'border-gray-300 bg-gray-100 text-gray-900'
-                            }`}>
-                              Est. Income: KES 350,000/mo
-                            </div>
+                    {isLand && property.landArea && (
+                      <div className={`text-sm font-medium px-3 py-1 rounded-full border transition-colors duration-300 ${
+                        isDarkMode 
+                          ? 'border-white/20 bg-white/5 text-white' 
+                          : 'border-gray-300 bg-gray-100 text-gray-900'
+                      }`}>
+                        {property.landArea}
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Key Metrics */}
-                <div className="flex gap-8">
-                  <div className="flex items-center gap-2">
-                    {getFactIcon(0, isDarkMode)}
-                    <div>
-                      <div className={`text-lg font-medium transition-colors duration-300 ${
-                        isDarkMode ? 'text-white' : 'text-gray-900'
-                      }`}>{property.beds} Beds</div>
+                {!isLand && (
+                  <div className="flex gap-8">
+                    <div className="flex items-center gap-2">
+                      {getFactIcon(0, isDarkMode)}
+                      <div>
+                        <div className={`text-lg font-medium transition-colors duration-300 ${
+                          isDarkMode ? 'text-white' : 'text-gray-900'
+                        }`}>{property.beds} Beds</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {getFactIcon(1, isDarkMode)}
+                      <div>
+                        <div className={`text-lg font-medium transition-colors duration-300 ${
+                          isDarkMode ? 'text-white' : 'text-gray-900'
+                        }`}>{property.baths} Baths</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {getFactIcon(2, isDarkMode)}
+                      <div>
+                        <div className={`text-lg font-medium transition-colors duration-300 ${
+                          isDarkMode ? 'text-white' : 'text-gray-900'
+                        }`}>{property.sqft} sqft</div>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {getFactIcon(1, isDarkMode)}
-                    <div>
-                      <div className={`text-lg font-medium transition-colors duration-300 ${
-                        isDarkMode ? 'text-white' : 'text-gray-900'
-                      }`}>{property.baths} Baths</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {getFactIcon(2, isDarkMode)}
-                    <div>
-                      <div className={`text-lg font-medium transition-colors duration-300 ${
-                        isDarkMode ? 'text-white' : 'text-gray-900'
-                      }`}>{property.sqft} sqft</div>
-                    </div>
-                  </div>
-                </div>
+                )}
 
                 {/* Divider */}
                 <div className={`border-t transition-colors duration-300 ${
@@ -629,6 +583,36 @@ export default function PropertyDetails() {
                     {property.description}
                   </p>
                 </div>
+
+                {/* Land Amenities and Features */}
+                {isLand && (property.amenities?.length > 0 || property.features?.length > 0) && (
+                  <div className="grid md:grid-cols-2 gap-8">
+                    {property.amenities?.length > 0 && (
+                      <div>
+                        <h3 className={`text-xl font-heading mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Amenities</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {property.amenities.map((a: string) => (
+                            <span key={a} className={`text-xs px-3 py-1 rounded-full border ${
+                              isDarkMode ? 'border-white/20 bg-white/5 text-white' : 'border-gray-300 bg-gray-100 text-gray-700'
+                            }`}>{a}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {property.features?.length > 0 && (
+                      <div>
+                        <h3 className={`text-xl font-heading mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Features</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {property.features.map((f: string) => (
+                            <span key={f} className={`text-xs px-3 py-1 rounded-full border ${
+                              isDarkMode ? 'border-white/20 bg-white/5 text-white' : 'border-gray-300 bg-gray-100 text-gray-700'
+                            }`}>{f}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Mobile Map Section */}
                 <div className="md:hidden">
@@ -682,7 +666,6 @@ export default function PropertyDetails() {
                   <motion.button 
                     onClick={() => {
                       if (property.developer?.phone) {
-                        // Remove any non-digit characters and add country code if not present
                         const phoneNumber = property.developer.phone.replace(/\D/g, '');
                         const formattedPhone = phoneNumber.startsWith('254') ? phoneNumber : `254${phoneNumber}`;
                         const whatsappUrl = `https://wa.me/${formattedPhone}?text=Hi, I'm interested in the property "${property.name}" at ${property.location}. Could you please provide more information?`;
@@ -833,29 +816,6 @@ export default function PropertyDetails() {
                 Sign In
               </motion.button>
             </form>
-
-            {/* Divider */}
-            <div className="my-6 flex items-center">
-              <div className="flex-1 h-px bg-white/20"></div>
-              <span className="px-4 text-sm text-white/50">or</span>
-              <div className="flex-1 h-px bg-white/20"></div>
-            </div>
-
-            {/* Additional Options */}
-            <div className="space-y-3">
-              <motion.button
-                type="button"
-                className="w-full py-3 rounded-lg border border-white/20 hover:border-white/40 text-white hover:bg-white/5 transition-colors"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <span className="text-sm font-medium">Create Investor Account</span>
-              </motion.button>
-              
-              <p className="text-center text-xs text-white/50">
-                New to REALAIST? Contact our team to get started
-              </p>
-            </div>
           </motion.div>
         </motion.div>
       )}
@@ -937,7 +897,7 @@ export default function PropertyDetails() {
                   return;
                 }
 
-                const { visit, error } = await scheduledVisitsService.createScheduledVisit({
+                const { error } = await scheduledVisitsService.createScheduledVisit({
                   propertyId,
                   scheduledDate: selectedDate,
                   scheduledTime: selectedTime,
@@ -948,18 +908,19 @@ export default function PropertyDetails() {
 
                 if (error) {
                   setVisitSubmissionMessage(`Error: ${error}`);
-                } else if (visit) {
-                  setVisitSubmissionMessage('Visit scheduled successfully! The developer will contact you soon.');
+                } else {
+                  // Success for unauthenticated flow: just confirm and close modal
+                  setVisitSubmissionMessage('Visit scheduled successfully!');
                   // Reset form
                   setSelectedDate('');
                   setSelectedTime('');
                   setVisitorName('');
                   setVisitorEmail('');
-                  // Close modal after a delay
+                  // Close modal after a brief delay; stay on the same page
                   setTimeout(() => {
-              setScheduleModalOpen(false);
+                    setScheduleModalOpen(false);
                     setVisitSubmissionMessage('');
-                  }, 2000);
+                  }, 1500);
                 }
               } catch (err) {
                 console.error('Error scheduling visit:', err);

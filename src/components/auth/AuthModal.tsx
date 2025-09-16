@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LoginForm } from './LoginForm';
-import { UserTypeSelector } from './UserTypeSelector';
-import { BuyerSignupForm } from './BuyerSignupForm';
 import { DeveloperSignupForm } from './DeveloperSignupForm';
 import { GoogleSignupHandler } from './GoogleSignupHandler';
 
@@ -13,7 +11,7 @@ interface AuthModalProps {
   initialMode?: 'login' | 'signup';
 }
 
-type AuthStep = 'login' | 'signup' | 'userType' | 'buyerSignup' | 'developerSignup' | 'googleSignup';
+type AuthStep = 'login' | 'signup' | 'developerSignup' | 'googleSignup';
 
 export const AuthModal: React.FC<AuthModalProps> = ({ 
   isOpen, 
@@ -31,21 +29,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const handleBack = () => {
     switch (currentStep) {
-      case 'buyerSignup':
       case 'developerSignup':
-        setCurrentStep('userType');
-        break;
-      case 'userType':
-        setCurrentStep('signup');
+        setCurrentStep('login');
         break;
       default:
         setCurrentStep('login');
     }
   };
 
-  const handleUserTypeSelect = (type: 'buyer' | 'developer') => {
-    setCurrentStep(type === 'buyer' ? 'buyerSignup' : 'developerSignup');
-  };
+  // No user type selection; always developer signup
 
   return (
     <AnimatePresence>
@@ -69,7 +61,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         >
           {/* Scrollable Content Container */}
           <div className="overflow-y-auto max-h-[95vh] sm:max-h-[90vh] p-4 sm:p-6 md:p-8">
-          {currentStep !== 'userType' && (
+          {true && (
             <div className="flex justify-between items-center mb-6">
               <motion.h3 
                 className={`font-heading text-2xl md:text-3xl transition-colors duration-300 ${
@@ -85,8 +77,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.2 }}
               >
-                {currentStep === 'login' ? 'Welcome Back' : 
-                 currentStep === 'buyerSignup' ? 'Create Buyer Account' :
+                {currentStep === 'login' ? 'Welcome Back' :
                  currentStep === 'developerSignup' ? 'Create Developer Account' :
                  'Create Account'}
               </motion.h3>
@@ -105,7 +96,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
           )}
           
-          {currentStep !== 'userType' && (
+          {true && (
             <motion.p 
               className={`mb-6 transition-colors duration-300 ${
                 isDarkMode ? 'text-white/70' : 'text-gray-600'
@@ -115,34 +106,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2, delay: 0.1 }}
             >
-              {currentStep === 'login' 
+              {currentStep === 'login'
                 ? 'Sign in to your account to access your dashboard and manage your properties.'
-                : currentStep === 'buyerSignup'
-                ? 'Create your buyer account to start investing in properties.'
-                : currentStep === 'developerSignup'
-                ? 'Create your developer account to list and manage properties.'
-                : 'Join Realaist to discover exclusive properties and get personalized recommendations.'
-              }
+                : 'Create your developer account to list and manage properties.'}
             </motion.p>
           )}
 
-          {/* Close button for user type selector */}
-          {currentStep === 'userType' && (
-            <div className="flex justify-end mb-4">
-              <motion.button
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                  isDarkMode 
-                    ? 'hover:bg-white/10 text-white/70 hover:text-white' 
-                    : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
-                }`}
-                onClick={onClose}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                ✕
-              </motion.button>
-            </div>
-          )}
+          {/* No user type selector in this simplified flow */}
         
         <AnimatePresence mode="wait">
           {currentStep === 'login' && (
@@ -150,24 +120,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               key="login"
               isDarkMode={isDarkMode}
               onSuccess={handleSuccess}
-              onSwitchToSignup={() => setCurrentStep('userType')}
-            />
-          )}
-          {currentStep === 'userType' && (
-            <UserTypeSelector
-              key="userType"
-              isDarkMode={isDarkMode}
-              onSelectType={handleUserTypeSelect}
-              onBack={() => setCurrentStep('login')}
-            />
-          )}
-          {currentStep === 'buyerSignup' && (
-            <BuyerSignupForm
-              key="buyerSignup"
-              isDarkMode={isDarkMode}
-              onBack={handleBack}
-              onSwitchToLogin={() => setCurrentStep('login')}
-              onSuccess={handleSuccess}
+              onSwitchToSignup={() => setCurrentStep('developerSignup')}
             />
           )}
           {currentStep === 'developerSignup' && (

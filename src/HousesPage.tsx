@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from './ThemeContext';
 import { useAuth } from './contexts/AuthContext';
 import { propertiesService, Property } from './services/propertiesService';
+import { Header } from './components/Header';
 
 // Helper function to get icon for fact type
 const getFactIcon = (factIndex: number, isDarkMode: boolean = true) => {
@@ -53,6 +54,21 @@ const getFactIcon = (factIndex: number, isDarkMode: boolean = true) => {
   }
 };
 
+// Helper: infer land unit from square feet
+const inferLandAreaDisplay = (squareFeet?: number): string => {
+  if (!squareFeet || squareFeet <= 0) return '';
+  const acres = squareFeet / 43560;
+  const hectares = squareFeet / 107639;
+  // Choose the unit that yields a cleaner number (closer to .00 or .25 increments)
+  const score = (n: number) => {
+    const frac = Math.abs(n - Math.round(n * 4) / 4); // closeness to 0.25 steps
+    return frac;
+  };
+  const useAcres = score(acres) <= score(hectares);
+  const value = useAcres ? acres : hectares;
+  const unit = useAcres ? 'Acres' : 'Hectares';
+  return `${value.toFixed(2)} ${unit}`;
+};
 
 
 // Helper function to convert database property to display format
@@ -62,20 +78,26 @@ const convertPropertyToHouse = (property: Property) => {
     return `KSh ${price.toLocaleString()}`;
   };
 
+  const isLand = (property.propertyType || '').toLowerCase() === 'land';
+  const landArea = isLand ? inferLandAreaDisplay(property.squareFeet) : '';
+
   return {
     id: property.id,
     name: property.title,
     location: property.location,
     price: formatPrice(property.price),
-    facts: [
-      property.bedrooms?.toString() || "N/A",
-      property.bathrooms?.toString() || "N/A", 
-      property.squareFeet ? `${property.squareFeet.toLocaleString()} sq ft` : "N/A"
-    ],
+    facts: isLand
+      ? []
+      : [
+          property.bedrooms?.toString() || "N/A",
+          property.bathrooms?.toString() || "N/A", 
+          property.squareFeet ? `${property.squareFeet.toLocaleString()} sq ft` : "N/A"
+        ],
     factLabels: ["Beds", "Baths", "Square Feet"],
     image: property.images && property.images.length > 0 ? property.images[0] : "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: property.status.charAt(0).toUpperCase() + property.status.slice(1),
-    type: property.propertyType
+    type: property.propertyType,
+    landArea
   };
 };
 
@@ -303,7 +325,7 @@ export default function HousesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const propertiesPerPage = 12;
 
-  const propertyTypes = ['All', 'Apartments', 'Beach Villas', 'Townhouses', 'Gated Communities'];
+  const propertyTypes = ['All', 'Apartments', 'Beach Villas', 'Townhouses', 'Gated Communities', 'Off-plan', 'Land'];
   const statuses = ['All', 'Available', 'Pre-Launch', 'Coming Soon'];
   const priceRanges = ['All', 'Under KSh 5M', 'KSh 5M - 10M', 'KSh 10M - 20M', 'KSh 20M - 50M', 'Over KSh 50M'];
   const squareFootage = ['All', 'Under 1,000 sq ft', '1,000 - 2,000 sq ft', '2,000 - 5,000 sq ft', 'Over 5,000 sq ft'];
@@ -576,213 +598,18 @@ export default function HousesPage() {
       `}</style>
 
       <div className="grain text-[var(--ink)] bg-[var(--bg)] font-body min-h-screen">
-        {/* Header */}
-        <motion.header 
-          className={`fixed top-0 inset-x-0 z-30 backdrop-blur supports-[backdrop-filter]:backdrop-blur-sm border-b transition-colors duration-300 ${
-            isDarkMode 
-              ? 'bg-black/35 border-white/10' 
-              : 'bg-white/80 border-gray-200'
-          }`}
-          initial={{ y: -100 }}
-          animate={{ y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-        >
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`border border-dashed rounded px-2 py-1 transition-colors duration-300 ${
-                isDarkMode ? 'border-white/60' : 'border-gray-400'
-              }`}>
-                <img 
-                  src="/logos/realaistlogo.png" 
-                  alt="Realaist Logo" 
-                  className="h-9 w-auto"
-                />
-              </div>
-            </div>
-            <nav className="hidden md:flex items-center gap-8 text-sm">
-              <a href="/" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Home</a>
-              <a href="/houses" className="text-[#C7A667]">Developers</a>
-              <a href="/blogs" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Blogs</a>
-              <a href="/" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
-              
-              {/* Auth Status */}
-              {isAuthenticated ? (
-                <div className="flex items-center gap-3">
-                  <motion.button
-                    onClick={() => navigate(user?.userType === 'developer' ? '/developer-dashboard' : '/buyer-dashboard')}
-                    className="px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    Welcome, {user?.firstName}
-                  </motion.button>
-                  <motion.button
-                    onClick={logout}
-                    className="px-4 py-2 rounded-full border border-white/30 text-white font-medium hover:bg-white/10 transition-colors"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    Logout
-                  </motion.button>
-                </div>
-              ) : (
-                <motion.button
-                  onClick={() => navigate('/login')}
-                  className="px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  Login/Signup
-                </motion.button>
-              )}
-              
-              <motion.button
-                onClick={toggleTheme}
-                className={`p-2 rounded-full border transition-all ${
-                  isDarkMode 
-                    ? 'border-white/30 hover:border-[#C7A667] hover:text-[#C7A667]' 
-                    : 'border-gray-300 hover:border-[#C7A667] hover:text-[#C7A667]'
-                }`}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                {isDarkMode ? '☀️' : '🌙'}
-              </motion.button>
-            </nav>
-
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className={`md:hidden p-2 rounded-lg transition-colors ${
-                isDarkMode ? 'text-white hover:text-[#C7A667]' : 'text-gray-900 hover:text-[#C7A667]'
-              }`}
-            >
-              <div className="flex flex-col gap-1">
-                <span className={`block w-5 h-0.5 transition-all duration-300 ${mobileMenuOpen ? 'rotate-45 translate-y-1' : '-translate-y-1'} ${isDarkMode ? 'bg-white' : 'bg-gray-900'}`}></span>
-                <span className={`block w-5 h-0.5 transition-all duration-300 ${mobileMenuOpen ? 'opacity-0' : 'opacity-100'} ${isDarkMode ? 'bg-white' : 'bg-gray-900'}`}></span>
-                <span className={`block w-5 h-0.5 transition-all duration-300 ${mobileMenuOpen ? '-rotate-45 -translate-y-1' : 'translate-y-1'} ${isDarkMode ? 'bg-white' : 'bg-gray-900'}`}></span>
-              </div>
-            </button>
-          </div>
-        </motion.header>
-
-        {/* Mobile Menu */}
-        <motion.div
-          className={`fixed inset-0 z-40 md:hidden transition-colors duration-300 ${
-            isDarkMode ? 'bg-black/95' : 'bg-white/95'
-          }`}
-          initial={{ opacity: 0, visibility: 'hidden' }}
-          animate={{
-            opacity: mobileMenuOpen ? 1 : 0,
-            visibility: mobileMenuOpen ? 'visible' : 'hidden'
+        <Header 
+          isDarkMode={isDarkMode}
+          toggleTheme={toggleTheme}
+          onLoginClick={() => {
+            // Fire custom event for App to open AuthModal
+            window.dispatchEvent(new Event('realaist:open-auth'));
+            // Also update URL param (optional) so deep links still work
+            const current = new URL(window.location.href);
+            current.searchParams.set('auth', 'open');
+            navigate(`${current.pathname}${current.search}`, { replace: true });
           }}
-          transition={{ duration: 0.3 }}
-        >
-          <div className="flex flex-col h-full pt-20 pb-6 px-6">
-            <nav className="flex flex-col gap-6 text-lg">
-              <a 
-                href="/" 
-                className={`transition-colors ${isDarkMode ? 'text-white hover:text-[#C7A667]' : 'text-gray-900 hover:text-[#C7A667]'}`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Home
-              </a>
-              <a 
-                href="/houses" 
-                className="text-[#C7A667]"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Developers
-              </a>
-              <a 
-                href="/blogs" 
-                className={`transition-colors ${isDarkMode ? 'text-white hover:text-[#C7A667]' : 'text-gray-900 hover:text-[#C7A667]'}`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Blogs
-              </a>
-              <a 
-                href="/" 
-                className={`transition-colors ${isDarkMode ? 'text-white hover:text-[#C7A667]' : 'text-gray-900 hover:text-[#C7A667]'}`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Contact
-              </a>
-              
-              {/* Auth Status */}
-              {isAuthenticated ? (
-                <div className="space-y-3 mt-4">
-                  <motion.button
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      navigate(user?.userType === 'developer' ? '/developer-dashboard' : '/buyer-dashboard');
-                    }}
-                    className="w-full px-6 py-3 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors text-lg"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    Welcome, {user?.firstName}
-                  </motion.button>
-                  <motion.button
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      logout();
-                    }}
-                    className="w-full px-6 py-3 rounded-full border border-white/30 hover:border-[#C7A667] hover:text-[#C7A667] transition-all text-lg font-medium"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    Logout
-                  </motion.button>
-                </div>
-              ) : (
-                <motion.button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    navigate('/login');
-                  }}
-                  className="w-full px-6 py-3 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors text-lg mt-4"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  Login/Signup
-                </motion.button>
-              )}
-            </nav>
-            
-            <div className="mt-auto">
-              <motion.button
-                onClick={() => {
-                  toggleTheme();
-                  setMobileMenuOpen(false);
-                }}
-                className={`w-full p-4 rounded-lg border transition-all ${
-                  isDarkMode 
-                    ? 'border-white/30 hover:border-[#C7A667] hover:text-[#C7A667]' 
-                    : 'border-gray-300 hover:border-[#C7A667] hover:text-[#C7A667]'
-                }`}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                {isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
-              </motion.button>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Mobile Theme Toggle Button */}
-        <motion.button
-          className={`fixed right-2 top-1/4 transform -translate-y-1/2 z-30 md:hidden w-10 h-10 rounded-full backdrop-blur-sm border flex items-center justify-center shadow-lg transition-all duration-300 opacity-60 hover:opacity-100 ${
-            isDarkMode 
-              ? 'bg-black/60 border-white/10 text-white/80' 
-              : 'bg-white/60 border-gray-200/50 text-gray-600'
-          }`}
-          onClick={toggleTheme}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          {isDarkMode ? '☀️' : '🌙'}
-        </motion.button>
+        />
 
 
         {/* Main Content */}
@@ -1098,27 +925,39 @@ export default function HousesPage() {
                         </div>
                         <div className="flex items-center gap-4 mb-4">
                           <div className="text-lg font-medium text-[#C7A667]">{house.price}</div>
-                          <div className={`text-sm font-medium px-3 py-1 rounded-full border transition-colors duration-300 ${
-                            isDarkMode 
-                              ? 'border-white/20 bg-white/5 text-white' 
-                              : 'border-gray-300 bg-gray-100 text-gray-900'
-                          }`}>
-                            Est. Income: KES 350,000/mo
-                          </div>
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-2 mb-6">
-                          {house.facts.map((fact: string, factIndex: number) => (
-                            <span key={fact} className={`text-xs px-3 py-1 rounded-full border flex items-center gap-1 transition-colors duration-300 ${
+                          {house.type === 'Land' && house.landArea ? (
+                            <div className={`text-sm font-medium px-3 py-1 rounded-full border transition-colors duration-300 ${
                               isDarkMode 
                                 ? 'border-white/20 bg-white/5 text-white' 
-                                : 'border-gray-300 bg-gray-100 text-gray-700'
+                                : 'border-gray-300 bg-gray-100 text-gray-900'
                             }`}>
-                              {getFactIcon(factIndex, isDarkMode)}
-                              {fact}
-                            </span>
-                          ))}
+                              {house.landArea}
+                            </div>
+                          ) : (
+                            <div className={`text-sm font-medium px-3 py-1 rounded-full border transition-colors duration-300 ${
+                              isDarkMode 
+                                ? 'border-white/20 bg-white/5 text-white' 
+                                : 'border-gray-300 bg-gray-100 text-gray-900'
+                            }`}>
+                              Est. Income: KES 350,000/mo
+                            </div>
+                          )}
                         </div>
+                        
+                        {house.type !== 'Land' && (
+                          <div className="flex flex-wrap gap-2 mb-6">
+                            {house.facts.map((fact: string, factIndex: number) => (
+                              <span key={fact} className={`text-xs px-3 py-1 rounded-full border flex items-center gap-1 transition-colors duration-300 ${
+                                isDarkMode 
+                                  ? 'border-white/20 bg-white/5 text-white' 
+                                  : 'border-gray-300 bg-gray-100 text-gray-700'
+                              }`}>
+                                {getFactIcon(factIndex, isDarkMode)}
+                                {fact}
+                              </span>
+                            ))}
+                          </div>
+                        )}
 
                         <div className="flex gap-3">
                           <motion.a 

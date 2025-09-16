@@ -43,6 +43,9 @@ interface PropertyFormData {
   images: File[];
   amenities: string[];
   features: string[];
+  // Land-specific
+  landSize?: number;
+  landUnit?: 'Acres' | 'Hectares' | '';
 }
 
 export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
@@ -62,10 +65,12 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
     bathrooms: 0,
     area: 0,
     units: 1,
-    status: 'Draft',
+    status: 'Active',
     images: [],
     amenities: [],
-    features: []
+    features: [],
+    landSize: 0,
+    landUnit: ''
   });
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -74,6 +79,8 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+
+  const isLand = formData.propertyType === 'Land';
 
   // Reset states when modal opens
   useEffect(() => {
@@ -96,10 +103,12 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
         bathrooms: 0,
         area: 0,
         units: 1,
-        status: 'Draft',
+        status: 'Active',
         images: [],
         amenities: [],
-        features: []
+        features: [],
+        landSize: 0,
+        landUnit: ''
       });
     }
   }, [isOpen]);
@@ -116,6 +125,8 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
       const timeout = setTimeout(() => {
         console.log('PropertyUploadModal: Safety timeout triggered, resetting isSubmitting');
         setIsSubmitting(false);
+        setSubmitStatus('error');
+        setErrorMessage('The request took too long. Please check your connection and try again.');
       }, 10000); // 10 second timeout
       
       return () => clearTimeout(timeout);
@@ -126,18 +137,24 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
   useEffect(() => {
     if (editingProperty && isOpen) {
       console.log('PropertyUploadModal: Pre-filling form for editing property:', editingProperty);
+      const landBackfill = editingProperty.propertyType === 'Land' && editingProperty.squareFeet
+        ? { landSize: Math.round((editingProperty.squareFeet / 43560) * 100) / 100, landUnit: 'Acres' as const }
+        : { landSize: 0, landUnit: '' as const };
       setFormData({
         title: editingProperty.title,
         description: editingProperty.description,
         price: editingProperty.price.toString(),
         location: editingProperty.location,
         propertyType: editingProperty.propertyType,
-        bedrooms: editingProperty.bedrooms?.toString() || '',
-        bathrooms: editingProperty.bathrooms?.toString() || '',
-        squareFeet: editingProperty.squareFeet?.toString() || '',
+        bedrooms: (editingProperty.bedrooms as number) || 0,
+        bathrooms: (editingProperty.bathrooms as number) || 0,
+        area: (editingProperty.squareFeet as number) || 0,
         images: [], // Will be handled separately for existing images
-        amenities: [], // Default empty for now
-        features: [] // Default empty for now
+        amenities: editingProperty.amenities || [],
+        features: editingProperty.features || [],
+        units: 1,
+        status: 'Active',
+        ...landBackfill
       });
     }
   }, [editingProperty, isOpen]);
@@ -149,7 +166,9 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
     'Penthouse',
     'Studio Complex',
     'Commercial Building',
-    'Mixed Use Development'
+    'Mixed Use Development',
+    'Off-plan',
+    'Land'
   ];
 
   const commonAmenities = [
@@ -165,6 +184,21 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
     'Air Conditioning'
   ];
 
+  const landAmenities = [
+    'Near School',
+    'Near Hospital',
+    'Near Shopping Center',
+    'Near Tarmac Road',
+    'Public Transport Access',
+    'Proximity to CBD',
+    'Scenic Views',
+    'Near Water Source',
+    'Near Electricity Grid',
+    'Gentle Terrain',
+    'Ready Title Deed',
+    'Beacons Placed'
+  ];
+
   const commonFeatures = [
     'Modern Kitchen',
     'Hardwood Floors',
@@ -177,6 +211,20 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
     'Energy Efficient',
     'Smart Home Features'
   ];
+
+  const landFeatures = [
+    'Water Connection',
+    'Electricity',
+    'All-Weather Road Access',
+    'Gated',
+    'Fenced',
+    'Street Lighting',
+    'Sewer Connection',
+    'Internet Availability'
+  ];
+
+  const amenitiesOptions = isLand ? landAmenities : commonAmenities;
+  const featuresOptions = isLand ? landFeatures : commonFeatures;
 
   const handleInputChange = (field: keyof PropertyFormData, value: any) => {
     setFormData(prev => ({
@@ -278,6 +326,13 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
       return;
     }
     
+    // For land, land size and unit are required
+    if (isLand && (!formData.landSize || !formData.landUnit)) {
+      setErrorMessage('Please provide land size and unit (acres/hectares)');
+      setSubmitStatus('error');
+      return;
+    }
+    
     if (editingProperty) {
       console.log('PropertyUploadModal: Starting property update...');
     } else {
@@ -294,6 +349,20 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
         throw new Error('Please enter a valid price');
       }
 
+      // Compute square feet if land
+      let computedSquareFeet: number | undefined = undefined;
+      if (isLand && formData.landSize && formData.landUnit) {
+        if (formData.landUnit === 'Acres') {
+          computedSquareFeet = formData.landSize * 43560;
+        } else if (formData.landUnit === 'Hectares') {
+          computedSquareFeet = formData.landSize * 107639;
+        }
+      }
+      // Round to integer for DB column (integer)
+      if (computedSquareFeet !== undefined) {
+        computedSquareFeet = Math.round(computedSquareFeet);
+      }
+
       let property;
       let propertyError;
 
@@ -306,9 +375,11 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
           price: numericPrice,
           location: formData.location,
           propertyType: formData.propertyType,
-          bedrooms: formData.bedrooms || undefined,
-          bathrooms: formData.bathrooms || undefined,
-          squareFeet: formData.area || undefined,
+          bedrooms: isLand ? undefined : (formData.bedrooms || undefined),
+          bathrooms: isLand ? undefined : (formData.bathrooms || undefined),
+          squareFeet: isLand ? computedSquareFeet : (formData.area || undefined),
+          amenities: formData.amenities,
+          features: formData.features
         };
 
         const result = await propertiesService.updateProperty(updateData);
@@ -322,19 +393,26 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
           price: numericPrice,
           location: formData.location,
           propertyType: formData.propertyType,
-          bedrooms: formData.bedrooms || undefined,
-          bathrooms: formData.bathrooms || undefined,
-          squareFeet: formData.area || undefined,
+          bedrooms: isLand ? undefined : (formData.bedrooms || undefined),
+          bathrooms: isLand ? undefined : (formData.bathrooms || undefined),
+          squareFeet: isLand ? computedSquareFeet : (formData.area || undefined),
           status: formData.status.toLowerCase() as 'active' | 'draft' | 'pending',
-          images: [] // Will be populated after upload
+          images: [], // Will be populated after upload
+          amenities: formData.amenities,
+          features: formData.features
         };
 
+        console.log('PropertyUploadModal: Payload being sent to createProperty:', propertyData);
         const result = await propertiesService.createProperty(propertyData);
+        console.log('PropertyUploadModal: createProperty result:', result);
         property = result.property;
         propertyError = result.error;
       }
       
       if (propertyError || !property) {
+        console.error('PropertyUploadModal: Error from service:', propertyError);
+        setSubmitStatus('error');
+        setErrorMessage(propertyError || 'No property returned from server');
         throw new Error(propertyError || (editingProperty ? 'Failed to update property' : 'Failed to create property'));
       }
 
@@ -371,6 +449,11 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
       setSubmitStatus('success');
       console.log(`PropertyUploadModal: Property ${editingProperty ? 'updated' : 'created'} successfully:`, property);
       
+      // Broadcast to listeners for immediate UI updates
+      try {
+        window.dispatchEvent(new CustomEvent('realaist:property-created', { detail: { property } }));
+      } catch {}
+      
       // Call the callback to refresh the properties list
       if (onPropertyCreated) {
         console.log('PropertyUploadModal: Calling onPropertyCreated callback');
@@ -378,7 +461,7 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
       }
       
       setTimeout(() => {
-      onClose();
+        onClose();
         // Reset form
         setFormData({
           title: '',
@@ -390,10 +473,12 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
           bathrooms: 0,
           area: 0,
           units: 1,
-          status: 'Draft',
+          status: 'Active',
           images: [],
           amenities: [],
-          features: []
+          features: [],
+          landSize: 0,
+          landUnit: ''
         });
         setCurrentStep(1);
         setSubmitStatus('idle');
@@ -449,7 +534,7 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 dark:hover:bg:white/10 rounded-lg transition-colors"
             >
               <X size={24} />
             </button>
@@ -518,7 +603,6 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
               </div>
             </motion.div>
           )}
-
           {/* Debug: Show current state */}
           {process.env.NODE_ENV === 'development' && (
             <div className="mb-4 p-2 bg-blue-100 dark:bg-blue-900/20 rounded text-xs">
@@ -566,7 +650,7 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Property Type *</label>
+                  <label className="block text sm font-medium mb-2">Property Type *</label>
                   <select
                     required
                     value={formData.propertyType}
@@ -584,7 +668,77 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
                   </select>
                 </div>
 
+                {/* Units OR Land Size */}
+                {!isLand ? (
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Number of Units</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={formData.units}
+                      onChange={(e) => handleInputChange('units', parseInt(e.target.value) || 1)}
+                      className={`w-full px-4 py-3 rounded-lg border ${
+                        isDarkMode 
+                          ? 'bg-white/5 border-white/10 text-white placeholder-gray-400' 
+                          : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                      } focus:outline-none focus:ring-2 focus:ring-[#C7A667] focus:border-transparent`}
+                    />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2 md:gap-3">
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium mb-2">Land Size *</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.landSize || 0}
+                        onChange={(e) => handleInputChange('landSize', parseFloat(e.target.value) || 0)}
+                        className={`w-full px-4 py-3 rounded-lg border ${
+                          isDarkMode 
+                            ? 'bg-white/5 border-white/10 text-white placeholder-gray-400' 
+                            : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                        } focus:outline-none focus:ring-2 focus:ring-[#C7A667] focus:border-transparent`}
+                        placeholder="e.g., 0.25"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Unit *</label>
+                      <select
+                        value={formData.landUnit || ''}
+                        onChange={(e) => handleInputChange('landUnit', e.target.value as 'Acres' | 'Hectares' | '')}
+                        className={`w-full px-3 py-3 rounded-lg border ${
+                          isDarkMode 
+                            ? 'bg-white/5 border-white/10 text-white' 
+                            : 'bg-white border-gray-200 text-gray-900'
+                        } focus:outline-none focus:ring-2 focus:ring-[#C7A667] focus:border-transparent`}
+                      >
+                        <option value="">Select</option>
+                        <option value="Acres">Acres</option>
+                        <option value="Hectares">Hectares</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+
                 <div>
+                  <label className="block text-sm font-medium mb-2">Status</label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => handleInputChange('status', e.target.value)}
+                    className={`w-full px-4 py-3 rounded-lg border ${
+                      isDarkMode 
+                        ? 'bg:white/5 border-white/10 text-white' 
+                        : 'bg-white border-gray-200 text-gray-900'
+                    } focus:outline-none focus:ring-2 focus:ring-[#C7A667] focus:border-transparent`}
+                  >
+                    <option value="Draft">Draft</option>
+                    <option value="Active">Active</option>
+                    <option value="Pending">Pending</option>
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium mb-2">Price *</label>
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -603,7 +757,7 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
                   </div>
                 </div>
 
-                <div>
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium mb-2">Location *</label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -620,38 +774,6 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
                       placeholder="e.g., Westlands, Nairobi"
                     />
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2">Number of Units</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={formData.units}
-                    onChange={(e) => handleInputChange('units', parseInt(e.target.value) || 1)}
-                    className={`w-full px-4 py-3 rounded-lg border ${
-                      isDarkMode 
-                        ? 'bg-white/5 border-white/10 text-white placeholder-gray-400' 
-                        : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
-                    } focus:outline-none focus:ring-2 focus:ring-[#C7A667] focus:border-transparent`}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2">Status</label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => handleInputChange('status', e.target.value)}
-                    className={`w-full px-4 py-3 rounded-lg border ${
-                      isDarkMode 
-                        ? 'bg-white/5 border-white/10 text-white' 
-                        : 'bg-white border-gray-200 text-gray-900'
-                    } focus:outline-none focus:ring-2 focus:ring-[#C7A667] focus:border-transparent`}
-                  >
-                    <option value="Draft">Draft</option>
-                    <option value="Active">Active</option>
-                    <option value="Pending">Pending</option>
-                  </select>
                 </div>
               </div>
 
@@ -680,71 +802,73 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
             >
-              <h4 className="text-xl font-bold mb-4">Property Details</h4>
+              <h4 className="text-xl font-bold mb-4">{isLand ? 'Land Details' : 'Property Details'}</h4>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Bedrooms</label>
-                  <div className="relative">
-                    <Bed className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                    <input
-                      type="number"
-                      min="0"
-                      value={formData.bedrooms}
-                      onChange={(e) => handleInputChange('bedrooms', parseInt(e.target.value) || 0)}
-                      className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
-                        isDarkMode 
-                          ? 'bg-white/5 border-white/10 text-white placeholder-gray-400' 
-                          : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
-                      } focus:outline-none focus:ring-2 focus:ring-[#C7A667] focus:border-transparent`}
-                    />
+              {!isLand && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Bedrooms</label>
+                    <div className="relative">
+                      <Bed className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.bedrooms}
+                        onChange={(e) => handleInputChange('bedrooms', parseInt(e.target.value) || 0)}
+                        className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
+                          isDarkMode 
+                            ? 'bg-white/5 border-white/10 text-white placeholder-gray-400' 
+                            : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                        } focus:outline-none focus:ring-2 focus:ring-[#C7A667] focus:border-transparent`}
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-2">Bathrooms</label>
-                  <div className="relative">
-                    <Bath className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.5"
-                      value={formData.bathrooms}
-                      onChange={(e) => handleInputChange('bathrooms', parseFloat(e.target.value) || 0)}
-                      className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
-                        isDarkMode 
-                          ? 'bg-white/5 border-white/10 text-white placeholder-gray-400' 
-                          : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
-                      } focus:outline-none focus:ring-2 focus:ring-[#C7A667] focus:border-transparent`}
-                    />
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Bathrooms</label>
+                    <div className="relative">
+                      <Bath className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        value={formData.bathrooms}
+                        onChange={(e) => handleInputChange('bathrooms', parseFloat(e.target.value) || 0)}
+                        className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
+                          isDarkMode 
+                            ? 'bg-white/5 border-white/10 text-white placeholder-gray-400' 
+                            : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                        } focus:outline-none focus:ring-2 focus:ring-[#C7A667] focus:border-transparent`}
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-2">Area (sq ft)</label>
-                  <div className="relative">
-                    <Square className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                    <input
-                      type="number"
-                      min="0"
-                      value={formData.area}
-                      onChange={(e) => handleInputChange('area', parseInt(e.target.value) || 0)}
-                      className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
-                        isDarkMode 
-                          ? 'bg-white/5 border-white/10 text-white placeholder-gray-400' 
-                          : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
-                      } focus:outline-none focus:ring-2 focus:ring-[#C7A667] focus:border-transparent`}
-                    />
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Area (sq ft)</label>
+                    <div className="relative">
+                      <Square className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.area}
+                        onChange={(e) => handleInputChange('area', parseInt(e.target.value) || 0)}
+                        className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
+                          isDarkMode 
+                            ? 'bg-white/5 border-white/10 text-white placeholder-gray-400' 
+                            : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                        } focus:outline-none focus:ring-2 focus:ring-[#C7A667] focus:border-transparent`}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Amenities */}
               <div>
                 <label className="block text-sm font-medium mb-2">Amenities</label>
                 <div className="space-y-4">
                   <div className="flex flex-wrap gap-2">
-                    {commonAmenities.map(amenity => (
+                    {amenitiesOptions.map(amenity => (
                       <button
                         key={amenity}
                         type="button"
@@ -800,7 +924,7 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
                 <label className="block text-sm font-medium mb-2">Features</label>
                 <div className="space-y-4">
                   <div className="flex flex-wrap gap-2">
-                    {commonFeatures.map(feature => (
+                    {featuresOptions.map(feature => (
                       <button
                         key={feature}
                         type="button"
