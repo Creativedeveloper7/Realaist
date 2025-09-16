@@ -73,6 +73,18 @@ export const MyProperties: React.FC<MyPropertiesProps> = ({ isDarkMode }) => {
     return () => window.removeEventListener('realaist:property-created' as any, handler);
   }, [user?.id]);
 
+  // React to external deletions
+  useEffect(() => {
+    const handler = (e: any) => {
+      const id = e?.detail?.id as string | undefined;
+      if (!id) return;
+      setProperties(prev => prev.filter(p => p.id !== id));
+      if (deletingProperty && deletingProperty.id === id) setDeletingProperty(null);
+    };
+    window.addEventListener('realaist:property-deleted' as any, handler);
+    return () => window.removeEventListener('realaist:property-deleted' as any, handler);
+  }, [deletingProperty]);
+
   const handlePropertyCreated = async () => {
     // Reload properties after a new one is created
     if (!user?.id) return;

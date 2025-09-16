@@ -16,6 +16,7 @@ import ScheduledVisits from './pages/ScheduledVisits';
 import { Documents } from './pages/Documents';
 import { Analytics } from './pages/Analytics';
 import { Blogs } from './pages/Blogs';
+import { default as PublicBlogsPage } from './BlogsPage';
 import PropertyDetails from './PropertyDetails';
 import HousesPage from './HousesPage';
 
@@ -62,6 +63,10 @@ function AppContent() {
         
         <Route path="/properties" element={
           <HousesPage />
+        } />
+        
+        <Route path="/blogs" element={
+          <PublicBlogsPage />
         } />
         
         {/* Protected Dashboard Routes */}

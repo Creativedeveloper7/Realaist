@@ -669,25 +669,45 @@ class PropertiesService {
   // Delete property
   async deleteProperty(id: string): Promise<{ error: string | null }> {
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      // Use local session to avoid network call/CORS
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError) {
+        console.error('deleteProperty: getSession error:', sessionError)
+      }
+      const sessionUser = sessionData?.session?.user || null
       
-      if (authError || !user) {
+      // If this is a locally created fallback property, delete from local storage regardless of auth
+      if (id.startsWith('fallback-')) {
+        console.log('deleteProperty: removing local fallback', id)
+        const local = readLocalProperties().filter(p => p.id !== id)
+        writeLocalProperties(local)
+        apiCacheService.clear('properties-{}')
+        apiCacheService.clear('properties-{"status":"active"}')
+        try { window.dispatchEvent(new CustomEvent('realaist:property-deleted', { detail: { id } })); } catch {}
+        return { error: null }
+      }
+
+      if (!sessionUser) {
+        console.error('deleteProperty: no session user present')
         return { error: 'User not authenticated' }
       }
 
+      console.log('deleteProperty: attempting DB delete', { id, developerId: sessionUser.id })
       const { error } = await supabase
         .from('properties')
         .delete()
         .eq('id', id)
-        .eq('developer_id', user.id) // Ensure user owns the property
+        .eq('developer_id', sessionUser.id) // Ensure user owns the property
 
       if (error) {
+        console.error('deleteProperty: supabase error', error)
         return { error: error.message }
       }
 
       // Invalidate caches
       apiCacheService.clear('properties-{}')
       apiCacheService.clear('properties-{"status":"active"}')
+      try { window.dispatchEvent(new CustomEvent('realaist:property-deleted', { detail: { id } })); } catch {}
 
       return { error: null }
     } catch (error) {

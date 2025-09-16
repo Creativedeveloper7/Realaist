@@ -67,6 +67,17 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({ isDarkMo
     return () => window.removeEventListener('realaist:property-created' as any, handler);
   }, [user?.id]);
 
+  // Remove from list on deletion events
+  useEffect(() => {
+    const handler = (e: any) => {
+      const id = e?.detail?.id as string | undefined;
+      if (!id) return;
+      setMyProperties(prev => prev.filter(p => p.id !== id));
+    };
+    window.addEventListener('realaist:property-deleted' as any, handler);
+    return () => window.removeEventListener('realaist:property-deleted' as any, handler);
+  }, []);
+
   const stats = [
     {
       title: 'Total Properties',
