@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { cacheManager, CacheInfo } from '../utils/cacheManager';
+import { cacheManager } from '../utils/cacheManager';
+import { unifiedCacheService } from '../services/unifiedCacheService';
 
 interface CacheClearButtonProps {
   isDarkMode: boolean;
@@ -19,20 +20,24 @@ export const CacheClearButton: React.FC<CacheClearButtonProps> = ({
     setIsClearing(true);
     
     try {
-      const success = await cacheManager.clearAllCaches();
+      // Clear unified cache
+      unifiedCacheService.clearAll();
+      unifiedCacheService.clearPropertyCaches();
+      unifiedCacheService.clearUserCaches();
       
-      if (success) {
-        setShowSuccess(true);
-        setLastCleared(new Date().toLocaleString());
-        
-        // Hide success message after 3 seconds
-        setTimeout(() => setShowSuccess(false), 3000);
-        
-        // Force refresh after a short delay
-        setTimeout(() => {
-          cacheManager.forceRefresh();
-        }, 1000);
-      }
+      // Clear service worker caches
+      await cacheManager.clearAllCaches();
+      
+      setShowSuccess(true);
+      setLastCleared(new Date().toLocaleString());
+      
+      // Hide success message after 3 seconds
+      setTimeout(() => setShowSuccess(false), 3000);
+      
+      // Force refresh after a short delay
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } catch (error) {
       console.error('Cache clearing failed:', error);
     } finally {
@@ -40,8 +45,15 @@ export const CacheClearButton: React.FC<CacheClearButtonProps> = ({
     }
   };
 
-  const getCacheInfo = (): CacheInfo | null => {
-    return cacheManager.getCacheInfo();
+  const getCacheInfo = () => {
+    const unifiedStats = unifiedCacheService.getStats();
+    return {
+      version: '3.0.2',
+      lastCleared: lastCleared || 'Never',
+      size: unifiedStats.memoryUsage,
+      entries: unifiedStats.entries.length,
+      memoryUsage: unifiedStats.memoryUsage
+    };
   };
 
   const cacheInfo = getCacheInfo();
@@ -119,8 +131,9 @@ export const CacheClearButton: React.FC<CacheClearButtonProps> = ({
         `}>
           <div className="font-medium mb-1">Cache Information</div>
           <div>Version: {cacheInfo.version}</div>
-          <div>Last Cleared: {new Date(cacheInfo.lastCleared).toLocaleString()}</div>
-          <div>Size: {(cacheInfo.size / 1024).toFixed(1)} KB</div>
+          <div>Last Cleared: {cacheInfo.lastCleared}</div>
+          <div>Entries: {cacheInfo.entries}</div>
+          <div>Memory: {(cacheInfo.memoryUsage / 1024).toFixed(1)} KB</div>
         </div>
       )}
     </div>
@@ -209,6 +222,26 @@ export const DeveloperCacheTools: React.FC<{ isDarkMode: boolean }> = ({ isDarkM
               whileTap={{ scale: 0.98 }}
             >
               Clear Console
+            </motion.button>
+            
+            <motion.button
+              onClick={() => {
+                const stats = unifiedCacheService.getStats();
+                console.log('📊 Cache Statistics:', stats);
+                console.log('🔍 Cache Entries:', stats.entries);
+                alert(`Cache Stats:\nEntries: ${stats.entries.length}\nMemory: ${(stats.memoryUsage / 1024).toFixed(1)} KB`);
+              }}
+              className={`
+                w-full px-3 py-2 rounded text-sm
+                ${isDarkMode 
+                  ? 'bg-green-600/20 text-green-400 hover:bg-green-600/30' 
+                  : 'bg-green-50 text-green-600 hover:bg-green-100'
+                }
+              `}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Show Cache Stats
             </motion.button>
           </div>
         </motion.div>

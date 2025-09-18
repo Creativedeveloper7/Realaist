@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authService, type AuthUser } from '../services/authService';
-import { apiCacheService } from '../services/apiCacheService';
+import { unifiedCacheService } from '../services/unifiedCacheService';
 import { cacheManager } from '../utils/cacheManager';
 
 export interface User {
@@ -82,12 +82,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Check if we're in offline mode first
+        // Check if we're in offline mode first (with timestamp check)
         const isOfflineMode = localStorage.getItem('offline_mode') === 'true';
-        if (isOfflineMode) {
+        const offlineTimestamp = localStorage.getItem('offline_mode_timestamp');
+        const isOfflineExpired = offlineTimestamp && 
+          (Date.now() - parseInt(offlineTimestamp)) > 300000; // 5 minutes
+        
+        if (isOfflineMode && !isOfflineExpired) {
           console.log('AuthContext: Offline mode detected, skipping Supabase auth check');
           setIsLoading(false);
           return;
+        } else if (isOfflineMode && isOfflineExpired) {
+          console.log('AuthContext: Offline mode expired, attempting to reconnect');
+          localStorage.removeItem('offline_mode');
+          localStorage.removeItem('offline_mode_timestamp');
         }
         
         const authUser = await authService.getCurrentUser();
@@ -100,8 +108,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       } catch (error) {
         console.error('Auth check failed:', error);
-        // If auth fails, enable offline mode
+        // If auth fails, enable offline mode with timestamp
         localStorage.setItem('offline_mode', 'true');
+        localStorage.setItem('offline_mode_timestamp', Date.now().toString());
       } finally {
         setIsLoading(false);
       }
@@ -135,7 +144,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const clearAllAppCaches = async () => {
     try {
-      apiCacheService.clearAll();
+      unifiedCacheService.clearAll();
+      unifiedCacheService.clearUserCaches();
       // Clear SW/browser/local caches asynchronously; no need to block UI
       cacheManager.clearAllCaches();
     } catch (e) {
@@ -238,7 +248,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await authService.signOut();
       
       // Clear any cached data
-      apiCacheService.clearAll();
+      unifiedCacheService.clearAll();
+      unifiedCacheService.clearUserCaches();
       localStorage.removeItem('current_user');
       localStorage.removeItem('offline_mode');
       
@@ -248,7 +259,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Logout error:', error);
       // Even if logout fails, clear the user state
       setUser(null);
-      apiCacheService.clearAll();
+      unifiedCacheService.clearAll();
+      unifiedCacheService.clearUserCaches();
       localStorage.removeItem('current_user');
       localStorage.removeItem('offline_mode');
       window.location.reload();

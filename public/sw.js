@@ -5,7 +5,9 @@
  * and optimized performance for production use.
  */
 
-const CACHE_VERSION = '3.0.0';
+// Note: Service workers can't import modules, so we need to keep constants here
+// but they should match the ones in cacheConstants.ts
+const CACHE_VERSION = '2.0.1758226001126';
 const STATIC_CACHE_NAME = `realaist-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE_NAME = `realaist-dynamic-${CACHE_VERSION}`;
 const API_CACHE_NAME = `realaist-api-${CACHE_VERSION}`;

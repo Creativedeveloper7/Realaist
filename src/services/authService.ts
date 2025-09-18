@@ -28,9 +28,25 @@ export interface SignInData {
   password: string
 }
 
-// Helper function to check offline mode
+// Helper function to check offline mode with timestamp
 const isOfflineMode = (): boolean => {
-  return localStorage.getItem('offline_mode') === 'true'
+  const offlineMode = localStorage.getItem('offline_mode') === 'true'
+  const offlineTimestamp = localStorage.getItem('offline_mode_timestamp')
+  
+  if (!offlineMode) return false
+  
+  // Check if offline mode has expired (5 minutes)
+  if (offlineTimestamp) {
+    const isExpired = (Date.now() - parseInt(offlineTimestamp)) > 300000 // 5 minutes
+    if (isExpired) {
+      console.log('AuthService: Offline mode expired, clearing offline state')
+      localStorage.removeItem('offline_mode')
+      localStorage.removeItem('offline_mode_timestamp')
+      return false
+    }
+  }
+  
+  return true
 }
 
 // Mock users for offline mode
@@ -183,6 +199,7 @@ class AuthService {
         if (authError.message.includes('Load failed') || authError.message.includes('fetch')) {
           console.log('Network error detected, switching to offline mode')
           localStorage.setItem('offline_mode', 'true')
+          localStorage.setItem('offline_mode_timestamp', Date.now().toString())
           const mockUser: AuthUser = {
             id: `mock-user-${Date.now()}`,
             email: data.email,
@@ -266,6 +283,7 @@ class AuthService {
         if (authError.message.includes('Load failed') || authError.message.includes('fetch')) {
           console.log('Network error detected, switching to offline mode')
           localStorage.setItem('offline_mode', 'true')
+          localStorage.setItem('offline_mode_timestamp', Date.now().toString())
           const mockUser = MOCK_USERS.find(u => u.email === data.email)
           if (mockUser) {
             localStorage.setItem('current_user', JSON.stringify(mockUser))

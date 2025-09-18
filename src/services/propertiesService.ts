@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase'
 import { offPlanProjects, completedProjects } from '../data/projects'
-import { apiCacheService } from './apiCacheService'
+import { unifiedCacheService } from './unifiedCacheService'
 
 // Helpers for local fallback persistence
 function readLocalProperties(): Property[] {
@@ -268,12 +268,33 @@ export interface PropertyFilters {
 }
 
 class PropertiesService {
+  // Helper method to clear all property-related caches
+  private clearPropertyCaches(): void {
+    // Clear all possible property cache keys
+    const cacheKeys = [
+      'properties-{}',
+      'properties-{"status":"active"}',
+      'properties-{"status":"sold"}',
+      'properties-{"status":"pending"}',
+      'properties-{"status":"draft"}',
+    ];
+    
+    cacheKeys.forEach(key => {
+      unifiedCacheService.clear(key);
+    });
+    
+    // Also clear any cached individual properties
+    // Note: This is a simple approach - in production you might want to track individual property keys
+    console.log('🧹 PropertiesService: Cleared all property caches');
+  }
+
   // Get all properties with optional filters
   async getProperties(filters?: PropertyFilters): Promise<{ properties: Property[]; error: string | null }> {
-    // Create cache key based on filters
-    const cacheKey = `properties-${JSON.stringify(filters || {})}`;
+    // Create cache key based on filters - use consistent format
+    const filterString = JSON.stringify(filters || {});
+    const cacheKey = `properties-${filterString}`;
     
-    return apiCacheService.get(
+    return unifiedCacheService.get(
       cacheKey,
       async () => {
         try {
@@ -337,10 +358,17 @@ class PropertiesService {
 
           if (error) {
             console.error('Error fetching properties:', error)
-            // Return fallback + locally created properties
-            console.log('Using fallback properties due to database error')
-            const local = readLocalProperties()
-            return { properties: [...local, ...ALL_FALLBACK_PROPERTIES], error: null }
+            // Only use fallback if it's a critical error, not just a network hiccup
+            if (error.message.includes('JWT') || error.message.includes('permission') || error.message.includes('auth')) {
+              console.log('Using fallback properties due to authentication error')
+              const local = readLocalProperties()
+              return { properties: [...local, ...ALL_FALLBACK_PROPERTIES], error: null }
+            } else {
+              // For other errors, return empty array and let the UI handle it
+              console.log('Database error, returning empty properties array')
+              const local = readLocalProperties()
+              return { properties: local, error: error.message }
+            }
           }
 
           const properties: Property[] = data.map(item => ({
@@ -356,12 +384,12 @@ class PropertiesService {
             images: item.images || [],
             status: item.status,
             developerId: item.developer_id,
-            developer: item.developer ? {
-              id: item.developer.id,
-              firstName: item.developer.first_name,
-              lastName: item.developer.last_name,
-              companyName: item.developer.company_name,
-              phone: item.developer.phone
+            developer: item.developer && Array.isArray(item.developer) && item.developer.length > 0 ? {
+              id: item.developer[0].id,
+              firstName: item.developer[0].first_name,
+              lastName: item.developer[0].last_name,
+              companyName: item.developer[0].company_name,
+              phone: item.developer[0].phone
             } : undefined,
             createdAt: item.created_at,
             updatedAt: item.updated_at,
@@ -374,10 +402,21 @@ class PropertiesService {
           return { properties: [...local, ...properties], error: null }
         } catch (error) {
           console.error('Error fetching properties:', error)
-          // Return fallback data when there's a network error
-          console.log('Using fallback properties due to network error')
-          const local = readLocalProperties()
-          return { properties: [...local, ...ALL_FALLBACK_PROPERTIES], error: null }
+          // Only use fallback for critical network errors, not temporary ones
+          if (error instanceof Error && (
+            error.message.includes('Failed to fetch') || 
+            error.message.includes('NetworkError') ||
+            error.message.includes('timeout')
+          )) {
+            console.log('Using fallback properties due to critical network error')
+            const local = readLocalProperties()
+            return { properties: [...local, ...ALL_FALLBACK_PROPERTIES], error: null }
+          } else {
+            // For other errors, return empty array
+            console.log('Non-critical error, returning empty properties array')
+            const local = readLocalProperties()
+            return { properties: local, error: 'Failed to fetch properties' }
+          }
         }
       },
       { ttl: 5 * 60 * 1000 } // Cache for 5 minutes
@@ -388,7 +427,7 @@ class PropertiesService {
   async getPropertyById(id: string): Promise<{ property: Property | null; error: string | null }> {
     const cacheKey = `property-${id}`;
     
-    return apiCacheService.get(
+    return unifiedCacheService.get(
       cacheKey,
       async () => {
         try {
@@ -446,12 +485,12 @@ class PropertiesService {
             images: data.images || [],
             status: data.status,
             developerId: data.developer_id,
-            developer: data.developer ? {
-              id: data.developer.id,
-              firstName: data.developer.first_name,
-              lastName: data.developer.last_name,
-              companyName: data.developer.company_name,
-              phone: data.developer.phone
+            developer: data.developer && Array.isArray(data.developer) && data.developer.length > 0 ? {
+              id: data.developer[0].id,
+              firstName: data.developer[0].first_name,
+              lastName: data.developer[0].last_name,
+              companyName: data.developer[0].company_name,
+              phone: data.developer[0].phone
             } : undefined,
             createdAt: data.created_at,
             updatedAt: data.updated_at,
@@ -530,12 +569,12 @@ class PropertiesService {
         images: propertyData.images || [],
         status: propertyData.status,
         developerId: propertyData.developer_id,
-        developer: propertyData.developer ? {
-          id: propertyData.developer.id,
-          firstName: propertyData.developer.first_name,
-          lastName: propertyData.developer.last_name,
-          companyName: propertyData.developer.company_name,
-          phone: propertyData.developer.phone
+        developer: propertyData.developer && Array.isArray(propertyData.developer) && propertyData.developer.length > 0 ? {
+          id: propertyData.developer[0].id,
+          firstName: propertyData.developer[0].first_name,
+          lastName: propertyData.developer[0].last_name,
+          companyName: propertyData.developer[0].company_name,
+          phone: propertyData.developer[0].phone
         } : undefined,
         createdAt: propertyData.created_at,
         updatedAt: propertyData.updated_at,
@@ -544,8 +583,7 @@ class PropertiesService {
       }
 
       // Invalidate caches
-      apiCacheService.clear('properties-{}')
-      apiCacheService.clear('properties-{"status":"active"}')
+      this.clearPropertyCaches()
 
       return { property, error: null }
     } catch (error: any) {
@@ -576,8 +614,7 @@ class PropertiesService {
           const local = readLocalProperties()
           writeLocalProperties([localProp, ...local])
           // Invalidate caches so lists re-read and include local
-          apiCacheService.clear('properties-{}')
-          apiCacheService.clear('properties-{"status":"active"}')
+          this.clearPropertyCaches()
           return { property: localProp, error: null }
         }
       } catch {}
@@ -642,12 +679,12 @@ class PropertiesService {
         images: propertyData.images || [],
         status: propertyData.status,
         developerId: propertyData.developer_id,
-        developer: propertyData.developer ? {
-          id: propertyData.developer.id,
-          firstName: propertyData.developer.first_name,
-          lastName: propertyData.developer.last_name,
-          companyName: propertyData.developer.company_name,
-          phone: propertyData.developer.phone
+        developer: propertyData.developer && Array.isArray(propertyData.developer) && propertyData.developer.length > 0 ? {
+          id: propertyData.developer[0].id,
+          firstName: propertyData.developer[0].first_name,
+          lastName: propertyData.developer[0].last_name,
+          companyName: propertyData.developer[0].company_name,
+          phone: propertyData.developer[0].phone
         } : undefined,
         createdAt: propertyData.created_at,
         updatedAt: propertyData.updated_at,
@@ -656,8 +693,7 @@ class PropertiesService {
       }
 
       // Invalidate caches
-      apiCacheService.clear('properties-{}')
-      apiCacheService.clear('properties-{"status":"active"}')
+      this.clearPropertyCaches()
 
       return { property, error: null }
     } catch (error) {
@@ -681,8 +717,7 @@ class PropertiesService {
         console.log('deleteProperty: removing local fallback', id)
         const local = readLocalProperties().filter(p => p.id !== id)
         writeLocalProperties(local)
-        apiCacheService.clear('properties-{}')
-        apiCacheService.clear('properties-{"status":"active"}')
+        this.clearPropertyCaches()
         try { window.dispatchEvent(new CustomEvent('realaist:property-deleted', { detail: { id } })); } catch {}
         return { error: null }
       }
@@ -705,8 +740,7 @@ class PropertiesService {
       }
 
       // Invalidate caches
-      apiCacheService.clear('properties-{}')
-      apiCacheService.clear('properties-{"status":"active"}')
+      this.clearPropertyCaches()
       try { window.dispatchEvent(new CustomEvent('realaist:property-deleted', { detail: { id } })); } catch {}
 
       return { error: null }
@@ -761,12 +795,12 @@ class PropertiesService {
         images: item.images || [],
         status: item.status,
         developerId: item.developer_id,
-        developer: item.developer ? {
-          id: item.developer.id,
-          firstName: item.developer.first_name,
-          lastName: item.developer.last_name,
-          companyName: item.developer.company_name,
-          phone: item.developer.phone
+        developer: item.developer && Array.isArray(item.developer) && item.developer.length > 0 ? {
+          id: item.developer[0].id,
+          firstName: item.developer[0].first_name,
+          lastName: item.developer[0].last_name,
+          companyName: item.developer[0].company_name,
+          phone: item.developer[0].phone
         } : undefined,
         createdAt: item.created_at,
         updatedAt: item.updated_at,

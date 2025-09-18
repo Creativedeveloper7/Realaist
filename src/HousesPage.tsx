@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from './ThemeContext';
-import { useAuth } from './contexts/AuthContext';
 import { propertiesService, Property } from './services/propertiesService';
 import { Header } from './components/Header';
 
@@ -306,7 +305,6 @@ const houses = [
 export default function HousesPage() {
   const navigate = useNavigate();
   const { isDarkMode, toggleTheme } = useTheme();
-  const { user, isAuthenticated, logout } = useAuth();
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filteredHouses, setFilteredHouses] = useState<any[]>([]);
@@ -321,7 +319,6 @@ export default function HousesPage() {
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const propertiesPerPage = 12;
 
@@ -336,36 +333,70 @@ export default function HousesPage() {
   useEffect(() => {
     const loadProperties = async () => {
       setIsLoading(true);
+      let retryCount = 0;
+      const maxRetries = 3;
       
-      try {
-        console.log('HousesPage: Attempting to fetch properties from database...');
-        const { properties: fetchedProperties, error: fetchError } = await propertiesService.getProperties();
+      while (retryCount < maxRetries) {
+        try {
+          console.log(`HousesPage: Attempting to fetch properties (attempt ${retryCount + 1}/${maxRetries})...`);
+          const { properties: fetchedProperties, error: fetchError } = await propertiesService.getProperties();
+          
+          if (!fetchError && fetchedProperties && fetchedProperties.length > 0) {
+            console.log('HousesPage: Successfully fetched', fetchedProperties.length, 'properties from database');
+            setProperties(fetchedProperties);
+            const convertedHouses = fetchedProperties.map(convertPropertyToHouse);
+            // Remove duplicates by ID
+            const uniqueHouses = convertedHouses.filter((house, index, self) => 
+              index === self.findIndex(h => h.id === house.id)
+            );
+            setFilteredHouses(uniqueHouses);
+            setIsOfflineMode(false);
+            // Clear offline mode flag since we successfully fetched data
+            localStorage.removeItem('offline_mode');
+            break; // Success, exit retry loop
+          } else {
+            console.log(`HousesPage: No properties found in database (attempt ${retryCount + 1})`);
+            retryCount++;
+            if (retryCount < maxRetries) {
+              // Wait before retry
+              await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+            }
+          }
+        } catch (err) {
+          console.error(`HousesPage: Error loading properties (attempt ${retryCount + 1}):`, err);
+          retryCount++;
+          if (retryCount < maxRetries) {
+            // Wait before retry
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+          }
+        }
+      }
+      
+      // If all retries failed, check if we got any data at all
+      if (retryCount >= maxRetries) {
+        console.log('HousesPage: All retries failed');
         
-        if (!fetchError && fetchedProperties && fetchedProperties.length > 0) {
-          console.log('HousesPage: Successfully fetched', fetchedProperties.length, 'properties from database');
-          setProperties(fetchedProperties);
-          const convertedHouses = fetchedProperties.map(convertPropertyToHouse);
-          // Remove duplicates by ID
+        // Only use fallback data if we have absolutely no properties
+        if (properties.length === 0) {
+          console.log('HousesPage: No properties available, using fallback data');
+          setFilteredHouses(houses);
+          setIsOfflineMode(true);
+          // Set offline mode with timestamp
+          localStorage.setItem('offline_mode', 'true');
+          localStorage.setItem('offline_mode_timestamp', Date.now().toString());
+        } else {
+          console.log('HousesPage: Using available properties from previous successful fetch');
+          // Use whatever properties we have from previous successful fetch
+          const convertedHouses = properties.map(convertPropertyToHouse);
           const uniqueHouses = convertedHouses.filter((house, index, self) => 
             index === self.findIndex(h => h.id === house.id)
           );
           setFilteredHouses(uniqueHouses);
-          setIsOfflineMode(false);
-          // Clear offline mode flag since we successfully fetched data
-          localStorage.removeItem('offline_mode');
-        } else {
-          console.log('HousesPage: No properties found in database or error occurred, using fallback data');
-          setFilteredHouses(houses);
-          setIsOfflineMode(true);
         }
-      } catch (err) {
-        console.error('HousesPage: Error loading properties:', err);
-        // Use hardcoded houses data as fallback
-        setFilteredHouses(houses);
-        setIsOfflineMode(true);
-      } finally {
-        setIsLoading(false);
       }
+      
+      // Always set loading to false
+      setIsLoading(false);
     };
 
     loadProperties();
@@ -904,8 +935,8 @@ export default function HousesPage() {
                           <motion.span 
                             className={`px-3 py-1 rounded-full text-xs font-medium border transition-all shadow-lg ${
                               isDarkMode 
-                                ? 'border-white/30 text-white hover:border-[#C7A667] hover:text-[#C7A667] hover:shadow-[#C7A667]/20 hover:drop-shadow-[0_0_12px_rgba(199,166,103,0.9)] hover:drop-shadow-[0_0_20px_rgba(199,166,103,0.6)]' 
-                                : 'border-gray-300 text-gray-700 hover:border-[#C7A667] hover:text-[#C7A667] hover:shadow-[#C7A667]/30 hover:drop-shadow-[0_0_12px_rgba(199,166,103,1)] hover:drop-shadow-[0_0_20px_rgba(199,166,103,0.8)]'
+                                ? 'border-white/30 text-white hover:border-[#C7A667] hover:text-[#C7A667] hover:shadow-[#C7A667]/20 hover:drop-shadow-[0_0_20px_rgba(199,166,103,0.6)]' 
+                                : 'border-gray-300 text-gray-700 hover:border-[#C7A667] hover:text-[#C7A667] hover:shadow-[#C7A667]/30 hover:drop-shadow-[0_0_20px_rgba(199,166,103,0.8)]'
                             }`}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
