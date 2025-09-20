@@ -79,10 +79,18 @@ class UnifiedCacheService {
     const isExpired = now > entry.expiresAt;
     const isTooOld = now - entry.timestamp > maxAge;
     const isWrongVersion = entry.version !== version;
+    
+    // Check if data is stale (older than half the maxAge)
+    const isStale = now - entry.timestamp > (maxAge / 2);
 
     if (isExpired || isTooOld || isWrongVersion) {
       this.memoryCache.delete(key);
       return null;
+    }
+
+    // If data is stale, mark it for refresh but still return it
+    if (isStale) {
+      console.log(`⚠️ UnifiedCache: Data for ${key} is stale, will refresh on next access`);
     }
 
     return entry.data;
@@ -197,6 +205,49 @@ class UnifiedCacheService {
     this.clearPattern('^auth-');
     this.clearPattern('^profile-');
     console.log('🧹 UnifiedCache: Cleared all user caches');
+  }
+
+  /**
+   * Force refresh stale data
+   */
+  async refreshStaleData<T>(
+    key: string, 
+    fetchFn: () => Promise<T>, 
+    options: CacheOptions = {}
+  ): Promise<T> {
+    const { ttl = this.DEFAULT_TTL, version = this.CACHE_VERSION } = options;
+    
+    console.log(`🔄 UnifiedCache: Force refreshing stale data for ${key}`);
+    const data = await fetchFn();
+    this.setCached(key, data, ttl, version);
+    return data;
+  }
+
+  /**
+   * Check if data is stale and needs refresh
+   */
+  isStale(key: string, maxAge: number = this.DEFAULT_MAX_AGE): boolean {
+    const entry = this.memoryCache.get(key);
+    if (!entry) return true;
+    
+    const now = Date.now();
+    return now - entry.timestamp > (maxAge / 2);
+  }
+
+  /**
+   * Get cache entry info
+   */
+  getCacheInfo(key: string): { exists: boolean; isStale: boolean; age: number; expiresAt: number } | null {
+    const entry = this.memoryCache.get(key);
+    if (!entry) return null;
+    
+    const now = Date.now();
+    return {
+      exists: true,
+      isStale: now - entry.timestamp > (this.DEFAULT_MAX_AGE / 2),
+      age: now - entry.timestamp,
+      expiresAt: entry.expiresAt
+    };
   }
 }
 

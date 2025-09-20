@@ -62,7 +62,16 @@ export const checkForUpdates = async (): Promise<void> => {
     const response = await fetch('/manifest.json', { cache: 'no-store' });
     if (!response.ok) return;
 
-    const manifest = await response.json();
+    const text = await response.text();
+    if (!text.trim()) return;
+
+    // Check if response is HTML (404 page) instead of JSON
+    if (text.trim().startsWith('<')) {
+      console.log('⚠️ Manifest.json not found, skipping update check');
+      return;
+    }
+
+    const manifest = JSON.parse(text);
     const currentVersion = manifest.version || CACHE_VERSION;
 
     if (currentVersion !== CACHE_VERSION) {

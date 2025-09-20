@@ -4,6 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from './ThemeContext';
 import { propertiesService, Property } from './services/propertiesService';
 import { Header } from './components/Header';
+import { tabFocusHandler } from './utils/tabFocusHandler';
+import { unifiedCacheService } from './services/unifiedCacheService';
+import { useAuth } from './contexts/AuthContext';
 
 // Helper function to get icon for fact type
 const getFactIcon = (factIndex: number, isDarkMode: boolean = true) => {
@@ -305,6 +308,7 @@ const houses = [
 export default function HousesPage() {
   const navigate = useNavigate();
   const { isDarkMode, toggleTheme } = useTheme();
+  const { isAuthenticated } = useAuth();
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filteredHouses, setFilteredHouses] = useState<any[]>([]);
@@ -320,6 +324,7 @@ export default function HousesPage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const propertiesPerPage = 12;
 
   const propertyTypes = ['All', 'Apartments', 'Beach Villas', 'Townhouses', 'Gated Communities', 'Off-plan', 'Land'];
@@ -331,75 +336,168 @@ export default function HousesPage() {
 
   // Load properties from database
   useEffect(() => {
-    const loadProperties = async () => {
-      setIsLoading(true);
-      let retryCount = 0;
-      const maxRetries = 3;
-      
-      while (retryCount < maxRetries) {
-        try {
-          console.log(`HousesPage: Attempting to fetch properties (attempt ${retryCount + 1}/${maxRetries})...`);
-          const { properties: fetchedProperties, error: fetchError } = await propertiesService.getProperties();
+    let isMounted = true;
+    
+    // First, try to load from localStorage
+    const loadFromStorage = () => {
+      try {
+        const storedProperties = localStorage.getItem('realaist_properties');
+        const storedTimestamp = localStorage.getItem('realaist_properties_timestamp');
+        
+        if (storedProperties && storedTimestamp) {
+          const properties = JSON.parse(storedProperties);
+          const age = Date.now() - parseInt(storedTimestamp);
           
-          if (!fetchError && fetchedProperties && fetchedProperties.length > 0) {
-            console.log('HousesPage: Successfully fetched', fetchedProperties.length, 'properties from database');
-            setProperties(fetchedProperties);
-            const convertedHouses = fetchedProperties.map(convertPropertyToHouse);
-            // Remove duplicates by ID
+          // If data is less than 24 hours old, use it
+          if (age < 24 * 60 * 60 * 1000) {
+            console.log('HousesPage: Loading properties from localStorage (age:', Math.round(age / 1000 / 60), 'minutes)');
+            setProperties(properties);
+            const convertedHouses = properties.map(convertPropertyToHouse);
             const uniqueHouses = convertedHouses.filter((house, index, self) => 
               index === self.findIndex(h => h.id === house.id)
             );
             setFilteredHouses(uniqueHouses);
-            setIsOfflineMode(false);
-            // Clear offline mode flag since we successfully fetched data
-            localStorage.removeItem('offline_mode');
-            break; // Success, exit retry loop
+            setIsLoading(false);
+            return true; // Data loaded from storage
           } else {
-            console.log(`HousesPage: No properties found in database (attempt ${retryCount + 1})`);
-            retryCount++;
-            if (retryCount < maxRetries) {
-              // Wait before retry
-              await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
-            }
-          }
-        } catch (err) {
-          console.error(`HousesPage: Error loading properties (attempt ${retryCount + 1}):`, err);
-          retryCount++;
-          if (retryCount < maxRetries) {
-            // Wait before retry
-            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+            console.log('HousesPage: Stored data is too old, will fetch fresh data');
           }
         }
+      } catch (error) {
+        console.warn('HousesPage: Error loading from localStorage:', error);
+      }
+      return false; // No data loaded from storage
+    };
+    
+    const loadProperties = async (forceRefresh = false) => {
+      if (!isMounted) return;
+      
+      // If we already have properties and it's not a force refresh, don't reload
+      if (!forceRefresh && properties.length > 0) {
+        console.log('HousesPage: Properties already loaded, skipping reload');
+        return;
       }
       
-      // If all retries failed, check if we got any data at all
-      if (retryCount >= maxRetries) {
-        console.log('HousesPage: All retries failed');
+      // Try to load from localStorage first (unless force refresh)
+      if (!forceRefresh && loadFromStorage()) {
+        return; // Data loaded from storage, no need to fetch
+      }
+      
+      console.log(`HousesPage: Loading properties (forceRefresh: ${forceRefresh})`);
+      setIsLoading(true);
+      
+      // NO TIMEOUT - Let data load naturally or show loading state
+      // No fallback to mock data - only show real data or loading
+      
+      try {
+        // If force refresh, clear all caches first
+        if (forceRefresh) {
+          console.log('HousesPage: Force refresh - clearing all caches');
+          unifiedCacheService.clearAll();
+        }
         
-        // Only use fallback data if we have absolutely no properties
-        if (properties.length === 0) {
-          console.log('HousesPage: No properties available, using fallback data');
-          setFilteredHouses(houses);
-          setIsOfflineMode(true);
-          // Set offline mode with timestamp
-          localStorage.setItem('offline_mode', 'true');
-          localStorage.setItem('offline_mode_timestamp', Date.now().toString());
+        const { properties: fetchedProperties, error: fetchError } = await propertiesService.getProperties();
+        
+        if (!isMounted) return;
+        
+        if (!fetchError && fetchedProperties && fetchedProperties.length > 0) {
+          console.log('HousesPage: Successfully fetched', fetchedProperties.length, 'properties from database');
+          setProperties(fetchedProperties);
+          
+          // Store properties in localStorage for persistence
+          localStorage.setItem('realaist_properties', JSON.stringify(fetchedProperties));
+          localStorage.setItem('realaist_properties_timestamp', Date.now().toString());
+          
+          const convertedHouses = fetchedProperties.map(convertPropertyToHouse);
+          // Remove duplicates by ID
+          const uniqueHouses = convertedHouses.filter((house, index, self) => 
+            index === self.findIndex(h => h.id === house.id)
+          );
+          setFilteredHouses(uniqueHouses);
+          setIsOfflineMode(false);
+          // Clear offline mode flag since we successfully fetched data
+          localStorage.removeItem('offline_mode');
+          localStorage.removeItem('offline_mode_timestamp');
         } else {
-          console.log('HousesPage: Using available properties from previous successful fetch');
-          // Use whatever properties we have from previous successful fetch
+          console.log('HousesPage: No properties found in database');
+          
+          // Keep existing data if available, otherwise show empty state
+          if (properties.length > 0) {
+            console.log('HousesPage: Using existing properties from previous successful fetch');
+            const convertedHouses = properties.map(convertPropertyToHouse);
+            const uniqueHouses = convertedHouses.filter((house, index, self) => 
+              index === self.findIndex(h => h.id === house.id)
+            );
+            setFilteredHouses(uniqueHouses);
+          } else {
+            console.log('HousesPage: No properties available, showing empty state');
+            setFilteredHouses([]);
+          }
+        }
+      } catch (err) {
+        console.error('HousesPage: Error loading properties:', err);
+        
+        if (!isMounted) return;
+        
+        // Keep existing data if available, otherwise show empty state
+        if (properties.length > 0) {
+          console.log('HousesPage: Error occurred, using existing properties from previous successful fetch');
           const convertedHouses = properties.map(convertPropertyToHouse);
           const uniqueHouses = convertedHouses.filter((house, index, self) => 
             index === self.findIndex(h => h.id === house.id)
           );
           setFilteredHouses(uniqueHouses);
+        } else {
+          console.log('HousesPage: Error occurred, no existing properties, showing empty state');
+          setFilteredHouses([]);
         }
       }
       
       // Always set loading to false
-      setIsLoading(false);
+      if (isMounted) {
+        setIsLoading(false);
+      }
     };
 
+    // Initial load
     loadProperties();
+
+    // Listen for tab focus events - NO AUTO REFRESH
+    const handleTabFocus = () => {
+      if (!isMounted) return;
+      
+      console.log('HousesPage: Tab focused - data remains static');
+      // Data stays static - no automatic refresh
+      // User must manually refresh if they want fresh data
+    };
+
+    // Listen for login events to refresh data
+    const handleUserLogin = () => {
+      if (!isMounted) return;
+      
+      console.log('HousesPage: User logged in, refreshing data...');
+      loadProperties(true);
+    };
+
+    // Add event listeners
+    window.addEventListener('focus', handleTabFocus);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        handleTabFocus();
+      }
+    });
+    window.addEventListener('realaist:user-logged-in', handleUserLogin);
+
+    // NO PERIODIC REFRESH - Data remains static
+    // User must manually refresh if they want fresh data
+
+    // Cleanup
+    return () => {
+      isMounted = false;
+      window.removeEventListener('focus', handleTabFocus);
+      document.removeEventListener('visibilitychange', handleTabFocus);
+      window.removeEventListener('realaist:user-logged-in', handleUserLogin);
+    };
   }, []);
 
   useEffect(() => {
@@ -499,6 +597,24 @@ export default function HousesPage() {
 
   const handleBackToHome = () => {
     navigate('/');
+  };
+
+  // Manual refresh function
+  const handleManualRefresh = async () => {
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
+    console.log('HousesPage: Manual refresh triggered by user');
+    
+    try {
+      // Clear all caches and fetch fresh data
+      unifiedCacheService.clearAll();
+      await loadProperties(true);
+    } catch (error) {
+      console.error('HousesPage: Manual refresh failed:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   // Generate search suggestions based on property data
@@ -684,9 +800,9 @@ export default function HousesPage() {
                   Discover our curated selection of high-performance properties across Kenya
                 </motion.p>
 
-                {/* Back to Home Button */}
+                {/* Back to Home and Refresh Buttons */}
                 <motion.div 
-                  className="mt-8 flex justify-center"
+                  className="mt-8 flex justify-center gap-4"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.8, delay: 0.6 }}
@@ -702,6 +818,36 @@ export default function HousesPage() {
                     whileTap={{ scale: 0.95 }}
                   >
                     ← Back to Home
+                  </motion.button>
+                  
+                  <motion.button
+                    onClick={handleManualRefresh}
+                    disabled={isRefreshing}
+                    className={`btn-3d px-6 py-3 rounded-full border transition-all flex items-center gap-2 ${
+                      isRefreshing
+                        ? 'opacity-50 cursor-not-allowed'
+                        : ''
+                    } ${
+                      isDarkMode 
+                        ? 'border-[#C7A667] bg-[#C7A667]/10 text-[#C7A667] hover:bg-[#C7A667]/20' 
+                        : 'border-[#C7A667] bg-[#C7A667]/10 text-[#C7A667] hover:bg-[#C7A667]/20'
+                    }`}
+                    whileHover={!isRefreshing ? { scale: 1.05 } : {}}
+                    whileTap={!isRefreshing ? { scale: 0.95 } : {}}
+                  >
+                    {isRefreshing ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        Refreshing...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Refresh Data
+                      </>
+                    )}
                   </motion.button>
                 </motion.div>
 
@@ -978,7 +1124,7 @@ export default function HousesPage() {
                         {house.type !== 'Land' && (
                           <div className="flex flex-wrap gap-2 mb-6">
                             {house.facts.map((fact: string, factIndex: number) => (
-                              <span key={fact} className={`text-xs px-3 py-1 rounded-full border flex items-center gap-1 transition-colors duration-300 ${
+                              <span key={`${house.id}-fact-${factIndex}`} className={`text-xs px-3 py-1 rounded-full border flex items-center gap-1 transition-colors duration-300 ${
                                 isDarkMode 
                                   ? 'border-white/20 bg-white/5 text-white' 
                                   : 'border-gray-300 bg-gray-100 text-gray-700'

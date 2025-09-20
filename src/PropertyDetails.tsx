@@ -155,9 +155,34 @@ export default function PropertyDetails() {
       setIsLoading(true);
       setError(null);
       
+      // First, try to load from localStorage
+      const loadFromStorage = () => {
+        try {
+          const storedProperties = localStorage.getItem('realaist_properties');
+          if (storedProperties) {
+            const properties = JSON.parse(storedProperties);
+            const foundProperty = properties.find((p: any) => p.id === propertyId);
+            if (foundProperty) {
+              console.log('PropertyDetails: Found property in localStorage');
+              setProperty(convertPropertyToDisplay(foundProperty));
+              setIsLoading(false);
+              return true;
+            }
+          }
+        } catch (error) {
+          console.warn('PropertyDetails: Error loading from localStorage:', error);
+        }
+        return false;
+      };
+      
+      // Try localStorage first
+      if (loadFromStorage()) {
+        return;
+      }
+      
       try {
-        // First, try to get from properties list (which includes fallback data)
-        console.log('PropertyDetails: Trying to get property from properties list first...');
+        // Try to get from properties list
+        console.log('PropertyDetails: Trying to get property from properties list...');
         const { properties: allProperties, error: listError } = await propertiesService.getProperties();
         if (!listError && allProperties) {
           const foundProperty = allProperties.find(p => p.id === propertyId);
@@ -169,59 +194,25 @@ export default function PropertyDetails() {
           }
         }
         
-        // If not found in properties list, try individual fetch
+        // If not found in properties list, try individual fetch (no timeout)
         console.log('PropertyDetails: Property not found in list, trying individual fetch...');
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Request timeout')), 5000)
-        );
-        
-        const fetchPromise = propertiesService.getPropertyById(propertyId);
-        
-        const { property: dbProperty, error: fetchError } = await Promise.race([
-          fetchPromise,
-          timeoutPromise
-        ]) as any;
+        const { property: dbProperty, error: fetchError } = await propertiesService.getPropertyById(propertyId);
         
         console.log('PropertyDetails: Fetch result:', { dbProperty: !!dbProperty, error: fetchError });
         
         if (fetchError) {
-          // Try to get from properties list as fallback
-          console.log('Individual fetch failed, trying properties list...');
-          const { properties: allProperties, error: listError } = await propertiesService.getProperties();
-          if (!listError && allProperties) {
-            const foundProperty = allProperties.find(p => p.id === propertyId);
-            if (foundProperty) {
-              setProperty(convertPropertyToDisplay(foundProperty));
-              return;
-            }
-          }
+          console.error('PropertyDetails: Individual fetch failed:', fetchError);
           setError('Property not found');
         } else if (dbProperty) {
+          console.log('PropertyDetails: Successfully loaded property from individual fetch');
           setProperty(convertPropertyToDisplay(dbProperty));
         } else {
+          console.log('PropertyDetails: No property found with ID:', propertyId);
           setError('Property not found');
         }
       } catch (err) {
-        console.error('Error loading property:', err);
-        // Try to get from properties list as final fallback
-        try {
-          const { properties: allProperties, error: listError } = await propertiesService.getProperties();
-          if (!listError && allProperties) {
-            const foundProperty = allProperties.find(p => p.id === propertyId);
-            if (foundProperty) {
-              setProperty(convertPropertyToDisplay(foundProperty));
-              return;
-            }
-          }
-        } catch (fallbackErr) {
-          console.error('Fallback also failed:', fallbackErr);
-        }
-        
-        if (err instanceof Error && err.message === 'Request timeout') {
-          setError('Request timed out. Please try again.');
-        } else {
-          setError('Failed to load property. Please check your connection.');
-        }
+        console.error('PropertyDetails: Error loading property:', err);
+        setError('Failed to load property details');
       } finally {
         setIsLoading(false);
       }

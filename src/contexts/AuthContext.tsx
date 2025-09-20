@@ -82,29 +82,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Check if we're in offline mode first (with timestamp check)
-        const isOfflineMode = localStorage.getItem('offline_mode') === 'true';
-        const offlineTimestamp = localStorage.getItem('offline_mode_timestamp');
-        const isOfflineExpired = offlineTimestamp && 
-          (Date.now() - parseInt(offlineTimestamp)) > 300000; // 5 minutes
-        
-        if (isOfflineMode && !isOfflineExpired) {
-          console.log('AuthContext: Offline mode detected, skipping Supabase auth check');
-          setIsLoading(false);
-          return;
-        } else if (isOfflineMode && isOfflineExpired) {
-          console.log('AuthContext: Offline mode expired, attempting to reconnect');
-          localStorage.removeItem('offline_mode');
-          localStorage.removeItem('offline_mode_timestamp');
-        }
+        // Always attempt to check authentication - no offline mode blocking
+        console.log('AuthContext: Checking authentication status');
         
         const authUser = await authService.getCurrentUser();
         if (authUser) {
+          console.log('AuthContext: User session found, setting user state');
           setUser(convertAuthUserToUser(authUser));
         } else {
-          // No session: proactively clear caches to avoid stale views
-          await clearAllAppCaches();
-          setUser(null);
+          // Check if user data exists in localStorage (for session persistence)
+          const storedUser = localStorage.getItem('current_user');
+          if (storedUser) {
+            try {
+              const parsedUser = JSON.parse(storedUser);
+              console.log('AuthContext: Found stored user data, restoring session');
+              setUser(convertAuthUserToUser(parsedUser));
+            } catch (error) {
+              console.warn('AuthContext: Invalid stored user data, clearing');
+              localStorage.removeItem('current_user');
+              setUser(null);
+            }
+          } else {
+            console.log('AuthContext: No active session or stored user data');
+            setUser(null);
+          }
         }
       } catch (error) {
         console.error('Auth check failed:', error);
@@ -118,27 +119,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     checkAuth();
 
-    // Listen to auth state changes (only if not in offline mode)
-    const isOfflineMode = localStorage.getItem('offline_mode') === 'true';
-    let subscription = null as any;
-    
-    if (!isOfflineMode) {
-      const { data: { subscription: authSubscription } } = authService.onAuthStateChange(async (authUser) => {
-        if (authUser) {
-          setUser(convertAuthUserToUser(authUser));
-        } else {
-          setUser(null);
-          await clearAllAppCaches();
-        }
-        // Don't set loading to false here as it interferes with login process
-      });
-      subscription = authSubscription;
-    }
+    // DISABLED: Auth state change listener to prevent auto-logout
+    // This was causing users to be logged out when switching tabs
+    // Users will stay logged in until they manually log out
+    console.log('AuthContext: Auth state change listener disabled to prevent auto-logout');
 
     return () => {
-      if (subscription) {
-        subscription.unsubscribe();
-      }
+      // No cleanup needed since auth state listener is disabled
     };
   }, []);
 
@@ -169,7 +156,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (result.user) {
         // Blow away any stale caches immediately
         await clearAllAppCaches();
+        
+        // Clear offline mode flags
+        localStorage.removeItem('offline_mode');
+        localStorage.removeItem('offline_mode_timestamp');
+        
         setUser(convertAuthUserToUser(result.user));
+        
+        // Dispatch event to refresh data after login
+        window.dispatchEvent(new CustomEvent('realaist:user-logged-in', { 
+          detail: { user: convertAuthUserToUser(result.user) } 
+        }));
+        
         return { success: true };
       } else {
         return { success: false, error: result.error || 'Login failed' };
@@ -247,23 +245,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Sign out from service
       await authService.signOut();
       
-      // Clear any cached data
-      unifiedCacheService.clearAll();
+      // Clear only user-specific data, keep property data
       unifiedCacheService.clearUserCaches();
       localStorage.removeItem('current_user');
       localStorage.removeItem('offline_mode');
+      localStorage.removeItem('offline_mode_timestamp');
       
-      // Force reload to clear any cached state
-      window.location.reload();
+      console.log('AuthContext: User logged out successfully');
+      // No page reload - let user stay on current page
     } catch (error) {
       console.error('Logout error:', error);
       // Even if logout fails, clear the user state
       setUser(null);
-      unifiedCacheService.clearAll();
       unifiedCacheService.clearUserCaches();
       localStorage.removeItem('current_user');
       localStorage.removeItem('offline_mode');
-      window.location.reload();
+      localStorage.removeItem('offline_mode_timestamp');
+      console.log('AuthContext: User logged out (with error)');
     }
   };
 

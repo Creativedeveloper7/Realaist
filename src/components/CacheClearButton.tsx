@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { cacheManager } from '../utils/cacheManager';
 import { unifiedCacheService } from '../services/unifiedCacheService';
+import { tabFocusHandler } from '../utils/tabFocusHandler';
 
 interface CacheClearButtonProps {
   isDarkMode: boolean;
@@ -242,6 +243,29 @@ export const DeveloperCacheTools: React.FC<{ isDarkMode: boolean }> = ({ isDarkM
               whileTap={{ scale: 0.98 }}
             >
               Show Cache Stats
+            </motion.button>
+            
+            <motion.button
+              onClick={async () => {
+                try {
+                  await tabFocusHandler.forceRefreshAllData();
+                  alert('Data refreshed successfully!');
+                } catch (error) {
+                  console.error('Error refreshing data:', error);
+                  alert('Error refreshing data. Check console for details.');
+                }
+              }}
+              className={`
+                w-full px-3 py-2 rounded text-sm
+                ${isDarkMode 
+                  ? 'bg-purple-600/20 text-purple-400 hover:bg-purple-600/30' 
+                  : 'bg-purple-50 text-purple-600 hover:bg-purple-100'
+                }
+              `}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Refresh Data
             </motion.button>
           </div>
         </motion.div>

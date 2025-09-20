@@ -361,8 +361,8 @@ class PropertiesService {
             // Only use fallback if it's a critical error, not just a network hiccup
             if (error.message.includes('JWT') || error.message.includes('permission') || error.message.includes('auth')) {
               console.log('Using fallback properties due to authentication error')
-              const local = readLocalProperties()
-              return { properties: [...local, ...ALL_FALLBACK_PROPERTIES], error: null }
+            const local = readLocalProperties()
+            return { properties: [...local, ...ALL_FALLBACK_PROPERTIES], error: null }
             } else {
               // For other errors, return empty array and let the UI handle it
               console.log('Database error, returning empty properties array')
@@ -409,8 +409,8 @@ class PropertiesService {
             error.message.includes('timeout')
           )) {
             console.log('Using fallback properties due to critical network error')
-            const local = readLocalProperties()
-            return { properties: [...local, ...ALL_FALLBACK_PROPERTIES], error: null }
+          const local = readLocalProperties()
+          return { properties: [...local, ...ALL_FALLBACK_PROPERTIES], error: null }
           } else {
             // For other errors, return empty array
             console.log('Non-critical error, returning empty properties array')
@@ -463,12 +463,6 @@ class PropertiesService {
 
           if (error) {
             console.error('Error fetching property by ID:', error)
-            // Try to find in fallback data
-            const fallbackProperty = ALL_FALLBACK_PROPERTIES.find(p => p.id === id)
-            if (fallbackProperty) {
-              console.log('Found property in fallback data')
-              return { property: fallbackProperty, error: null }
-            }
             return { property: null, error: error.message }
           }
 
