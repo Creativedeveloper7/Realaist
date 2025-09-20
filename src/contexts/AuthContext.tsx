@@ -109,7 +109,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       } catch (error) {
         console.error('Auth check failed:', error);
-        // If auth fails, enable offline mode with timestamp
+        
+        // Check if we have stored user data before going offline
+        const storedUser = localStorage.getItem('current_user');
+        if (storedUser) {
+          try {
+            const parsedUser = JSON.parse(storedUser);
+            console.log('AuthContext: Auth failed but found stored user, maintaining session');
+            setUser(convertAuthUserToUser(parsedUser));
+            return; // Don't set offline mode if we have stored user
+          } catch (parseError) {
+            console.warn('AuthContext: Invalid stored user data, clearing');
+            localStorage.removeItem('current_user');
+          }
+        }
+        
+        // Only set offline mode if no stored user data
         localStorage.setItem('offline_mode', 'true');
         localStorage.setItem('offline_mode_timestamp', Date.now().toString());
       } finally {

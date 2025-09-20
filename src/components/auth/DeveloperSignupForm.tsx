@@ -142,12 +142,12 @@ export const DeveloperSignupForm: React.FC<DeveloperSignupFormProps> = ({
             <h3 className={`text-xl font-bold ${
               isDarkMode ? 'text-white' : 'text-gray-900'
             }`}>
-              Developer Signup
+              Realtor Signup
             </h3>
             <p className={`text-sm ${
               isDarkMode ? 'text-white/70' : 'text-gray-600'
             }`}>
-              Create your developer account to list properties
+              Create your realtor account to list properties
             </p>
           </div>
         </div>

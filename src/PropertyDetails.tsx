@@ -111,25 +111,33 @@ export default function PropertyDetails() {
   const [visitSubmissionMessage, setVisitSubmissionMessage] = useState('');
   
   // Helper function to convert database property to display format
-  const convertPropertyToDisplay = (dbProperty: Property) => ({
-    name: dbProperty.title,
-    location: dbProperty.location,
-    description: dbProperty.description,
-    price: `KSh ${dbProperty.price.toLocaleString()}`,
-    estimatedIncome: "KES 350,000/mo",
-    beds: dbProperty.bedrooms || 0,
-    baths: dbProperty.bathrooms || 0,
-    sqft: dbProperty.squareFeet?.toString() || "0",
-    images: dbProperty.images && dbProperty.images.length > 0 ? dbProperty.images : [
-      "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600"
-    ],
-    facts: ["1–2 Beds", "From KSh 3.7M", "ROI 10–12%"],
-    developer: dbProperty.developer,
-    type: dbProperty.propertyType,
-    landArea: formatLandArea(dbProperty.squareFeet),
-    amenities: (dbProperty as any).amenities || [],
-    features: (dbProperty as any).features || []
-  });
+  const convertPropertyToDisplay = (dbProperty: Property) => {
+    console.log('PropertyDetails: Converting property to display format:', {
+      title: dbProperty.title,
+      developer: dbProperty.developer,
+      developerPhone: dbProperty.developer?.phone
+    });
+    
+    return {
+      name: dbProperty.title,
+      location: dbProperty.location,
+      description: dbProperty.description,
+      price: `KSh ${dbProperty.price.toLocaleString()}`,
+      estimatedIncome: "KES 350,000/mo",
+      beds: dbProperty.bedrooms || 0,
+      baths: dbProperty.bathrooms || 0,
+      sqft: dbProperty.squareFeet?.toString() || "0",
+      images: dbProperty.images && dbProperty.images.length > 0 ? dbProperty.images : [
+        "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600"
+      ],
+      facts: ["1–2 Beds", "From KSh 3.7M", "ROI 10–12%"],
+      developer: dbProperty.developer,
+      type: dbProperty.propertyType,
+      landArea: formatLandArea(dbProperty.squareFeet),
+      amenities: (dbProperty as any).amenities || [],
+      features: (dbProperty as any).features || []
+    };
+  };
 
   useEffect(() => {
     const loadProperty = async () => {
@@ -156,24 +164,36 @@ export default function PropertyDetails() {
       setError(null);
       
       // First, try to load from localStorage
-      const loadFromStorage = () => {
-        try {
-          const storedProperties = localStorage.getItem('realaist_properties');
-          if (storedProperties) {
-            const properties = JSON.parse(storedProperties);
-            const foundProperty = properties.find((p: any) => p.id === propertyId);
-            if (foundProperty) {
-              console.log('PropertyDetails: Found property in localStorage');
-              setProperty(convertPropertyToDisplay(foundProperty));
-              setIsLoading(false);
-              return true;
-            }
-          }
-        } catch (error) {
-          console.warn('PropertyDetails: Error loading from localStorage:', error);
-        }
-        return false;
-      };
+              const loadFromStorage = () => {
+                try {
+                  const storedProperties = localStorage.getItem('realaist_properties');
+                  if (storedProperties) {
+                    const properties = JSON.parse(storedProperties);
+                    const foundProperty = properties.find((p: any) => p.id === propertyId);
+                    if (foundProperty) {
+                      console.log('PropertyDetails: Found property in localStorage');
+                      console.log('PropertyDetails: Stored property developer data:', {
+                        developer: foundProperty.developer,
+                        phone: foundProperty.developer?.phone
+                      });
+                      
+                      // Check if developer data is complete
+                      if (foundProperty.developer && foundProperty.developer.phone) {
+                        console.log('PropertyDetails: Developer data is complete, using stored data');
+                        setProperty(convertPropertyToDisplay(foundProperty));
+                        setIsLoading(false);
+                        return true;
+                      } else {
+                        console.log('PropertyDetails: Developer data incomplete in localStorage, will fetch fresh data');
+                        return false; // Don't use incomplete data
+                      }
+                    }
+                  }
+                } catch (error) {
+                  console.warn('PropertyDetails: Error loading from localStorage:', error);
+                }
+                return false;
+              };
       
       // Try localStorage first
       if (loadFromStorage()) {
@@ -181,31 +201,57 @@ export default function PropertyDetails() {
       }
       
       try {
-        // Try to get from properties list
+        // Try to get from properties list using direct method
         console.log('PropertyDetails: Trying to get property from properties list...');
-        const { properties: allProperties, error: listError } = await propertiesService.getProperties();
+        const { properties: allProperties, error: listError } = await propertiesService.getPropertiesDirect();
         if (!listError && allProperties) {
           const foundProperty = allProperties.find(p => p.id === propertyId);
           if (foundProperty) {
             console.log('PropertyDetails: Found property in properties list');
-            setProperty(convertPropertyToDisplay(foundProperty));
-            setIsLoading(false);
-            return;
+            console.log('PropertyDetails: Properties list developer data:', {
+              developer: foundProperty.developer,
+              phone: foundProperty.developer?.phone
+            });
+            
+            // Check if developer data is complete
+            if (foundProperty.developer && foundProperty.developer.phone) {
+              console.log('PropertyDetails: Developer data is complete in properties list');
+              const displayProperty = convertPropertyToDisplay(foundProperty);
+              console.log('PropertyDetails: Setting property with developer data:', {
+                developer: displayProperty.developer,
+                phone: displayProperty.developer?.phone
+              });
+              setProperty(displayProperty);
+              setIsLoading(false);
+              return;
+            } else {
+              console.log('PropertyDetails: Developer data incomplete in properties list, trying individual fetch');
+            }
           }
         }
         
-        // If not found in properties list, try individual fetch (no timeout)
-        console.log('PropertyDetails: Property not found in list, trying individual fetch...');
+        // If not found in properties list or developer data incomplete, try individual fetch (no timeout)
+        console.log('PropertyDetails: Property not found in list or developer data incomplete, trying individual fetch...');
         const { property: dbProperty, error: fetchError } = await propertiesService.getPropertyById(propertyId);
         
-        console.log('PropertyDetails: Fetch result:', { dbProperty: !!dbProperty, error: fetchError });
+        console.log('PropertyDetails: Individual fetch result:', { 
+          dbProperty: !!dbProperty, 
+          error: fetchError,
+          developer: dbProperty?.developer,
+          phone: dbProperty?.developer?.phone
+        });
         
         if (fetchError) {
           console.error('PropertyDetails: Individual fetch failed:', fetchError);
           setError('Property not found');
         } else if (dbProperty) {
           console.log('PropertyDetails: Successfully loaded property from individual fetch');
-          setProperty(convertPropertyToDisplay(dbProperty));
+          const displayProperty = convertPropertyToDisplay(dbProperty);
+          console.log('PropertyDetails: Setting property with developer data:', {
+            developer: displayProperty.developer,
+            phone: displayProperty.developer?.phone
+          });
+          setProperty(displayProperty);
         } else {
           console.log('PropertyDetails: No property found with ID:', propertyId);
           setError('Property not found');

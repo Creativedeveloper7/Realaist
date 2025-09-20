@@ -6,18 +6,18 @@ export interface HowItWorksStep {
 
 export const howItWorksSteps: HowItWorksStep[] = [
   {
-    title: "Discover Opportunities",
-    description: "Explore top investment properties",
+    title: "Property Listings",
+    description: "Real estate Developers & companies sign up, list and verify their properties.",
     image: "https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=800"
   },
   {
-    title: "AI Verification",
-    description: "Use our AI tool to verify ownership & legal compliance.",
+    title: "Smart Property Search",
+    description: "Investors easily discover verified real estate investment opportunities.",
     image: "https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=800"
   },
   {
-    title: "Connect with Developers",
-    description: "Contact sellers directly, leave your details for a callback or schedule a visit",
+    title: "Connect & Close",
+    description: "Automation tools that connect sellers and buyers, strengthen relationships, and close deals faster.",
     image: "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=800"
   }
 ];

@@ -327,8 +327,8 @@ export default function HousesPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const propertiesPerPage = 12;
 
-  const propertyTypes = ['All', 'Apartments', 'Beach Villas', 'Townhouses', 'Gated Communities', 'Off-plan', 'Land'];
-  const statuses = ['All', 'Available', 'Pre-Launch', 'Coming Soon'];
+  const propertyTypes = ['All', 'Apartment Complex', 'Villa Development', 'Townhouse Complex', 'Penthouse', 'Studio Complex', 'Commercial Building', 'Mixed Use Development', 'Beach Villas', 'Gated Communities', 'Off-plan', 'Land'];
+  const statuses = ['All', 'active', 'sold', 'pending', 'draft'];
   const priceRanges = ['All', 'Under KSh 5M', 'KSh 5M - 10M', 'KSh 10M - 20M', 'KSh 20M - 50M', 'Over KSh 50M'];
   const squareFootage = ['All', 'Under 1,000 sq ft', '1,000 - 2,000 sq ft', '2,000 - 5,000 sq ft', 'Over 5,000 sq ft'];
   const bedrooms = ['All', '1', '2', '3', '4', '5+'];
@@ -348,9 +348,9 @@ export default function HousesPage() {
           const properties = JSON.parse(storedProperties);
           const age = Date.now() - parseInt(storedTimestamp);
           
-          // If data is less than 24 hours old, use it
-          if (age < 24 * 60 * 60 * 1000) {
-            console.log('HousesPage: Loading properties from localStorage (age:', Math.round(age / 1000 / 60), 'minutes)');
+          // If data is less than 5 minutes old, use it
+          if (age < 5 * 60 * 1000) {
+            console.log('HousesPage: Loading properties from localStorage (age:', Math.round(age / 1000), 'seconds)');
             setProperties(properties);
             const convertedHouses = properties.map(convertPropertyToHouse);
             const uniqueHouses = convertedHouses.filter((house, index, self) => 
@@ -394,9 +394,71 @@ export default function HousesPage() {
         if (forceRefresh) {
           console.log('HousesPage: Force refresh - clearing all caches');
           unifiedCacheService.clearAll();
+          // Also clear localStorage to ensure fresh data
+          localStorage.removeItem('realaist_properties');
+          localStorage.removeItem('realaist_properties_timestamp');
         }
         
-        const { properties: fetchedProperties, error: fetchError } = await propertiesService.getProperties();
+        console.log('HousesPage: Calling propertiesService.getProperties()...');
+        
+        // SIMPLE SOLUTION: Use localStorage data immediately, then fetch fresh data in background
+        // This prevents loading issues while still getting fresh data
+        const storedProperties = localStorage.getItem('realaist_properties');
+        if (storedProperties) {
+          try {
+            const properties = JSON.parse(storedProperties);
+            console.log('HousesPage: Using stored data immediately, fetching fresh data in background');
+            setProperties(properties);
+            const convertedHouses = properties.map(convertPropertyToHouse);
+            const uniqueHouses = convertedHouses.filter((house, index, self) => 
+              index === self.findIndex(h => h.id === house.id)
+            );
+            setFilteredHouses(uniqueHouses);
+            setIsLoading(false);
+            
+            // Fetch fresh data in background without blocking UI
+            setTimeout(async () => {
+              try {
+                console.log('HousesPage: Background fetch starting...');
+                const { properties: freshProperties, error: fetchError } = await propertiesService.getPropertiesDirect();
+                if (!fetchError && freshProperties && freshProperties.length > 0) {
+                  console.log('HousesPage: Background fetch completed, updating with fresh data');
+                  setProperties(freshProperties);
+                  localStorage.setItem('realaist_properties', JSON.stringify(freshProperties));
+                  localStorage.setItem('realaist_properties_timestamp', Date.now().toString());
+                  const convertedHouses = freshProperties.map(convertPropertyToHouse);
+                  const uniqueHouses = convertedHouses.filter((house, index, self) => 
+                    index === self.findIndex(h => h.id === house.id)
+                  );
+                  setFilteredHouses(uniqueHouses);
+                }
+              } catch (err) {
+                console.log('HousesPage: Background fetch failed, keeping stored data');
+              }
+            }, 100);
+            return;
+          } catch (error) {
+            console.warn('HousesPage: Error parsing stored data:', error);
+          }
+        }
+        
+        // If no stored data, try direct fetch with timeout
+        console.log('HousesPage: No stored data, attempting direct fetch...');
+        const timeoutPromise = new Promise<{ properties: Property[]; error: string | null }>((_, reject) => {
+          setTimeout(() => {
+            reject(new Error('Properties fetch timeout after 5 seconds'));
+          }, 5000);
+        });
+        
+        const { properties: fetchedProperties, error: fetchError } = await Promise.race([
+          propertiesService.getPropertiesDirect(),
+          timeoutPromise
+        ]);
+        
+        console.log('HousesPage: Direct fetch completed', { 
+          propertiesCount: fetchedProperties?.length, 
+          error: fetchError 
+        });
         
         if (!isMounted) return;
         
@@ -430,8 +492,14 @@ export default function HousesPage() {
             );
             setFilteredHouses(uniqueHouses);
           } else {
-            console.log('HousesPage: No properties available, showing empty state');
-            setFilteredHouses([]);
+            // Try to load from localStorage as fallback
+            console.log('HousesPage: No properties from database, trying localStorage fallback');
+            if (loadFromStorage()) {
+              return; // Data loaded from storage
+            } else {
+              console.log('HousesPage: No properties available, showing empty state');
+              setFilteredHouses([]);
+            }
           }
         }
       } catch (err) {
@@ -448,8 +516,14 @@ export default function HousesPage() {
           );
           setFilteredHouses(uniqueHouses);
         } else {
-          console.log('HousesPage: Error occurred, no existing properties, showing empty state');
-          setFilteredHouses([]);
+          // Try to load from localStorage as fallback
+          console.log('HousesPage: Database error, trying localStorage fallback');
+          if (loadFromStorage()) {
+            return; // Data loaded from storage
+          } else {
+            console.log('HousesPage: Error occurred, no existing properties, showing empty state');
+            setFilteredHouses([]);
+          }
         }
       }
       
@@ -479,6 +553,14 @@ export default function HousesPage() {
       loadProperties(true);
     };
 
+    // Listen for property creation events to refresh data
+    const handlePropertyCreated = () => {
+      if (!isMounted) return;
+      
+      console.log('HousesPage: New property created, refreshing data...');
+      loadProperties(true);
+    };
+
     // Add event listeners
     window.addEventListener('focus', handleTabFocus);
     document.addEventListener('visibilitychange', () => {
@@ -487,6 +569,7 @@ export default function HousesPage() {
       }
     });
     window.addEventListener('realaist:user-logged-in', handleUserLogin);
+    window.addEventListener('realaist:property-created', handlePropertyCreated);
 
     // NO PERIODIC REFRESH - Data remains static
     // User must manually refresh if they want fresh data
@@ -497,6 +580,7 @@ export default function HousesPage() {
       window.removeEventListener('focus', handleTabFocus);
       document.removeEventListener('visibilitychange', handleTabFocus);
       window.removeEventListener('realaist:user-logged-in', handleUserLogin);
+      window.removeEventListener('realaist:property-created', handlePropertyCreated);
     };
   }, []);
 

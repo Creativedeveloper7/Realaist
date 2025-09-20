@@ -78,7 +78,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 transition={{ duration: 0.2 }}
               >
                 {currentStep === 'login' ? 'Welcome Back' :
-                 currentStep === 'developerSignup' ? 'Create Developer Account' :
+                 currentStep === 'developerSignup' ? 'Create Realtor Account' :
                  'Create Account'}
               </motion.h3>
               <motion.button
@@ -108,7 +108,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             >
               {currentStep === 'login'
                 ? 'Sign in to your account to access your dashboard and manage your properties.'
-                : 'Create your developer account to list and manage properties.'}
+                : 'Create your realtor account to list and manage properties.'}
             </motion.p>
           )}
 

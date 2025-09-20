@@ -39,7 +39,7 @@ interface PropertyFormData {
   bathrooms: number;
   area: number;
   units: number;
-  status: 'Active' | 'Draft' | 'Pending';
+  status: 'active' | 'draft' | 'pending';
   images: File[];
   amenities: string[];
   features: string[];
@@ -65,7 +65,7 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
     bathrooms: 0,
     area: 0,
     units: 1,
-    status: 'Active',
+    status: 'active',
     images: [],
     amenities: [],
     features: [],
@@ -103,7 +103,7 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
         bathrooms: 0,
         area: 0,
         units: 1,
-        status: 'Active',
+        status: 'active',
         images: [],
         amenities: [],
         features: [],
@@ -153,7 +153,7 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
         amenities: editingProperty.amenities || [],
         features: editingProperty.features || [],
         units: 1,
-        status: 'Active',
+        status: 'active',
         ...landBackfill
       });
     }
@@ -473,7 +473,7 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
           bathrooms: 0,
           area: 0,
           units: 1,
-          status: 'Active',
+          status: 'active',
           images: [],
           amenities: [],
           features: [],
@@ -732,9 +732,9 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
                         : 'bg-white border-gray-200 text-gray-900'
                     } focus:outline-none focus:ring-2 focus:ring-[#C7A667] focus:border-transparent`}
                   >
-                    <option value="Draft">Draft</option>
-                    <option value="Active">Active</option>
-                    <option value="Pending">Pending</option>
+                    <option value="draft">Draft</option>
+                    <option value="active">Active</option>
+                    <option value="pending">Pending</option>
                   </select>
                 </div>
 

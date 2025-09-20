@@ -298,6 +298,13 @@ class PropertiesService {
       cacheKey,
       async () => {
         try {
+          console.log('PropertiesService: Starting database fetch...');
+          
+          // Add timeout to prevent hanging
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('Database fetch timeout after 10 seconds')), 10000);
+          });
+          
           let query = supabase
             .from('properties')
             .select(`
@@ -354,7 +361,13 @@ class PropertiesService {
             query = query.eq('developer_id', filters.developerId)
           }
 
-          const { data, error } = await query
+          console.log('PropertiesService: Executing database query...');
+          const { data, error } = await Promise.race([
+            query,
+            timeoutPromise
+          ]);
+
+          console.log('PropertiesService: Database query completed', { dataLength: data?.length, error: error?.message });
 
           if (error) {
             console.error('Error fetching properties:', error)
@@ -423,6 +436,99 @@ class PropertiesService {
     );
   }
 
+  // Get all properties directly from database (no caching) - matches Dashboard approach
+  async getPropertiesDirect(filters?: PropertyFilters): Promise<{ properties: Property[]; error: string | null }> {
+    try {
+      console.log('PropertiesService: Starting direct database fetch...');
+      
+      let query = supabase
+        .from('properties')
+        .select(`
+          *,
+          developer:profiles!properties_developer_id_fkey(
+            id,
+            first_name,
+            last_name,
+            company_name,
+            phone
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(100)
+
+      // Apply filters
+      if (filters?.location) {
+        query = query.ilike('location', `%${filters.location}%`)
+      }
+      if (filters?.propertyType) {
+        query = query.eq('property_type', filters.propertyType)
+      }
+      if (filters?.minPrice) {
+        query = query.gte('price', filters.minPrice)
+      }
+      if (filters?.maxPrice) {
+        query = query.lte('price', filters.maxPrice)
+      }
+      if (filters?.bedrooms) {
+        query = query.eq('bedrooms', filters.bedrooms)
+      }
+      if (filters?.bathrooms) {
+        query = query.eq('bathrooms', filters.bathrooms)
+      }
+      if (filters?.status) {
+        query = query.eq('status', filters.status)
+      }
+      if (filters?.developerId) {
+        query = query.eq('developer_id', filters.developerId)
+      }
+
+      console.log('PropertiesService: Executing direct database query...');
+      const { data, error } = await query;
+
+      console.log('PropertiesService: Direct database query completed', { dataLength: data?.length, error: error?.message });
+
+      if (error) {
+        console.error('Error fetching properties directly:', error)
+        const local = readLocalProperties()
+        return { properties: local, error: error.message }
+      }
+
+      const properties: Property[] = data.map(item => ({
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        price: item.price,
+        location: item.location,
+        propertyType: item.property_type,
+        bedrooms: item.bedrooms,
+        bathrooms: item.bathrooms,
+        squareFeet: item.square_feet,
+        images: item.images || [],
+        status: item.status,
+        developerId: item.developer_id,
+        developer: item.developer && Array.isArray(item.developer) && item.developer.length > 0 ? {
+          id: item.developer[0].id,
+          firstName: item.developer[0].first_name,
+          lastName: item.developer[0].last_name,
+          companyName: item.developer[0].company_name,
+          phone: item.developer[0].phone
+        } : undefined,
+        createdAt: item.created_at,
+        updatedAt: item.updated_at,
+        amenities: item.amenities || [],
+        features: item.features || []
+      }))
+
+      // Merge with locally created properties
+      const local = readLocalProperties()
+      return { properties: [...local, ...properties], error: null }
+    } catch (error) {
+      console.error('Error fetching properties directly:', error)
+      const local = readLocalProperties()
+      return { properties: local, error: 'An unexpected error occurred' }
+    }
+  }
+
   // Get property by ID
   async getPropertyById(id: string): Promise<{ property: Property | null; error: string | null }> {
     const cacheKey = `property-${id}`;
@@ -466,6 +572,39 @@ class PropertiesService {
             return { property: null, error: error.message }
           }
 
+          console.log('PropertiesService: getPropertyById - Raw developer data:', {
+            developer: data.developer,
+            isArray: Array.isArray(data.developer),
+            length: data.developer?.length,
+            phone: data.developer?.phone || data.developer?.[0]?.phone,
+            developerKeys: data.developer ? Object.keys(data.developer) : null,
+            developerValues: data.developer ? Object.values(data.developer) : null
+          });
+
+          // Handle both array and object formats for developer data
+          let developerData = null;
+          if (data.developer) {
+            if (Array.isArray(data.developer) && data.developer.length > 0) {
+              // Array format (from properties list)
+              developerData = {
+                id: data.developer[0].id,
+                firstName: data.developer[0].first_name,
+                lastName: data.developer[0].last_name,
+                companyName: data.developer[0].company_name,
+                phone: data.developer[0].phone
+              };
+            } else if (typeof data.developer === 'object' && data.developer.id) {
+              // Object format (from individual property fetch)
+              developerData = {
+                id: data.developer.id,
+                firstName: data.developer.first_name,
+                lastName: data.developer.last_name,
+                companyName: data.developer.company_name,
+                phone: data.developer.phone
+              };
+            }
+          }
+
           const property: Property = {
             id: data.id,
             title: data.title,
@@ -479,18 +618,17 @@ class PropertiesService {
             images: data.images || [],
             status: data.status,
             developerId: data.developer_id,
-            developer: data.developer && Array.isArray(data.developer) && data.developer.length > 0 ? {
-              id: data.developer[0].id,
-              firstName: data.developer[0].first_name,
-              lastName: data.developer[0].last_name,
-              companyName: data.developer[0].company_name,
-              phone: data.developer[0].phone
-            } : undefined,
+            developer: developerData,
             createdAt: data.created_at,
             updatedAt: data.updated_at,
             amenities: data.amenities || [],
             features: data.features || []
           }
+
+          console.log('PropertiesService: getPropertyById - Mapped property developer:', {
+            developer: property.developer,
+            phone: property.developer?.phone
+          });
 
           return { property, error: null }
         } catch (error) {

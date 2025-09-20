@@ -84,20 +84,34 @@ class AuthService {
         return null
       }
       
-      const { data: { user }, error } = await supabase.auth.getUser()
+      // Add timeout to prevent hanging auth checks
+      const authPromise = supabase.auth.getUser()
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Auth check timeout')), 5000);
+      });
       
-      if (error || !user) {
-        return null
-      }
+      try {
+        const { data: { user }, error } = await Promise.race([authPromise, timeoutPromise])
+        
+        if (error || !user) {
+          console.log('AuthService: getUser failed, checking if user is still valid:', error?.message);
+          // Don't immediately return null - check if we have a stored user first
+          const storedUser = localStorage.getItem('current_user')
+          if (storedUser) {
+            console.log('AuthService: Using stored user data as fallback');
+            return JSON.parse(storedUser)
+          }
+          return null
+        }
 
-      // Get user profile
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
+        // Get user profile
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
 
-      if (profileError || !profile) {
+        if (profileError || !profile) {
         // If profile doesn't exist, try to create one
         console.log('Profile not found, attempting to create one for user:', user.id)
         
@@ -139,16 +153,27 @@ class AuthService {
         }
       }
 
-      return {
-        id: profile.id,
-        email: profile.email,
-        firstName: profile.first_name,
-        lastName: profile.last_name,
-        phone: profile.phone,
-        avatarUrl: profile.avatar_url,
-        userType: profile.user_type,
-        companyName: profile.company_name,
-        licenseNumber: profile.license_number
+        return {
+          id: profile.id,
+          email: profile.email,
+          firstName: profile.first_name,
+          lastName: profile.last_name,
+          phone: profile.phone,
+          avatarUrl: profile.avatar_url,
+          userType: profile.user_type,
+          companyName: profile.company_name,
+          licenseNumber: profile.license_number
+        }
+
+      } catch (timeoutError) {
+        console.log('AuthService: Auth check timed out, using stored user data as fallback');
+        // If auth check times out, use stored user data
+        const storedUser = localStorage.getItem('current_user')
+        if (storedUser) {
+          console.log('AuthService: Using stored user data due to timeout');
+          return JSON.parse(storedUser)
+        }
+        return null
       }
     } catch (error) {
       console.error('Error getting current user:', error)
@@ -195,8 +220,22 @@ class AuthService {
 
       if (authError) {
         console.error('Supabase auth error:', authError)
+        
+        // Handle specific error cases
+        if (authError.message.includes('User already registered')) {
+          return { user: null, error: 'An account with this email already exists. Please try signing in instead.' }
+        }
+        
+        if (authError.message.includes('Password should be at least')) {
+          return { user: null, error: 'Password must be at least 6 characters long.' }
+        }
+        
+        if (authError.message.includes('Invalid email')) {
+          return { user: null, error: 'Please enter a valid email address.' }
+        }
+        
         // If it's a network error, try offline mode
-        if (authError.message.includes('Load failed') || authError.message.includes('fetch')) {
+        if (authError.message.includes('Load failed') || authError.message.includes('fetch') || authError.message.includes('406')) {
           console.log('Network error detected, switching to offline mode')
           localStorage.setItem('offline_mode', 'true')
           localStorage.setItem('offline_mode_timestamp', Date.now().toString())
@@ -213,6 +252,7 @@ class AuthService {
           localStorage.setItem('current_user', JSON.stringify(mockUser))
           return { user: mockUser, error: null }
         }
+        
         return { user: null, error: authError.message }
       }
 
@@ -225,15 +265,49 @@ class AuthService {
       await new Promise(resolve => setTimeout(resolve, 1000))
 
       // Get the created profile
-      const { data: profile, error: profileError } = await supabase
+      let { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', authData.user.id)
         .single()
 
+      // If profile doesn't exist, try to create it manually
       if (profileError || !profile) {
-        console.error('Profile not found after signup:', profileError)
-        return { user: null, error: 'Profile creation failed' }
+        console.log('Profile not found after signup, attempting to create manually:', profileError)
+        
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert({
+            id: authData.user.id,
+            email: authData.user.email!,
+            first_name: data.firstName,
+            last_name: data.lastName,
+            user_type: data.userType,
+            phone: data.phone,
+            company_name: data.companyName,
+            license_number: data.licenseNumber,
+            avatar_url: authData.user.user_metadata?.avatar_url || null
+          })
+          .select()
+          .single()
+
+        if (createError) {
+          console.error('Failed to create profile manually:', createError)
+          
+          // Handle specific profile creation errors
+          if (createError.message.includes('duplicate key')) {
+            return { user: null, error: 'An account with this email already exists. Please try signing in instead.' }
+          }
+          
+          if (createError.message.includes('violates foreign key')) {
+            return { user: null, error: 'Database configuration error. Please contact support.' }
+          }
+          
+          return { user: null, error: `Profile creation failed: ${createError.message}` }
+        }
+
+        profile = newProfile
+        console.log('Profile created manually successfully')
       }
 
       const authUser: AuthUser = {

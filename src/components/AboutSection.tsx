@@ -29,13 +29,13 @@ export function AboutSection({ isDarkMode }: AboutSectionProps) {
           <p className={`mt-4 max-w-prose transition-colors duration-300 ${
             isDarkMode ? 'text-white/70' : 'text-gray-600'
           }`}>
-            REALAIST is an AI-powered platform that connects investors with vetted real estate opportunities from trusted developers and companies.Our AI agent verifies property ownership, legal compliance, and the track record of each developer — ensuring a secure and trustworthy investment experience.
+            REALAIST is an AI-powered platform that connects investors with verified properties from trusted real estate developers & companies.
           </p>
           <div className="mt-8 grid grid-cols-3 gap-8">
             {[
-              { k: "KES 12B+", v: "Assets Listed" },
-              { k: "200+", v: "Investors Served" },
-              { k: "11.4%", v: "Avg Yield" },
+              { k: "77", v: "Real Estate Companies" },
+              { k: "1000+", v: "Properties Listed" },
+              { k: "10,000+", v: "Active Investors" },
             ].map((s, index) => (
               <motion.div 
                 key={s.k} 
@@ -95,6 +95,8 @@ export function AboutSection({ isDarkMode }: AboutSectionProps) {
                   } ${
                     partner.name === "BlackRock" 
                       ? "max-h-14" 
+                      : partner.name === "Mwangi" || partner.name === "Suva" || partner.name === "Nesh"
+                      ? "max-h-20"                        
                       : "max-h-12"
                   }`}
                   onError={(e) => {
@@ -130,6 +132,8 @@ export function AboutSection({ isDarkMode }: AboutSectionProps) {
                   } ${
                     partner.name === "BlackRock" 
                       ? "max-h-14" 
+                      : partner.name === "Mwangi" || partner.name === "Suva" || partner.name === "Nesh"
+                      ? "max-h-16"
                       : "max-h-12"
                   }`}
                   onError={(e) => {
