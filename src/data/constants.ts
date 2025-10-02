@@ -13,8 +13,8 @@ export const searchExamples = [
 
 export const partners = [
   { name: "BlackRock", logo: "/logos/BlackRock-logo.png" },
-  { name: "Knight Frank", logo: "/logos/Knight_Frank_Logo.svg.png" },
-  { name: "HassConsult", logo: "/logos/hassconsult.png" },
+  
+  
   { name: "Mwangi", logo: "/logos/mwangi.png" },
   { name: "Suva", logo: "/logos/suva.png" },
   { name: "Nesh", logo: "/logos/nesh.png" },

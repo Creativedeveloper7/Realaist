@@ -312,6 +312,28 @@ export default function PropertyDetails() {
   const goToImage = (index: number) => {
     setCurrentImageIndex(index);
   };
+  
+  const handleShare = async () => {
+    try {
+      const shareTitle = property?.name ? `${property.name} - Realaist` : 'Realaist Property';
+      const shareText = property?.name && property?.location
+        ? `Check out ${property.name} in ${property.location} on Realaist.`
+        : 'Check out this property on Realaist.';
+      const shareUrl = window.location.href;
+
+      if (navigator.share) {
+        await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(`${shareTitle}\n${shareText}\n${shareUrl}`);
+        alert('Link copied to clipboard');
+      } else {
+        window.location.href = `mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(`${shareText}\n${shareUrl}`)}`;
+      }
+    } catch (err) {
+      console.error('Share action failed:', err);
+      alert('Could not share this property.');
+    }
+  };
 
   return (
     <>
@@ -716,6 +738,19 @@ export default function PropertyDetails() {
                     whileTap={{ scale: 0.98 }}
                   >
                     💬 Chat on WhatsApp
+                  </motion.button>
+
+                  <motion.button 
+                    onClick={handleShare}
+                    className={`w-full px-6 py-3 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 border ${
+                      isDarkMode 
+                        ? 'border-white/30 text-white hover:border-[#C7A667] hover:text-[#C7A667]'
+                        : 'border-gray-300 text-gray-700 hover:border-[#C7A667] hover:text-[#C7A667]'
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    🔗 Share
                   </motion.button>
                 </div>
 
