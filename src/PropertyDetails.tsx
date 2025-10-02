@@ -643,8 +643,8 @@ export default function PropertyDetails() {
                   </p>
                 </div>
 
-                {/* Land Amenities and Features */}
-                {isLand && (property.amenities?.length > 0 || property.features?.length > 0) && (
+                {/* Amenities and Features */}
+                {(property.amenities?.length > 0 || property.features?.length > 0) && (
                   <div className="grid md:grid-cols-2 gap-8">
                     {property.amenities?.length > 0 && (
                       <div>
