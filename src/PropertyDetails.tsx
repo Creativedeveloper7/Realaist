@@ -67,28 +67,6 @@ const formatLandArea = (squareFeet?: number): string => {
   return `${value.toFixed(2)} ${unit}`;
 };
 
-function FloatingLogo({ isDarkMode = true }: { isDarkMode?: boolean }) {
-  return (
-    <motion.a 
-      href="/"
-      className="fixed left-4 top-8 z-50 select-none logo-float cursor-pointer"
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-    >
-      <div className={`border border-dashed rounded-md px-4 py-3 backdrop-blur-sm transition-colors duration-300 ${
-        isDarkMode 
-          ? 'border-white/60 bg-black/20' 
-          : 'border-gray-400 bg-white/20'
-      }`}>
-        <img 
-          src="/logos/realaistlogo.png" 
-          alt="Realaist Logo" 
-          className="h-12 w-auto md:h-15"
-        />
-      </div>
-    </motion.a>
-  );
-}
 
 export default function PropertyDetails() {
   const { propertyId } = useParams();
@@ -1239,6 +1217,266 @@ export default function PropertyDetails() {
           </motion.div>
         </motion.div>
       )}
+
+      {/* Related Properties Section */}
+      {property && (
+        <RelatedPropertiesSection 
+          currentProperty={property} 
+          isDarkMode={isDarkMode} 
+        />
+      )}
     </>
   );
 }
+
+// Related Properties Component
+interface RelatedPropertiesSectionProps {
+  currentProperty: Property;
+  isDarkMode: boolean;
+}
+
+const RelatedPropertiesSection: React.FC<RelatedPropertiesSectionProps> = ({ 
+  currentProperty, 
+  isDarkMode 
+}) => {
+  const [relatedProperties, setRelatedProperties] = useState<Property[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchRelatedProperties = async () => {
+      try {
+        setIsLoading(true);
+        const { properties } = await propertiesService.getProperties();
+        
+        // Filter related properties based on location, bedrooms, and price bracket
+        const filtered = properties.filter((p: Property) => {
+          if (p.id === currentProperty.id) return false; // Exclude current property
+          
+          // Location match (same area/city)
+          const currentLocation = currentProperty.location.toLowerCase();
+          const propertyLocation = p.location.toLowerCase();
+          const locationMatch = currentLocation.includes(propertyLocation.split(',')[0]) || 
+                               propertyLocation.includes(currentLocation.split(',')[0]);
+          
+          // Bedrooms match (same or similar)
+          const bedroomMatch = p.bedrooms === currentProperty.bedrooms || 
+                              Math.abs((p.bedrooms || 0) - (currentProperty.bedrooms || 0)) <= 1;
+          
+          // Price bracket match (within 20% range)
+          const priceRange = currentProperty.price * 0.2;
+          const priceMatch = Math.abs(p.price - currentProperty.price) <= priceRange;
+          
+          return locationMatch || bedroomMatch || priceMatch;
+        });
+        
+        // Sort by relevance (location first, then price similarity)
+        const sorted = filtered.sort((a: Property, b: Property) => {
+          const aLocationMatch = a.location.toLowerCase().includes(currentProperty.location.toLowerCase().split(',')[0]);
+          const bLocationMatch = b.location.toLowerCase().includes(currentProperty.location.toLowerCase().split(',')[0]);
+          
+          if (aLocationMatch && !bLocationMatch) return -1;
+          if (!aLocationMatch && bLocationMatch) return 1;
+          
+          const aPriceDiff = Math.abs(a.price - currentProperty.price);
+          const bPriceDiff = Math.abs(b.price - currentProperty.price);
+          return aPriceDiff - bPriceDiff;
+        });
+        
+        setRelatedProperties(sorted.slice(0, 6)); // Show max 6 related properties
+      } catch (error) {
+        console.error('Error fetching related properties:', error);
+        setRelatedProperties([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRelatedProperties();
+  }, [currentProperty]);
+
+  const handlePropertyClick = (propertyId: string) => {
+    navigate(`/property/${propertyId}`);
+    window.scrollTo(0, 0);
+  };
+
+  if (isLoading) {
+    return (
+      <section className={`py-16 px-4 sm:px-6 lg:px-8 ${
+        isDarkMode ? 'bg-[#111217]' : 'bg-gray-50'
+      }`}>
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#C7A667] mx-auto"></div>
+            <p className={`mt-2 ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>
+              Loading related properties...
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (relatedProperties.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className={`py-16 px-4 sm:px-6 lg:px-8 ${
+      isDarkMode ? 'bg-[#111217]' : 'bg-gray-50'
+    }`}>
+      <div className="max-w-7xl mx-auto">
+        <motion.div
+          className="text-center mb-12"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          <h2 className={`text-3xl font-bold mb-4 ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>
+            Related Properties
+          </h2>
+          <p className={`text-lg ${
+            isDarkMode ? 'text-white/70' : 'text-gray-600'
+          }`}>
+            Discover similar properties in the same area
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {relatedProperties.map((property, index) => (
+            <motion.div
+              key={property.id}
+              className={`group cursor-pointer rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl ${
+                isDarkMode ? 'bg-[#0E0E10] border border-white/10' : 'bg-white border border-gray-200'
+              }`}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: index * 0.1 }}
+              whileHover={{ y: -5 }}
+              onClick={() => handlePropertyClick(property.id)}
+            >
+              {/* Property Image */}
+              <div className="relative h-48 overflow-hidden">
+                {property.images && property.images.length > 0 ? (
+                  <img
+                    src={property.images[0]}
+                    alt={property.title}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className={`w-full h-full flex items-center justify-center ${
+                    isDarkMode ? 'bg-white/5' : 'bg-gray-100'
+                  }`}>
+                    <span className={`text-4xl ${
+                      isDarkMode ? 'text-white/30' : 'text-gray-400'
+                    }`}>
+                      🏠
+                    </span>
+                  </div>
+                )}
+                
+                {/* Price Badge */}
+                <div className="absolute top-4 left-4">
+                  <span className="px-3 py-1 bg-[#C7A667] text-black font-bold rounded-full text-sm">
+                    ${property.price.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              {/* Property Details */}
+              <div className="p-6">
+                <h3 className={`text-xl font-bold mb-2 group-hover:text-[#C7A667] transition-colors ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>
+                  {property.title}
+                </h3>
+                
+                <p className={`text-sm mb-4 ${
+                  isDarkMode ? 'text-white/70' : 'text-gray-600'
+                }`}>
+                  📍 {property.location}
+                </p>
+
+                {/* Property Facts */}
+                <div className="flex items-center gap-4 mb-4">
+                  {property.bedrooms && (
+                    <div className="flex items-center gap-1">
+                      <img src="/icons/bed.png" alt="Beds" className="w-4 h-4" />
+                      <span className={`text-sm ${
+                        isDarkMode ? 'text-white/70' : 'text-gray-600'
+                      }`}>
+                        {property.bedrooms}
+                      </span>
+                    </div>
+                  )}
+                  {property.bathrooms && (
+                    <div className="flex items-center gap-1">
+                      <img src="/icons/bath.png" alt="Baths" className="w-4 h-4" />
+                      <span className={`text-sm ${
+                        isDarkMode ? 'text-white/70' : 'text-gray-600'
+                      }`}>
+                        {property.bathrooms}
+                      </span>
+                    </div>
+                  )}
+                  {property.squareFeet && (
+                    <div className="flex items-center gap-1">
+                      <img src="/icons/sqre%20ft.png" alt="Square Feet" className="w-4 h-4" />
+                      <span className={`text-sm ${
+                        isDarkMode ? 'text-white/70' : 'text-gray-600'
+                      }`}>
+                        {property.squareFeet.toLocaleString()} sq ft
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Property Type */}
+                <div className="flex items-center justify-between">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    property.propertyType === 'apartment' 
+                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
+                      : property.propertyType === 'house'
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300'
+                      : 'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300'
+                  }`}>
+                    {property.propertyType?.charAt(0).toUpperCase() + property.propertyType?.slice(1)}
+                  </span>
+                  
+                  <span className={`text-sm font-medium ${
+                    isDarkMode ? 'text-[#C7A667]' : 'text-[#C7A667]'
+                  }`}>
+                    View Details →
+                  </span>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* View All Properties Link */}
+        <motion.div
+          className="text-center mt-12"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+        >
+          <motion.a
+            href="/properties"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#C7A667] text-black font-medium rounded-lg hover:bg-[#B89657] transition-colors"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            View All Properties
+            <span>→</span>
+          </motion.a>
+        </motion.div>
+      </div>
+    </section>
+  );
+};
