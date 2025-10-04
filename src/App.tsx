@@ -72,8 +72,8 @@ function AppContent() {
           <PublicBlogsPage />
         } />
         
-        {/* Admin Routes */}
-        <Route path="/login/admin" element={
+        {/* Admin Login Route */}
+        <Route path="/admin/login" element={
           <AdminLogin isDarkMode={isDarkMode} />
         } />
         

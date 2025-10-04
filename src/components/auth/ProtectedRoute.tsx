@@ -24,8 +24,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  // If no user is authenticated, redirect to home
+  // If no user is authenticated, redirect to appropriate login
   if (!user) {
+    // If this is an admin route, redirect to admin login
+    if (requireAdmin) {
+      return <Navigate to="/admin/login" replace />;
+    }
+    // Otherwise redirect to home
     return <Navigate to="/" replace />;
   }
 
