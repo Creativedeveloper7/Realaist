@@ -49,10 +49,15 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ isDarkMode }) => {
       // Store admin user in localStorage for development
       localStorage.setItem('current_user', JSON.stringify(mockAdminUser));
       
-      // Simulate successful login
+      // Dispatch event to trigger auth state refresh
+      window.dispatchEvent(new CustomEvent('realaist:admin-login', { 
+        detail: { user: mockAdminUser } 
+      }));
+      
+      // Navigate to admin dashboard
       setTimeout(() => {
         navigate('/admin');
-      }, 1000);
+      }, 500);
 
     } catch (err) {
       setError('An unexpected error occurred');

@@ -151,13 +151,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     checkAuth();
 
-    // DISABLED: Auth state change listener to prevent auto-logout
-    // This was causing users to be logged out when switching tabs
-    // Users will stay logged in until they manually log out
-    console.log('AuthContext: Auth state change listener disabled to prevent auto-logout');
+    // Listen for admin login events
+    const handleAdminLogin = (event: CustomEvent) => {
+      const adminUser = event.detail.user;
+      console.log('AuthContext: Admin login event received, setting user state');
+      setUser(convertAuthUserToUser(adminUser));
+    };
+
+    // Listen for user login events
+    const handleUserLogin = (event: CustomEvent) => {
+      const userData = event.detail.user;
+      console.log('AuthContext: User login event received, setting user state');
+      setUser(convertAuthUserToUser(userData));
+    };
+
+    window.addEventListener('realaist:admin-login', handleAdminLogin as EventListener);
+    window.addEventListener('realaist:user-logged-in', handleUserLogin as EventListener);
 
     return () => {
-      // No cleanup needed since auth state listener is disabled
+      window.removeEventListener('realaist:admin-login', handleAdminLogin as EventListener);
+      window.removeEventListener('realaist:user-logged-in', handleUserLogin as EventListener);
     };
   }, []);
 
