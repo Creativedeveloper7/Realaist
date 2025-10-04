@@ -9,13 +9,16 @@ import { UserProfile } from './components/dashboard/UserProfile';
 import { DeveloperCacheTools } from './components/CacheClearButton';
 import { Dashboard } from './pages/Dashboard';
 import { DeveloperDashboard } from './pages/DeveloperDashboard';
-import { BuyerDashboard } from './pages/BuyerDashboard';
 import { HomePage } from './pages/HomePage';
 import { MyProperties } from './pages/MyProperties';
 import ScheduledVisits from './pages/ScheduledVisits';
 import { Documents } from './pages/Documents';
 import { Analytics } from './pages/Analytics';
 import { Blogs } from './pages/Blogs';
+import { Billings } from './pages/Billings';
+import { AdminDashboard } from './pages/AdminDashboard';
+import { AdminLogin } from './pages/AdminLogin';
+import { AdminLayout } from './components/dashboard/AdminLayout';
 import { default as PublicBlogsPage } from './BlogsPage';
 import PropertyDetails from './PropertyDetails';
 import HousesPage from './HousesPage';
@@ -67,6 +70,11 @@ function AppContent() {
         
         <Route path="/blogs" element={
           <PublicBlogsPage />
+        } />
+        
+        {/* Admin Routes */}
+        <Route path="/login/admin" element={
+          <AdminLogin isDarkMode={isDarkMode} />
         } />
         
         {/* Protected Dashboard Routes */}
@@ -128,11 +136,52 @@ function AppContent() {
           </ProtectedRoute>
         } />
         
+        <Route path="/dashboard/billings" element={
+          <ProtectedRoute>
+            <DashboardLayout isDarkMode={isDarkMode}>
+              <Billings isDarkMode={isDarkMode} />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
+        
         <Route path="/dashboard/profile" element={
           <ProtectedRoute>
             <DashboardLayout isDarkMode={isDarkMode}>
               <UserProfile isDarkMode={isDarkMode} />
             </DashboardLayout>
+          </ProtectedRoute>
+        } />
+        
+        {/* Admin Routes */}
+        <Route path="/admin" element={
+          <ProtectedRoute requireAdmin={true}>
+            <AdminLayout isDarkMode={isDarkMode}>
+              <AdminDashboard isDarkMode={isDarkMode} />
+            </AdminLayout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/admin/developers" element={
+          <ProtectedRoute requireAdmin={true}>
+            <AdminLayout isDarkMode={isDarkMode}>
+              <AdminDashboard isDarkMode={isDarkMode} />
+            </AdminLayout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/admin/properties" element={
+          <ProtectedRoute requireAdmin={true}>
+            <AdminLayout isDarkMode={isDarkMode}>
+              <AdminDashboard isDarkMode={isDarkMode} />
+            </AdminLayout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/admin/analytics" element={
+          <ProtectedRoute requireAdmin={true}>
+            <AdminLayout isDarkMode={isDarkMode}>
+              <AdminDashboard isDarkMode={isDarkMode} />
+            </AdminLayout>
           </ProtectedRoute>
         } />
         

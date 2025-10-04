@@ -10,7 +10,7 @@ export interface User {
   lastName: string;
   phone?: string;
   avatarUrl?: string;
-  userType: 'buyer' | 'developer';
+  userType: 'buyer' | 'developer' | 'admin';
   companyName?: string;
   licenseNumber?: string;
   preferences: {
@@ -36,7 +36,7 @@ export interface SignupData {
   password: string;
   firstName: string;
   lastName: string;
-  userType: 'buyer' | 'developer';
+  userType: 'buyer' | 'developer' | 'admin';
   phone?: string;
   companyName?: string;
   licenseNumber?: string;
@@ -60,23 +60,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Admin email list - in production, this would be stored securely
+  const ADMIN_EMAILS = [
+    'admin@realaist.com',
+    'superadmin@realaist.com',
+    'support@realaist.com'
+  ];
+
+  // Helper function to check if user is admin
+  const isAdminUser = (email: string): boolean => {
+    return ADMIN_EMAILS.includes(email.toLowerCase());
+  };
+
   // Helper function to convert AuthUser to User
-  const convertAuthUserToUser = (authUser: AuthUser): User => ({
-    id: authUser.id,
-    email: authUser.email,
-    firstName: authUser.firstName,
-    lastName: authUser.lastName,
-    phone: authUser.phone,
-    avatarUrl: authUser.avatarUrl,
-    userType: authUser.userType,
-    companyName: authUser.companyName,
-    licenseNumber: authUser.licenseNumber,
-    preferences: {
-      notifications: true,
-      darkMode: false,
-      language: 'en'
-    }
-  });
+  const convertAuthUserToUser = (authUser: AuthUser | any): User => {
+    // Check if user is admin based on email
+    const userType = isAdminUser(authUser.email) ? 'admin' : authUser.userType;
+    
+    return {
+      id: authUser.id,
+      email: authUser.email,
+      firstName: authUser.firstName,
+      lastName: authUser.lastName,
+      phone: authUser.phone,
+      avatarUrl: authUser.avatarUrl,
+      userType: userType as 'buyer' | 'developer' | 'admin',
+      companyName: authUser.companyName,
+      licenseNumber: authUser.licenseNumber,
+      preferences: {
+        notifications: true,
+        darkMode: false,
+        language: 'en'
+      }
+    };
+  };
 
   // Check for existing session on mount
   useEffect(() => {
@@ -204,12 +221,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setIsLoading(false);
       }, 15000); // 15 second timeout for signup
       
+      // For admin users, use a different signup approach
+      const signupUserType = userData.userType === 'admin' ? 'developer' : userData.userType;
+      
       const result = await authService.signUp({
         email: userData.email,
         password: userData.password,
         firstName: userData.firstName,
         lastName: userData.lastName,
-        userType: userData.userType,
+        userType: signupUserType as 'buyer' | 'developer',
         phone: userData.phone,
         companyName: userData.companyName,
         licenseNumber: userData.licenseNumber

@@ -7,7 +7,7 @@ export interface AuthUser {
   lastName: string
   phone?: string
   avatarUrl?: string
-  userType: 'buyer' | 'developer'
+  userType: 'buyer' | 'developer' | 'admin'
   companyName?: string
   licenseNumber?: string
 }
@@ -17,7 +17,7 @@ export interface SignUpData {
   password: string
   firstName: string
   lastName: string
-  userType: 'buyer' | 'developer'
+  userType: 'buyer' | 'developer' | 'admin'
   phone?: string
   companyName?: string
   licenseNumber?: string
