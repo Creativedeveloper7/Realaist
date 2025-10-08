@@ -14,11 +14,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   onSuccess, 
   onSwitchToSignup
 }) => {
-<<<<<<< HEAD
   const { login, signInWithGoogle, isLoading, user } = useAuth();
-=======
-  const { login, signInWithGoogle, isLoading } = useAuth();
->>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
@@ -52,7 +48,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     
     if (!validateForm()) return;
 
-<<<<<<< HEAD
     const trimmedEmail = formData.email.trim();
     const result = await login(trimmedEmail, formData.password);
     
@@ -72,13 +67,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       ];
       const isAdmin = adminEmails.includes(trimmedEmail.toLowerCase());
       navigate(isAdmin ? '/admin' : '/dashboard');
-=======
-    const result = await login(formData.email, formData.password);
-    
-    if (result.success) {
-      onSuccess?.();
-      navigate('/dashboard');
->>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
     } else {
       setErrors({ general: result.error || 'Login failed' });
     }
@@ -99,7 +87,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     
     if (result.success) {
       onSuccess?.();
-<<<<<<< HEAD
       // Prefer role from AuthContext if already available
       if (user?.userType === 'admin') {
         navigate('/admin');
@@ -122,8 +109,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         }
       } catch {}
       // Fallback
-=======
->>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
       navigate('/dashboard');
     } else {
       setErrors({ general: result.error || 'Google sign-in failed' });

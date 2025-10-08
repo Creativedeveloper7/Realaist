@@ -493,31 +493,51 @@ class PropertiesService {
         return { properties: local, error: error.message }
       }
 
-      const properties: Property[] = data.map(item => ({
-        id: item.id,
-        title: item.title,
-        description: item.description,
-        price: item.price,
-        location: item.location,
-        propertyType: item.property_type,
-        bedrooms: item.bedrooms,
-        bathrooms: item.bathrooms,
-        squareFeet: item.square_feet,
-        images: item.images || [],
-        status: item.status,
-        developerId: item.developer_id,
-        developer: item.developer && Array.isArray(item.developer) && item.developer.length > 0 ? {
-          id: item.developer[0].id,
-          firstName: item.developer[0].first_name,
-          lastName: item.developer[0].last_name,
-          companyName: item.developer[0].company_name,
-          phone: item.developer[0].phone
-        } : undefined,
-        createdAt: item.created_at,
-        updatedAt: item.updated_at,
-        amenities: item.amenities || [],
-        features: item.features || []
-      }))
+      const properties: Property[] = data.map(item => {
+        // Handle developer data - it might be an array or object
+        let developerData = undefined;
+        if (item.developer) {
+          if (Array.isArray(item.developer) && item.developer.length > 0) {
+            // Array format (from join query)
+            developerData = {
+              id: item.developer[0].id,
+              firstName: item.developer[0].first_name,
+              lastName: item.developer[0].last_name,
+              companyName: item.developer[0].company_name,
+              phone: item.developer[0].phone
+            };
+          } else if (typeof item.developer === 'object' && item.developer.id) {
+            // Object format (direct object)
+            developerData = {
+              id: item.developer.id,
+              firstName: item.developer.first_name,
+              lastName: item.developer.last_name,
+              companyName: item.developer.company_name,
+              phone: item.developer.phone
+            };
+          }
+        }
+
+        return {
+          id: item.id,
+          title: item.title,
+          description: item.description,
+          price: item.price,
+          location: item.location,
+          propertyType: item.property_type,
+          bedrooms: item.bedrooms,
+          bathrooms: item.bathrooms,
+          squareFeet: item.square_feet,
+          images: item.images || [],
+          status: item.status,
+          developerId: item.developer_id,
+          developer: developerData,
+          createdAt: item.created_at,
+          updatedAt: item.updated_at,
+          amenities: item.amenities || [],
+          features: item.features || []
+        };
+      })
 
       // Merge with locally created properties
       const local = readLocalProperties()

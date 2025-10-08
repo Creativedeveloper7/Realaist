@@ -22,21 +22,6 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ isDarkMode }) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
-<<<<<<< HEAD
-    try {
-      // Normal login via Supabase
-      const result = await login(email, password);
-      if (!result.success) {
-        setError(result.error || 'Invalid credentials');
-        setIsLoading(false);
-        return;
-      }
-      // After successful auth, navigate to admin panel
-      navigate('/admin');
-    } catch (err) {
-      setError('Login failed. Please try again.');
-    } finally {
-=======
 
     try {
       // For development: Allow any password for admin emails
@@ -76,7 +61,6 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ isDarkMode }) => {
 
     } catch (err) {
       setError('An unexpected error occurred');
->>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
       setIsLoading(false);
     }
   };
@@ -239,16 +223,11 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ isDarkMode }) => {
             <ul className={`text-xs space-y-1 ${
               isDarkMode ? 'text-gray-400' : 'text-gray-600'
             }`}>
-<<<<<<< HEAD
-              <li>• Use an admin email created in Supabase (e.g. admin@realaist.tech)</li>
-              <li>• Admin access is verified by email allowlist in the app</li>
-=======
               <li>• Use any of these emails:</li>
               <li>• admin@realaist.com</li>
               <li>• superadmin@realaist.com</li>
               <li>• support@realaist.com</li>
               <li>• Any password will work</li>
->>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
             </ul>
           </div>
         </motion.div>

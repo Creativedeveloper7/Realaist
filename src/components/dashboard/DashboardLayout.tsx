@@ -17,12 +17,7 @@ import {
   BarChart3,
   BookOpen,
   ArrowLeft,
-<<<<<<< HEAD
   Megaphone
-=======
-  CreditCard,
-  Crown
->>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
@@ -63,11 +58,7 @@ const developerNavItems: NavItem[] = [
   { id: 'documents', label: 'Documents', icon: FileText, href: '/dashboard/documents' },
   { id: 'blogs', label: 'Blogs', icon: BookOpen, href: '/dashboard/blogs' },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/dashboard/analytics' },
-<<<<<<< HEAD
   { id: 'campaign-ads', label: 'Campaign Ads', icon: Megaphone, href: '/dashboard/campaign-ads' },
-=======
-  { id: 'billings', label: 'Billings', icon: CreditCard, href: '/dashboard/billings' },
->>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
   { id: 'profile', label: 'Profile', icon: User, href: '/dashboard/profile' },
 ];
 
@@ -79,68 +70,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-<<<<<<< HEAD
-=======
-  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
-  
-  // Premium tiers data
-  const premiumTiers = [
-    {
-      id: 'tier1',
-      name: 'Starter',
-      price: '$29',
-      period: '/month',
-      description: 'Perfect for individual developers',
-      features: [
-        'Up to 5 property listings',
-        'Basic analytics dashboard',
-        'Email support',
-        'Standard property photos',
-        'Basic SEO optimization'
-      ],
-      popular: false,
-      color: 'from-blue-500 to-blue-600'
-    },
-    {
-      id: 'tier2',
-      name: 'Professional',
-      price: '$79',
-      period: '/month',
-      description: 'Ideal for growing development teams',
-      features: [
-        'Up to 25 property listings',
-        'Advanced analytics & insights',
-        'Priority support',
-        'Professional photo shoots',
-        'Advanced SEO & marketing tools',
-        'Lead management system',
-        'Custom branding'
-      ],
-      popular: true,
-      color: 'from-[#C7A667] to-yellow-600'
-    },
-    {
-      id: 'tier3',
-      name: 'Enterprise',
-      price: '$199',
-      period: '/month',
-      description: 'For large development companies',
-      features: [
-        'Unlimited property listings',
-        'Real-time analytics & reporting',
-        '24/7 dedicated support',
-        'Professional video tours',
-        'AI-powered marketing tools',
-        'Advanced lead scoring',
-        'White-label solution',
-        'API access',
-        'Custom integrations'
-      ],
-      popular: false,
-      color: 'from-purple-500 to-purple-600'
-    }
-  ];
->>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
   
   // Get navigation items based on user type
   const getNavItems = () => {
@@ -162,11 +91,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     if (path === '/dashboard/scheduled-visits') return 'scheduled-visits';
     if (path === '/dashboard/documents') return 'documents';
     if (path === '/dashboard/analytics') return 'analytics';
-<<<<<<< HEAD
     if (path === '/dashboard/campaign-ads') return 'campaign-ads';
-=======
-    if (path === '/dashboard/billings') return 'billings';
->>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
     if (path === '/dashboard/profile') return 'profile';
     return 'overview';
   };
@@ -345,7 +270,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 Back to Home
               </motion.button>
               
-<<<<<<< HEAD
               {/* Campaign Ads Button - Only show for developers */}
               {user?.userType === 'developer' && (
                 <motion.button
@@ -357,19 +281,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                       '0 4px 15px rgba(199, 166, 103, 0.4)',
                       '0 8px 25px rgba(199, 166, 103, 0.6)',
                       '0 4px 15px rgba(199, 166, 103, 0.4)'
-=======
-              {/* Go Premium Button - Only show for developers */}
-              {user?.userType === 'developer' && (
-                <motion.button
-                  onClick={() => setIsPremiumModalOpen(true)}
-                  className="relative flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-black font-bold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
-                  animate={{
-                    scale: [1, 1.05, 1],
-                    boxShadow: [
-                      '0 4px 15px rgba(251, 191, 36, 0.4)',
-                      '0 8px 25px rgba(251, 191, 36, 0.6)',
-                      '0 4px 15px rgba(251, 191, 36, 0.4)'
->>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
                     ]
                   }}
                   transition={{
@@ -378,7 +289,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                     ease: "easeInOut"
                   }}
                   whileHover={{ 
-<<<<<<< HEAD
                     scale: 1.05,
                     boxShadow: '0 10px 30px rgba(199, 166, 103, 0.8)'
                   }}
@@ -386,18 +296,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 >
                   <Megaphone size={18} />
                   <span className="relative z-10">Campaign Ads</span>
-=======
-                    scale: 1.1,
-                    boxShadow: '0 10px 30px rgba(251, 191, 36, 0.8)'
-                  }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Crown size={18} className="animate-pulse" />
-                  <span className="relative z-10">Go Premium</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 rounded-lg opacity-75 animate-pulse"></div>
->>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
                 </motion.button>
               )}
+              
               
               <div>
                 <h1 className="text-2xl font-bold">Welcome back, {user?.firstName}!</h1>
@@ -435,125 +336,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         />
       )}
 
-<<<<<<< HEAD
-=======
-      {/* Premium Modal */}
-      <AnimatePresence>
-        {isPremiumModalOpen && (
-          <motion.div
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setIsPremiumModalOpen(false)}
-          >
-            <motion.div
-              className={`relative w-full max-w-6xl max-h-[90vh] overflow-y-auto ${
-                isDarkMode ? 'bg-[#0E0E10] border border-white/10' : 'bg-white border border-gray-200'
-              } rounded-2xl shadow-2xl`}
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Modal Header */}
-              <div className="p-6 border-b border-white/10">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-lg">
-                      <Crown className="w-6 h-6 text-black" />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold">Choose Your Premium Plan</h2>
-                      <p className="text-gray-600">Unlock powerful features to grow your real estate business</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setIsPremiumModalOpen(false)}
-                    className={`p-2 rounded-lg ${
-                      isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'
-                    }`}
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Pricing Tiers */}
-              <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {premiumTiers.map((tier, index) => (
-                    <motion.div
-                      key={tier.id}
-                      className={`relative p-6 rounded-2xl border-2 transition-all duration-300 ${
-                        tier.popular
-                          ? 'border-[#C7A667] shadow-lg scale-105'
-                          : isDarkMode
-                          ? 'border-white/10 hover:border-white/20'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      whileHover={{ scale: tier.popular ? 1.05 : 1.02 }}
-                    >
-                      {tier.popular && (
-                        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                          <span className="bg-gradient-to-r from-[#C7A667] to-yellow-600 text-black px-4 py-1 rounded-full text-sm font-bold">
-                            Most Popular
-                          </span>
-                        </div>
-                      )}
-                      
-                      <div className="text-center mb-6">
-                        <h3 className="text-xl font-bold mb-2">{tier.name}</h3>
-                        <p className="text-gray-600 text-sm mb-4">{tier.description}</p>
-                        <div className="flex items-baseline justify-center">
-                          <span className="text-4xl font-bold">{tier.price}</span>
-                          <span className="text-gray-500 ml-1">{tier.period}</span>
-                        </div>
-                      </div>
-
-                      <ul className="space-y-3 mb-6">
-                        {tier.features.map((feature, featureIndex) => (
-                          <li key={featureIndex} className="flex items-start gap-3">
-                            <div className={`w-5 h-5 rounded-full bg-gradient-to-r ${tier.color} flex items-center justify-center flex-shrink-0 mt-0.5`}>
-                              <div className="w-2 h-2 bg-white rounded-full"></div>
-                            </div>
-                            <span className="text-sm">{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-
-                      <motion.button
-                        className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-300 ${
-                          tier.popular
-                            ? 'bg-gradient-to-r from-[#C7A667] to-yellow-600 text-black hover:shadow-lg'
-                            : isDarkMode
-                            ? 'bg-white/10 text-white hover:bg-white/20'
-                            : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                        }`}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        {tier.popular ? 'Get Started' : 'Choose Plan'}
-                      </motion.button>
-                    </motion.div>
-                  ))}
-                </div>
-
-                {/* Additional Info */}
-                <div className="mt-8 text-center">
-                  <p className="text-gray-600 text-sm">
-                    All plans include 30-day money-back guarantee • Cancel anytime • No setup fees
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
->>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
     </div>
   );
 };

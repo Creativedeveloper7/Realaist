@@ -16,7 +16,6 @@ import { Documents } from './pages/Documents';
 import { Analytics } from './pages/Analytics';
 import { Blogs } from './pages/Blogs';
 import DashboardCampaignAds from './pages/DashboardCampaignAds';
-import { Billings } from './pages/Billings';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { AdminLogin } from './pages/AdminLogin';
 import { AdminLayout } from './components/dashboard/AdminLayout';
@@ -165,16 +164,6 @@ function AppContent() {
           }
         />
 
-        <Route
-          path="/dashboard/billings"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout isDarkMode={isDarkMode}>
-                <Billings isDarkMode={isDarkMode} />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
 
         <Route
           path="/dashboard/profile"
@@ -215,7 +204,7 @@ function AppContent() {
           element={
             <ProtectedRoute requireAdmin={true}>
               <AdminLayout isDarkMode={isDarkMode}>
-                <PropertiesPage />
+                <PropertiesPage isDarkMode={isDarkMode} />
               </AdminLayout>
             </ProtectedRoute>
           }
