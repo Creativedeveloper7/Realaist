@@ -63,7 +63,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Admin email list - in production, this would be stored securely
   const ADMIN_EMAILS = [
     'admin@realaist.com',
+<<<<<<< HEAD
     'admin@realaist.tech',
+=======
+>>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
     'superadmin@realaist.com',
     'support@realaist.com'
   ];

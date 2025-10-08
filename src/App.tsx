@@ -15,6 +15,7 @@ import ScheduledVisits from './pages/ScheduledVisits';
 import { Documents } from './pages/Documents';
 import { Analytics } from './pages/Analytics';
 import { Blogs } from './pages/Blogs';
+<<<<<<< HEAD
 import DashboardCampaignAds from './pages/DashboardCampaignAds';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { AdminLogin } from './pages/AdminLogin';
@@ -24,6 +25,12 @@ import RevenuePage from './pages/admin/RevenuePage';
 import MessagesPage from './pages/admin/MessagesPage';
 import ReportsPage from './pages/admin/ReportsPage';
 import SettingsPage from './pages/admin/SettingsPage';
+=======
+import { Billings } from './pages/Billings';
+import { AdminDashboard } from './pages/AdminDashboard';
+import { AdminLogin } from './pages/AdminLogin';
+import { AdminLayout } from './components/dashboard/AdminLayout';
+>>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
 import { default as PublicBlogsPage } from './BlogsPage';
 import PropertyDetails from './PropertyDetails';
 import HousesPage from './HousesPage';
@@ -140,16 +147,27 @@ function AppContent() {
             </DashboardLayout>
           </ProtectedRoute>
         } />
+<<<<<<< HEAD
 
         <Route path="/dashboard/campaign-ads" element={
           <ProtectedRoute>
             <DashboardLayout isDarkMode={isDarkMode}>
               <DashboardCampaignAds />
+=======
+        
+        <Route path="/dashboard/billings" element={
+          <ProtectedRoute>
+            <DashboardLayout isDarkMode={isDarkMode}>
+              <Billings isDarkMode={isDarkMode} />
+>>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
             </DashboardLayout>
           </ProtectedRoute>
         } />
         
+<<<<<<< HEAD
         
+=======
+>>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
         <Route path="/dashboard/profile" element={
           <ProtectedRoute>
             <DashboardLayout isDarkMode={isDarkMode}>
@@ -178,7 +196,11 @@ function AppContent() {
         <Route path="/admin/properties" element={
           <ProtectedRoute requireAdmin={true}>
             <AdminLayout isDarkMode={isDarkMode}>
+<<<<<<< HEAD
               <PropertiesPage />
+=======
+              <AdminDashboard isDarkMode={isDarkMode} />
+>>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
             </AdminLayout>
           </ProtectedRoute>
         } />
@@ -190,6 +212,7 @@ function AppContent() {
             </AdminLayout>
           </ProtectedRoute>
         } />
+<<<<<<< HEAD
 
         <Route path="/admin/revenue" element={
           <ProtectedRoute requireAdmin={true}>
@@ -222,6 +245,8 @@ function AppContent() {
             </AdminLayout>
           </ProtectedRoute>
         } />
+=======
+>>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
         
         {/* Redirect any unknown routes to home */}
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -22,6 +22,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ isDarkMode }) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+<<<<<<< HEAD
     try {
       // Normal login via Supabase
       const result = await login(email, password);
@@ -35,6 +36,47 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ isDarkMode }) => {
     } catch (err) {
       setError('Login failed. Please try again.');
     } finally {
+=======
+
+    try {
+      // For development: Allow any password for admin emails
+      const isAdminEmail = email.toLowerCase().includes('admin') || 
+                          email.toLowerCase().includes('superadmin') || 
+                          email.toLowerCase().includes('support');
+      
+      if (!isAdminEmail) {
+        setError('Access denied. Admin privileges required.');
+        setIsLoading(false);
+        return;
+      }
+
+      // For development: Create a mock admin user
+      const mockAdminUser = {
+        id: 'admin-1',
+        email: email,
+        firstName: 'Admin',
+        lastName: 'User',
+        userType: 'admin' as const,
+        companyName: 'Realaist Admin',
+        licenseNumber: 'ADMIN-001'
+      };
+
+      // Store admin user in localStorage for development
+      localStorage.setItem('current_user', JSON.stringify(mockAdminUser));
+      
+      // Dispatch event to trigger auth state refresh
+      window.dispatchEvent(new CustomEvent('realaist:admin-login', { 
+        detail: { user: mockAdminUser } 
+      }));
+      
+      // Navigate to admin dashboard
+      setTimeout(() => {
+        navigate('/admin');
+      }, 500);
+
+    } catch (err) {
+      setError('An unexpected error occurred');
+>>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
       setIsLoading(false);
     }
   };
@@ -197,8 +239,16 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ isDarkMode }) => {
             <ul className={`text-xs space-y-1 ${
               isDarkMode ? 'text-gray-400' : 'text-gray-600'
             }`}>
+<<<<<<< HEAD
               <li>• Use an admin email created in Supabase (e.g. admin@realaist.tech)</li>
               <li>• Admin access is verified by email allowlist in the app</li>
+=======
+              <li>• Use any of these emails:</li>
+              <li>• admin@realaist.com</li>
+              <li>• superadmin@realaist.com</li>
+              <li>• support@realaist.com</li>
+              <li>• Any password will work</li>
+>>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
             </ul>
           </div>
         </motion.div>
