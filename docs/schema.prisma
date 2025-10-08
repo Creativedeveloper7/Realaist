@@ -1,0 +1,102 @@
+// Datasource
+// Adjust provider/url as needed
+
+datasource db {
+	provider = "postgresql"
+	url      = env("DATABASE_URL")
+}
+
+generator client {
+	provider = "prisma-client-js"
+}
+
+enum UserRole {
+	ADMIN
+	INVESTOR
+	DEVELOPER
+}
+
+enum PropertyStatus {
+	PENDING
+	LIVE
+	SOLD
+}
+
+enum InquiryStatus {
+	NEW
+	CONTACTED
+	CLOSED
+}
+
+model User {
+	id           String    @id @default(uuid())
+	email        String    @unique
+	passwordHash String?
+	firstName    String
+	lastName     String
+	role         UserRole  @default(INVESTOR)
+	isVerified   Boolean   @default(false)
+	company      Company?  @relation(fields: [companyId], references: [id])
+	companyId    String?
+	inquiries    Inquiry[]
+	createdAt    DateTime  @default(now())
+	updatedAt    DateTime  @updatedAt
+}
+
+model Company {
+	id          String      @id @default(uuid())
+	name        String
+	website     String?
+	contactEmail String?
+	contactPhone String?
+	users       User[]
+	properties  Property[]
+	createdAt   DateTime    @default(now())
+	updatedAt   DateTime    @updatedAt
+}
+
+model Property {
+	id         String         @id @default(uuid())
+	title      String
+	description String?
+	developer  Company        @relation(fields: [developerId], references: [id])
+	developerId String
+	status     PropertyStatus @default(PENDING)
+	isVerified Boolean        @default(false)
+	price      Decimal?
+	location   String?
+	media      Media[]
+	inquiries  Inquiry[]
+	createdAt  DateTime       @default(now())
+	updatedAt  DateTime       @updatedAt
+
+	@@index([developerId])
+	@@index([status])
+}
+
+model Media {
+	id         String   @id @default(uuid())
+	property   Property @relation(fields: [propertyId], references: [id])
+	propertyId String
+	url        String
+	alt        String?
+	position   Int      @default(0)
+	createdAt  DateTime @default(now())
+
+	@@index([propertyId])
+}
+
+model Inquiry {
+	id         String        @id @default(uuid())
+	investor   User          @relation(fields: [investorId], references: [id])
+	investorId String
+	property   Property      @relation(fields: [propertyId], references: [id])
+	propertyId String
+	message    String?
+	status     InquiryStatus @default(NEW)
+	createdAt  DateTime      @default(now())
+	updatedAt  DateTime      @updatedAt
+
+	@@index([status])
+	@@index([propertyId])
+}
