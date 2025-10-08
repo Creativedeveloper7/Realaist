@@ -18,13 +18,13 @@ export default defineConfig({
     emptyOutDir: true,
     // Optimize chunk size
     chunkSizeWarningLimit: 1000,
-    // Force cache busting
+    // Disable sourcemaps for production
     sourcemap: false,
-    // Use esbuild (default) to avoid requiring terser on Vercel
+    // Use esbuild for fast minification
     minify: 'esbuild'
   },
   server: {
-    port: 5175, // local dev port
+    port: 5175, // Local dev port
     // Force reload on file changes
     hmr: {
       overlay: true
