@@ -24,10 +24,7 @@ export default defineConfig({
     minify: 'esbuild'
   },
   server: {
-<<<<<<< HEAD
-    port: 5175,
-=======
->>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
+    port: 5175, // local dev port
     // Force reload on file changes
     hmr: {
       overlay: true
