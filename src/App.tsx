@@ -15,8 +15,8 @@ import ScheduledVisits from './pages/ScheduledVisits';
 import { Documents } from './pages/Documents';
 import { Analytics } from './pages/Analytics';
 import { Blogs } from './pages/Blogs';
-<<<<<<< HEAD
 import DashboardCampaignAds from './pages/DashboardCampaignAds';
+import { Billings } from './pages/Billings';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { AdminLogin } from './pages/AdminLogin';
 import { AdminLayout } from './components/dashboard/AdminLayout';
@@ -25,12 +25,6 @@ import RevenuePage from './pages/admin/RevenuePage';
 import MessagesPage from './pages/admin/MessagesPage';
 import ReportsPage from './pages/admin/ReportsPage';
 import SettingsPage from './pages/admin/SettingsPage';
-=======
-import { Billings } from './pages/Billings';
-import { AdminDashboard } from './pages/AdminDashboard';
-import { AdminLogin } from './pages/AdminLogin';
-import { AdminLayout } from './components/dashboard/AdminLayout';
->>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
 import { default as PublicBlogsPage } from './BlogsPage';
 import PropertyDetails from './PropertyDetails';
 import HousesPage from './HousesPage';
@@ -68,192 +62,226 @@ function AppContent() {
     <>
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={
-          <HomePage onLoginClick={handleLoginClick} />
-        } />
-        
-        <Route path="/property/:propertyId" element={
-          <PropertyDetails />
-        } />
-        
-        <Route path="/properties" element={
-          <HousesPage />
-        } />
-        
-        <Route path="/blogs" element={
-          <PublicBlogsPage />
-        } />
-        
+        <Route
+          path="/"
+          element={<HomePage onLoginClick={handleLoginClick} />}
+        />
+
+        <Route path="/property/:propertyId" element={<PropertyDetails />} />
+
+        <Route path="/properties" element={<HousesPage />} />
+
+        <Route path="/blogs" element={<PublicBlogsPage />} />
+
         {/* Admin Login Route */}
-        <Route path="/admin/login" element={
-          <AdminLogin isDarkMode={isDarkMode} />
-        } />
-        
+        <Route path="/admin/login" element={<AdminLogin isDarkMode={isDarkMode} />} />
+
         {/* Protected Dashboard Routes */}
-        <Route path="/dashboard" element={
-          <ProtectedRoute>
-            <DashboardLayout isDarkMode={isDarkMode}>
-              <Dashboard isDarkMode={isDarkMode} />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/developer-dashboard" element={
-          <ProtectedRoute>
-            <DashboardLayout isDarkMode={isDarkMode}>
-              <DeveloperDashboard isDarkMode={isDarkMode} />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        
-        {/* Buyer dashboard removed; app runs developer-only */}
-        
-        <Route path="/dashboard/properties" element={
-          <ProtectedRoute>
-            <DashboardLayout isDarkMode={isDarkMode}>
-              <MyProperties isDarkMode={isDarkMode} />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/dashboard/scheduled-visits" element={
-          <ProtectedRoute>
-            <DashboardLayout isDarkMode={isDarkMode}>
-              <ScheduledVisits isDarkMode={isDarkMode} />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/dashboard/documents" element={
-          <ProtectedRoute>
-            <DashboardLayout isDarkMode={isDarkMode}>
-              <Documents isDarkMode={isDarkMode} />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/dashboard/blogs" element={
-          <ProtectedRoute>
-            <DashboardLayout isDarkMode={isDarkMode}>
-              <Blogs isDarkMode={isDarkMode} />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/dashboard/analytics" element={
-          <ProtectedRoute>
-            <DashboardLayout isDarkMode={isDarkMode}>
-              <Analytics isDarkMode={isDarkMode} />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-<<<<<<< HEAD
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout isDarkMode={isDarkMode}>
+                <Dashboard isDarkMode={isDarkMode} />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/dashboard/campaign-ads" element={
-          <ProtectedRoute>
-            <DashboardLayout isDarkMode={isDarkMode}>
-              <DashboardCampaignAds />
-=======
-        
-        <Route path="/dashboard/billings" element={
-          <ProtectedRoute>
-            <DashboardLayout isDarkMode={isDarkMode}>
-              <Billings isDarkMode={isDarkMode} />
->>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        
-<<<<<<< HEAD
-        
-=======
->>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
-        <Route path="/dashboard/profile" element={
-          <ProtectedRoute>
-            <DashboardLayout isDarkMode={isDarkMode}>
-              <UserProfile isDarkMode={isDarkMode} />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        
+        <Route
+          path="/developer-dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout isDarkMode={isDarkMode}>
+                <DeveloperDashboard isDarkMode={isDarkMode} />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/properties"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout isDarkMode={isDarkMode}>
+                <MyProperties isDarkMode={isDarkMode} />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/scheduled-visits"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout isDarkMode={isDarkMode}>
+                <ScheduledVisits isDarkMode={isDarkMode} />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/documents"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout isDarkMode={isDarkMode}>
+                <Documents isDarkMode={isDarkMode} />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/blogs"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout isDarkMode={isDarkMode}>
+                <Blogs isDarkMode={isDarkMode} />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/analytics"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout isDarkMode={isDarkMode}>
+                <Analytics isDarkMode={isDarkMode} />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/campaign-ads"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout isDarkMode={isDarkMode}>
+                <DashboardCampaignAds />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/billings"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout isDarkMode={isDarkMode}>
+                <Billings isDarkMode={isDarkMode} />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/profile"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout isDarkMode={isDarkMode}>
+                <UserProfile isDarkMode={isDarkMode} />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
         {/* Admin Routes */}
-        <Route path="/admin" element={
-          <ProtectedRoute requireAdmin={true}>
-            <AdminLayout isDarkMode={isDarkMode}>
-              <AdminDashboard isDarkMode={isDarkMode} />
-            </AdminLayout>
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/admin/developers" element={
-          <ProtectedRoute requireAdmin={true}>
-            <AdminLayout isDarkMode={isDarkMode}>
-              <AdminDashboard isDarkMode={isDarkMode} />
-            </AdminLayout>
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/admin/properties" element={
-          <ProtectedRoute requireAdmin={true}>
-            <AdminLayout isDarkMode={isDarkMode}>
-<<<<<<< HEAD
-              <PropertiesPage />
-=======
-              <AdminDashboard isDarkMode={isDarkMode} />
->>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
-            </AdminLayout>
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/admin/analytics" element={
-          <ProtectedRoute requireAdmin={true}>
-            <AdminLayout isDarkMode={isDarkMode}>
-              <AdminDashboard isDarkMode={isDarkMode} />
-            </AdminLayout>
-          </ProtectedRoute>
-        } />
-<<<<<<< HEAD
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <AdminLayout isDarkMode={isDarkMode}>
+                <AdminDashboard isDarkMode={isDarkMode} />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/admin/revenue" element={
-          <ProtectedRoute requireAdmin={true}>
-            <AdminLayout isDarkMode={isDarkMode}>
-              <RevenuePage />
-            </AdminLayout>
-          </ProtectedRoute>
-        } />
+        <Route
+          path="/admin/developers"
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <AdminLayout isDarkMode={isDarkMode}>
+                <AdminDashboard isDarkMode={isDarkMode} />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/admin/messages" element={
-          <ProtectedRoute requireAdmin={true}>
-            <AdminLayout isDarkMode={isDarkMode}>
-              <MessagesPage />
-            </AdminLayout>
-          </ProtectedRoute>
-        } />
+        <Route
+          path="/admin/properties"
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <AdminLayout isDarkMode={isDarkMode}>
+                <PropertiesPage />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/admin/reports" element={
-          <ProtectedRoute requireAdmin={true}>
-            <AdminLayout isDarkMode={isDarkMode}>
-              <ReportsPage />
-            </AdminLayout>
-          </ProtectedRoute>
-        } />
+        <Route
+          path="/admin/analytics"
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <AdminLayout isDarkMode={isDarkMode}>
+                <AdminDashboard isDarkMode={isDarkMode} />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/admin/settings" element={
-          <ProtectedRoute requireAdmin={true}>
-            <AdminLayout isDarkMode={isDarkMode}>
-              <SettingsPage />
-            </AdminLayout>
-          </ProtectedRoute>
-        } />
-=======
->>>>>>> badcbd12fee5a2d6a31ce865809cbf0286a153da
-        
+        <Route
+          path="/admin/revenue"
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <AdminLayout isDarkMode={isDarkMode}>
+                <RevenuePage />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/messages"
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <AdminLayout isDarkMode={isDarkMode}>
+                <MessagesPage />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/reports"
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <AdminLayout isDarkMode={isDarkMode}>
+                <ReportsPage />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/settings"
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <AdminLayout isDarkMode={isDarkMode}>
+                <SettingsPage />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
         {/* Redirect any unknown routes to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
       {/* Global Auth Modal */}
-      <AuthModal 
+      <AuthModal
         isOpen={loginModalOpen}
         onClose={() => {
           setLoginModalOpen(false);
