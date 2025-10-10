@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS campaigns (
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('active', 'pending', 'failed', 'completed')),
     creative_url TEXT, -- URL to uploaded creative
     google_ads_campaign_id TEXT, -- Google Ads campaign ID
+    property_ids UUID[], -- Array of property IDs for this campaign
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -23,6 +24,7 @@ CREATE TABLE IF NOT EXISTS campaigns (
 CREATE INDEX IF NOT EXISTS idx_campaigns_user_id ON campaigns(user_id);
 CREATE INDEX IF NOT EXISTS idx_campaigns_status ON campaigns(status);
 CREATE INDEX IF NOT EXISTS idx_campaigns_created_at ON campaigns(created_at);
+CREATE INDEX IF NOT EXISTS idx_campaigns_property_ids ON campaigns USING GIN(property_ids);
 
 -- RLS policies (if using Supabase)
 ALTER TABLE campaigns ENABLE ROW LEVEL SECURITY;

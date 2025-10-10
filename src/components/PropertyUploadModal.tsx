@@ -604,7 +604,7 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
             </motion.div>
           )}
           {/* Debug: Show current state */}
-          {process.env.NODE_ENV === 'development' && (
+          {import.meta.env.DEV && (
             <div className="mb-4 p-2 bg-blue-100 dark:bg-blue-900/20 rounded text-xs">
               <strong>Debug Info:</strong> isSubmitting: {isSubmitting.toString()}, 
               submitStatus: {submitStatus}, currentStep: {currentStep}

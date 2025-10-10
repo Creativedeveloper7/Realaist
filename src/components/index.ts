@@ -12,4 +12,8 @@ export { ContactSection } from './ContactSection';
 export { ConsultationModal } from './ConsultationModal';
 export { LoginModal } from './LoginModal';
 export { Section } from './Section';
+export { LocationDropdown } from './LocationDropdown';
+export { TagInput } from './TagInput';
+export { PropertySelector } from './PropertySelector';
+export { Tooltip, HelpIcon } from './Tooltip';
 

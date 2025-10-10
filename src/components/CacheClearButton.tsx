@@ -146,7 +146,7 @@ export const DeveloperCacheTools: React.FC<{ isDarkMode: boolean }> = ({ isDarkM
   const [showTools, setShowTools] = useState(false);
 
   // Only show in development
-  if (process.env.NODE_ENV !== 'development') {
+  if (!import.meta.env.DEV) {
     return null;
   }
 
