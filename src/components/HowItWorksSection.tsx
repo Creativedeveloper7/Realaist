@@ -32,11 +32,6 @@ export function HowItWorksSection({ isDarkMode, onLoginClick }: HowItWorksSectio
           }`}>
             How It Works.
           </h2>
-          <p className={`text-lg max-w-3xl mx-auto transition-colors duration-300 ${
-            isDarkMode ? 'text-white/70' : 'text-gray-600'
-          }`}>
-            Discover our streamlined process for connecting investors with premium real estate opportunities
-          </p>
         </motion.div>
 
         {/* How It Works Carousel */}
