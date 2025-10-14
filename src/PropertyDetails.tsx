@@ -12,7 +12,7 @@ import { Share2 } from 'lucide-react';
 // Helper function to get icon for fact type
 const getFactIcon = (factIndex: number, isDarkMode: boolean = true) => {
   const iconClass = isDarkMode 
-    ? "w-6 h-6 object-contain filter brightness-0 saturate-100 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]"
+    ? "w-6 h-6 object-contain filter brightness-0 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]"
     : "w-6 h-6 object-contain filter brightness-0 saturate-100 invert-0";
     
   switch (factIndex) {
@@ -1351,7 +1351,7 @@ const DeveloperPropertiesSection: React.FC<DeveloperPropertiesSectionProps> = ({
 
   return (
     <section className={`py-16 px-4 sm:px-6 lg:px-8 ${
-      isDarkMode ? 'bg-white' : 'bg-gray-100'
+      isDarkMode ? 'bg-[#111217]' : 'bg-gray-100'
     }`}>
       <div className="max-w-7xl mx-auto">
         <motion.div
@@ -1414,12 +1414,6 @@ const DeveloperPropertiesSection: React.FC<DeveloperPropertiesSectionProps> = ({
                   </span>
                 </div>
 
-                {/* Developer Badge */}
-                <div className="absolute top-4 right-4">
-                  <span className="px-2 py-1 bg-black/50 backdrop-blur-sm text-white text-xs rounded-full">
-                    Same Developer
-                  </span>
-                </div>
               </div>
 
               {/* Property Details */}
@@ -1440,7 +1434,15 @@ const DeveloperPropertiesSection: React.FC<DeveloperPropertiesSectionProps> = ({
                 <div className="flex items-center gap-4 mb-4">
                   {property.bedrooms && (
                     <div className="flex items-center gap-1">
-                      <img src="/icons/bed.png" alt="Beds" className="w-4 h-4" />
+                      <img 
+                        src="/icons/bed.png" 
+                        alt="Beds" 
+                        className={`w-4 h-4 object-contain filter ${
+                          isDarkMode 
+                            ? 'brightness-0 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]' 
+                            : 'brightness-0 saturate-100 invert-0'
+                        }`}
+                      />
                       <span className={`text-sm ${
                         isDarkMode ? 'text-white/70' : 'text-gray-600'
                       }`}>
@@ -1450,7 +1452,15 @@ const DeveloperPropertiesSection: React.FC<DeveloperPropertiesSectionProps> = ({
                   )}
                   {property.bathrooms && (
                     <div className="flex items-center gap-1">
-                      <img src="/icons/bath.png" alt="Baths" className="w-4 h-4" />
+                      <img 
+                        src="/icons/bath.png" 
+                        alt="Baths" 
+                        className={`w-4 h-4 object-contain filter ${
+                          isDarkMode 
+                            ? 'brightness-0 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]' 
+                            : 'brightness-0 saturate-100 invert-0'
+                        }`}
+                      />
                       <span className={`text-sm ${
                         isDarkMode ? 'text-white/70' : 'text-gray-600'
                       }`}>
@@ -1460,7 +1470,15 @@ const DeveloperPropertiesSection: React.FC<DeveloperPropertiesSectionProps> = ({
                   )}
                   {property.squareFeet && (
                     <div className="flex items-center gap-1">
-                      <img src="/icons/sqre%20ft.png" alt="Square Feet" className="w-4 h-4" />
+                      <img 
+                        src="/icons/sqre%20ft.png" 
+                        alt="Square Feet" 
+                        className={`w-4 h-4 object-contain filter ${
+                          isDarkMode 
+                            ? 'brightness-0 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]' 
+                            : 'brightness-0 saturate-100 invert-0'
+                        }`}
+                      />
                       <span className={`text-sm ${
                         isDarkMode ? 'text-white/70' : 'text-gray-600'
                       }`}>
