@@ -16,7 +16,7 @@ export function ContactSection({ isDarkMode }: ContactSectionProps) {
           transition={{ duration: 0.6 }}
           className="w-full max-w-2xl"
         >
-          <h3 className="font-heading text-3xl md:text-4xl text-center">Let's talk investments</h3>
+          <h3 className="font-heading text-3xl md:text-4xl text-center">Contact Us</h3>
           <p className={`mt-3 max-w-prose mx-auto text-center transition-colors duration-300 ${
             isDarkMode ? 'text-white/70' : 'text-gray-600'
           }`}>Fill the form and our team will respond within 24 hours.</p>

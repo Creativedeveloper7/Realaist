@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { Section } from './Section';
 import { partners } from '../data/constants';
@@ -92,13 +91,7 @@ export function AboutSection({ isDarkMode }: AboutSectionProps) {
                     isDarkMode 
                       ? 'filter brightness-0 invert opacity-70 hover:opacity-100' 
                       : 'opacity-70 hover:opacity-100'
-                  } ${
-                    partner.name === "BlackRock" 
-                      ? "max-h-14" 
-                      : partner.name === "Mwangi" || partner.name === "Suva" || partner.name === "Nesh"
-                      ? "max-h-20"                        
-                      : "max-h-12"
-                  }`}
+                  } max-h-36`}
                   onError={(e) => {
                     // Fallback to text if image fails to load
                     const target = e.target as HTMLImageElement;
@@ -129,13 +122,7 @@ export function AboutSection({ isDarkMode }: AboutSectionProps) {
                     isDarkMode 
                       ? 'filter brightness-0 invert opacity-70 hover:opacity-100' 
                       : 'opacity-70 hover:opacity-100'
-                  } ${
-                    partner.name === "BlackRock" 
-                      ? "max-h-14" 
-                      : partner.name === "Mwangi" || partner.name === "Suva" || partner.name === "Nesh"
-                      ? "max-h-16"
-                      : "max-h-12"
-                  }`}
+                  } max-h-36`}
                   onError={(e) => {
                     // Fallback to text if image fails to load
                     const target = e.target as HTMLImageElement;

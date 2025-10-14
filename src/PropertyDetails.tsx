@@ -297,9 +297,9 @@ export default function PropertyDetails() {
   
   const handleShare = async () => {
     try {
-      const shareTitle = property?.name ? `${property.name} - Realaist` : 'Realaist Property';
-      const shareText = property?.name && property?.location
-        ? `Check out ${property.name} in ${property.location} on Realaist.`
+      const shareTitle = property?.title ? `${property.title} - Realaist` : 'Realaist Property';
+      const shareText = property?.title && property?.location
+        ? `Check out ${property.title} in ${property.location} on Realaist.`
         : 'Check out this property on Realaist.';
       const shareUrl = window.location.href;
 
@@ -321,13 +321,13 @@ export default function PropertyDetails() {
     if (!property) return;
 
     const propertyData: PropertyShareData = {
-      title: property.name || 'Amazing Property',
+      title: property.title || 'Amazing Property',
       location: property.location || 'Prime Location',
-      price: property.price || 'Contact for Price',
+      price: property.price ? `KSh ${property.price.toLocaleString()}` : 'Contact for Price',
       imageUrl: property.images && property.images.length > 0 
         ? property.images[0] 
         : 'https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600',
-      description: property.description || `Discover this ${property.type || 'property'} in ${property.location || 'a prime location'}.`,
+      description: property.description || `Discover this ${property.propertyType || 'property'} in ${property.location || 'a prime location'}.`,
       propertyUrl: window.location.href
     };
 
@@ -475,7 +475,7 @@ export default function PropertyDetails() {
             <motion.img
               key={currentImageIndex}
               src={property.images[currentImageIndex]}
-              alt={property.name}
+              alt={property.title}
               className="w-full h-full object-cover"
               initial={{ opacity: 0, scale: 1.1 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -492,7 +492,11 @@ export default function PropertyDetails() {
               whileTap={{ scale: 0.95 }}
               onClick={() => {
                 // Handle 3D virtual tour functionality
-                console.log('3D Virtual Tour clicked for:', property.name);
+                if (property.virtualTourUrl) {
+                  window.open(property.virtualTourUrl, '_blank');
+                } else {
+                  alert('3D Virtual Tour is not available for this property yet. Please contact the developer for more information.');
+                }
               }}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -508,7 +512,11 @@ export default function PropertyDetails() {
               whileTap={{ scale: 0.95 }}
               onClick={() => {
                 // Handle watch video functionality
-                console.log('Watch Video clicked for:', property.name);
+                if (property.videoUrl) {
+                  window.open(property.videoUrl, '_blank');
+                } else {
+                  alert('Video is not available for this property yet. Please contact the developer for more information.');
+                }
               }}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -567,7 +575,7 @@ export default function PropertyDetails() {
                     fontWeight: 500,
                     letterSpacing: '0.05em'
                   }}>
-                    {property.name}
+                    {property.title}
                   </h1>
                   <div className={`flex items-center gap-2 mb-2 transition-colors duration-300 ${
                     isDarkMode ? 'text-white/70' : 'text-gray-600'
@@ -726,7 +734,7 @@ export default function PropertyDetails() {
                       if (property.developer?.phone) {
                         const phoneNumber = property.developer.phone.replace(/\D/g, '');
                         const formattedPhone = phoneNumber.startsWith('254') ? phoneNumber : `254${phoneNumber}`;
-                        const whatsappUrl = `https://wa.me/${formattedPhone}?text=Hi, I'm interested in the property "${property.name}" at ${property.location}. Could you please provide more information?`;
+                        const whatsappUrl = `https://wa.me/${formattedPhone}?text=Hi, I'm interested in the property "${property.title}" at ${property.location}. Could you please provide more information?`;
                         window.open(whatsappUrl, '_blank');
                       } else {
                         alert('Developer contact information not available');
@@ -969,7 +977,7 @@ export default function PropertyDetails() {
               <p className={`mt-2 text-sm transition-colors duration-300 ${
                 isDarkMode ? 'text-white/70' : 'text-gray-600'
               }`}>
-                Book a viewing for {property.name}
+                Book a viewing for {property.title}
               </p>
             </div>
 
@@ -991,7 +999,7 @@ export default function PropertyDetails() {
                   scheduledTime: selectedTime,
                   visitorName,
                   visitorEmail,
-                  message: `Visit request for ${property.name}`
+                  message: `Visit request for ${property.title}`
                 });
 
                 if (error) {

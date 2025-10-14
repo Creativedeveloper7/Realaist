@@ -12,11 +12,8 @@ export const searchExamples = [
 ];
 
 export const partners = [
-  
-  
-  
-  { name: "Mwangi", logo: "/logos/mwangi.png" },
-  { name: "Suva", logo: "/logos/suva.png" },
-  { name: "Nesh", logo: "/logos/nesh.png" },
+  { name: "Escada", logo: "/logos/escada.png" },
+  { name: "Taj", logo: "/logos/taj.png" },
+  { name: "Tulivu", logo: "/logos/tulivu.png" },
 ];
 
