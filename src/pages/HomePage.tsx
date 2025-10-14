@@ -9,7 +9,6 @@ import { offPlanProjects, completedProjects } from '../data/projects';
 import { FloatingLogo } from '../components/FloatingLogo';
 import { Header } from '../components/Header';
 import { Hero } from '../components/Hero';
-import { SearchSection } from '../components/SearchSection';
 import { AboutSection } from '../components/AboutSection';
 import { HowItWorksSection } from '../components/HowItWorksSection';
 import { PropertyCarousel } from '../components/PropertyCarousel';
@@ -104,11 +103,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onLoginClick }) => {
           {/* Hero Section */}
           <Hero isDarkMode={isDarkMode} />
 
-          {/* Search Section */}
-          <SearchSection 
-            isDarkMode={isDarkMode}
-            onConsultationClick={handleConsultationClick}
-          />
 
           {/* About Section */}
           <AboutSection isDarkMode={isDarkMode} />
