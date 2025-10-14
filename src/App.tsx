@@ -67,6 +67,7 @@ function AppContent() {
         />
 
         <Route path="/property/:propertyId" element={<PropertyDetails />} />
+        <Route path="/p/:propertyId" element={<PropertyDetails />} />
 
         <Route path="/properties" element={<HousesPage />} />
 

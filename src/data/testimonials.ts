@@ -8,19 +8,19 @@ export interface Testimonial {
 export const testimonials: Testimonial[] = [
   {
     id: 1,
-    name: "Investor 1",
+    name: "Karen Mwangi",
     location: "Nairobi, KE",
     testimonial: "REALAIST helped me access a pre-launch opportunity with transparent numbers. Performance has matched the projections."
   },
   {
     id: 2,
-    name: "Investor 2", 
+    name: "Terry Mwendwa", 
     location: "Mombasa, KE",
     testimonial: "The team's expertise in luxury real estate is unmatched. They guided me through every step of the investment process."
   },
   {
     id: 3,
-    name: "Investor 3",
+    name: "Mwakazi Danson",
     location: "Diani, KE", 
     testimonial: "Outstanding returns on my beachfront property investment. REALAIST's market insights are invaluable."
   }

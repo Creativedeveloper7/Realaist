@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Section } from './Section';
 import { Project } from '../data/projects';
 import { getFactIcon } from '../utils/icons';
+import { ContactModal } from '../PropertyDetails';
+import { shareToWhatsApp, PropertyShareData } from '../utils/whatsappShare';
+import { Share2 } from 'lucide-react';
 
 interface PropertyCarouselProps {
   title: string;
@@ -12,6 +15,21 @@ interface PropertyCarouselProps {
 
 export function PropertyCarousel({ title, projects, isDarkMode }: PropertyCarouselProps) {
   const [carouselIndex, setCarouselIndex] = useState(0);
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+
+  const handleWhatsAppShare = (project: Project) => {
+    const propertyData: PropertyShareData = {
+      title: project.name || 'Amazing Property',
+      location: project.location || 'Prime Location',
+      price: project.price || 'Contact for Price',
+      imageUrl: project.hero || 'https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600',
+      description: project.summary || `Discover this premium property in ${project.location || 'a prime location'}.`,
+      propertyUrl: `${window.location.origin}/property/${project.id}`
+    };
+
+    shareToWhatsApp(propertyData);
+  };
 
   return (
     <Section id={`${title.toLowerCase().replace(/\s+/g, '-')}-properties`} dark isDarkMode={isDarkMode}>
@@ -77,22 +95,26 @@ export function PropertyCarousel({ title, projects, isDarkMode }: PropertyCarous
                           </span>
                         ))}
                       </div>
-                      <div className="mt-6 flex gap-3">
+                      <div className="mt-6 flex gap-2">
                         <a 
                           href={`/property/${p.id}`}
-                          className="px-5 py-2.5 rounded-full bg-[#C7A667] text-black text-sm font-medium relative z-50 inline-block text-center hover:bg-[#B89657] transition-colors"
+                          className="px-4 py-2.5 rounded-full bg-[#C7A667] text-black text-sm font-medium relative z-50 inline-block text-center hover:bg-[#B89657] transition-colors flex-1"
                         >
                           View Details
                         </a>
                         <motion.button 
-                          className="btn-3d px-5 py-2.5 rounded-full border border-white/30 text-sm hover:border-[#C7A667] hover:text-[#C7A667] transition-all flex items-center gap-2"
+                          onClick={() => {
+                            setSelectedProject(p);
+                            setContactModalOpen(true);
+                          }}
+                          className="btn-3d px-4 py-2.5 rounded-full border border-white/30 text-sm hover:border-[#C7A667] hover:text-[#C7A667] transition-all flex items-center gap-1"
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                         >
                           <img 
                             src="/icons/phone.png" 
                             alt="Phone" 
-                            className="w-4 h-4 object-contain"
+                            className="w-3 h-3 object-contain"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
                               target.style.display = 'none';
@@ -100,6 +122,21 @@ export function PropertyCarousel({ title, projects, isDarkMode }: PropertyCarous
                             style={{ filter: isDarkMode ? 'brightness(0) invert(1)' : 'brightness(0)' }}
                           />
                           Contact
+                        </motion.button>
+                        <motion.button 
+                          onClick={() => handleWhatsAppShare(p)}
+                          className="btn-3d px-4 py-2.5 rounded-full bg-green-600 text-white text-sm transition-all flex items-center gap-1 hover:bg-green-700 relative group"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          title="Share property on WhatsApp"
+                        >
+                          <Share2 className="w-4 h-4" />
+                          Share
+                          {/* Tooltip */}
+                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                            Share on WhatsApp
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                          </div>
                         </motion.button>
                       </div>
                     </div>
@@ -172,6 +209,24 @@ export function PropertyCarousel({ title, projects, isDarkMode }: PropertyCarous
           ))}
         </div>
       </div>
+
+      {/* Contact Modal */}
+      <ContactModal
+        isOpen={contactModalOpen}
+        onClose={() => {
+          setContactModalOpen(false);
+          setSelectedProject(null);
+        }}
+        developer={selectedProject ? {
+          id: 'project-developer',
+          firstName: 'Project',
+          lastName: 'Developer',
+          companyName: 'Realaist Properties',
+          phone: '+254 700 000 000'
+        } : null}
+        propertyName={selectedProject?.name}
+        isDarkMode={isDarkMode}
+      />
     </Section>
   );
 }

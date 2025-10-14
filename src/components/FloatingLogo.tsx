@@ -10,14 +10,10 @@ export function FloatingLogo({ isDarkMode = true }: FloatingLogoProps) {
     <motion.a 
       href="/"
       className="fixed left-4 top-8 z-50 select-none logo-float cursor-pointer"
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
+      whileHover={{ scale: 4.05 }}
+      whileTap={{ scale: 2.95 }}
     >
-      <div className={`border border-dashed rounded-md p-2 backdrop-blur-sm transition-colors duration-300 ${
-        isDarkMode 
-          ? 'border-white/60 bg-black/20' 
-          : 'border-gray-400 bg-white/20'
-      }`}>
+     ,<div>
         <img 
           src="/logos/realaistlogo.png" 
           alt="Realaist Logo" 

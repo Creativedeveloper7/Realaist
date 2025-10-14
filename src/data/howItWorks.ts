@@ -6,18 +6,18 @@ export interface HowItWorksStep {
 
 export const howItWorksSteps: HowItWorksStep[] = [
   {
-    title: "Property Listings",
-    description: "Real estate Developers & companies sign up, list and verify their properties.",
+    title: "List your Property",
+    description: "Instantly generate a dedicated landing page showcasing property details,locations and clear call -to-action buttons for whatsapp,calls and scheduling viewings",
     image: "https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=800"
   },
   {
-    title: "Smart Property Search",
-    description: "Investors easily discover verified real estate investment opportunities.",
+    title: "Advertise on Social Media,",
+    description: "Launch targeted ads across Meta, Google and Youtube directly from one centralized dashboard with real-time performance analytics.",
     image: "https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=800"
   },
   {
-    title: "Connect & Close",
-    description: "Automation tools that connect sellers and buyers, strengthen relationships, and close deals faster.",
+    title: "Manage Customer Relations",
+    description: "Capture,track and nurture leads effortlessly through an integrated CRM and whatsapp messaging.",
     image: "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=800"
   }
 ];

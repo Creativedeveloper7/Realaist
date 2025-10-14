@@ -11,8 +11,9 @@ import {
   Upload,
   MapPin,
   DollarSign,
-  Calendar,
-  Users
+  Users,
+  Settings,
+  Key
 } from 'lucide-react';
 import { PropertyUploadModal } from '../components/PropertyUploadModal';
 import { propertiesService, Property } from '../services/propertiesService';
@@ -490,6 +491,64 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({ isDarkMo
           >
             <Users className="w-5 h-5 text-[#C7A667]" />
             <span>Team Management</span>
+          </motion.button>
+        </div>
+      </motion.div>
+
+      {/* Google Ads API Settings */}
+      <motion.div
+        className={`p-6 rounded-2xl ${
+          isDarkMode ? 'bg-[#0E0E10] border border-white/10' : 'bg-white border border-gray-200'
+        }`}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8 }}
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
+            <Key className={`w-5 h-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold">Google Ads API Settings</h3>
+            <p className="text-sm text-gray-500">Configure your Google Ads API credentials for campaign management</p>
+          </div>
+        </div>
+
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
+          <div className="flex items-start gap-3">
+            <div className="text-yellow-600 dark:text-yellow-400 mt-0.5">⚠️</div>
+            <div>
+              <h4 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">Test Phase</h4>
+              <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                You're currently in the test phase. Contact admin to configure your Google Ads Developer Token for campaign creation.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <motion.button
+            className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 dark:border-white/20 hover:border-blue-500 transition-colors"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Settings className="w-5 h-5 text-blue-500" />
+            <div className="text-left">
+              <span className="font-medium">API Configuration</span>
+              <p className="text-sm text-gray-500">Manage your Google Ads API settings</p>
+            </div>
+          </motion.button>
+          
+          <motion.button
+            className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 dark:border-white/20 hover:border-green-500 transition-colors"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Key className="w-5 h-5 text-green-500" />
+            <div className="text-left">
+              <span className="font-medium">Developer Token</span>
+              <p className="text-sm text-gray-500">Configure your API access token</p>
+            </div>
           </motion.button>
         </div>
       </motion.div>

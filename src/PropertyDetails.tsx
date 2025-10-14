@@ -6,6 +6,8 @@ import { useAuth } from './contexts/AuthContext';
 import { propertiesService, Property } from './services/propertiesService';
 import { scheduledVisitsService } from './services/scheduledVisitsService';
 import { Header } from './components/Header';
+import { shareToWhatsApp, PropertyShareData } from './utils/whatsappShare';
+import { Share2 } from 'lucide-react';
 
 // Helper function to get icon for fact type
 const getFactIcon = (factIndex: number, isDarkMode: boolean = true) => {
@@ -97,6 +99,7 @@ export default function PropertyDetails() {
     });
     
     return {
+      id: dbProperty.id,
       name: dbProperty.title,
       location: dbProperty.location,
       description: dbProperty.description,
@@ -110,6 +113,7 @@ export default function PropertyDetails() {
       ],
       facts: ["1–2 Beds", "From KSh 3.7M", "ROI 10–12%"],
       developer: dbProperty.developer,
+      developerId: dbProperty.developerId,
       type: dbProperty.propertyType,
       landArea: formatLandArea(dbProperty.squareFeet),
       amenities: (dbProperty as any).amenities || [],
@@ -311,6 +315,23 @@ export default function PropertyDetails() {
       console.error('Share action failed:', err);
       alert('Could not share this property.');
     }
+  };
+
+  const handleWhatsAppShare = () => {
+    if (!property) return;
+
+    const propertyData: PropertyShareData = {
+      title: property.name || 'Amazing Property',
+      location: property.location || 'Prime Location',
+      price: property.price || 'Contact for Price',
+      imageUrl: property.images && property.images.length > 0 
+        ? property.images[0] 
+        : 'https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600',
+      description: property.description || `Discover this ${property.type || 'property'} in ${property.location || 'a prime location'}.`,
+      propertyUrl: window.location.href
+    };
+
+    shareToWhatsApp(propertyData);
   };
 
   return (
@@ -728,7 +749,24 @@ export default function PropertyDetails() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    🔗 Share
+                    <Share2 className="w-4 h-4" />
+                    Share
+                  </motion.button>
+
+                  <motion.button 
+                    onClick={handleWhatsAppShare}
+                    className="w-full px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 relative group"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    title="Share property on WhatsApp"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    Share on WhatsApp
+                    {/* Tooltip */}
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                      Share property on WhatsApp
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                    </div>
                   </motion.button>
                 </div>
 
@@ -1218,9 +1256,9 @@ export default function PropertyDetails() {
         </motion.div>
       )}
 
-      {/* Related Properties Section */}
-      {property && (
-        <RelatedPropertiesSection 
+      {/* Developer Properties Section */}
+      {property && property.developer && (
+        <DeveloperPropertiesSection 
           currentProperty={property} 
           isDarkMode={isDarkMode} 
         />
@@ -1229,70 +1267,56 @@ export default function PropertyDetails() {
   );
 }
 
-// Related Properties Component
-interface RelatedPropertiesSectionProps {
-  currentProperty: Property;
+
+// Developer Properties Component
+interface DeveloperPropertiesSectionProps {
+  currentProperty: any; // Using any since it's the converted display format
   isDarkMode: boolean;
 }
 
-const RelatedPropertiesSection: React.FC<RelatedPropertiesSectionProps> = ({ 
+const DeveloperPropertiesSection: React.FC<DeveloperPropertiesSectionProps> = ({ 
   currentProperty, 
   isDarkMode 
 }) => {
-  const [relatedProperties, setRelatedProperties] = useState<Property[]>([]);
+  const [developerProperties, setDeveloperProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchRelatedProperties = async () => {
+    const fetchDeveloperProperties = async () => {
       try {
         setIsLoading(true);
+        
+        // Get all properties and filter by developer
         const { properties } = await propertiesService.getProperties();
         
-        // Filter related properties based on location, bedrooms, and price bracket
+        // Filter properties by the same developer, excluding the current property
         const filtered = properties.filter((p: Property) => {
           if (p.id === currentProperty.id) return false; // Exclude current property
           
-          // Location match (same area/city)
-          const currentLocation = currentProperty.location.toLowerCase();
-          const propertyLocation = p.location.toLowerCase();
-          const locationMatch = currentLocation.includes(propertyLocation.split(',')[0]) || 
-                               propertyLocation.includes(currentLocation.split(',')[0]);
-          
-          // Bedrooms match (same or similar)
-          const bedroomMatch = p.bedrooms === currentProperty.bedrooms || 
-                              Math.abs((p.bedrooms || 0) - (currentProperty.bedrooms || 0)) <= 1;
-          
-          // Price bracket match (within 20% range)
-          const priceRange = currentProperty.price * 0.2;
-          const priceMatch = Math.abs(p.price - currentProperty.price) <= priceRange;
-          
-          return locationMatch || bedroomMatch || priceMatch;
+          // Check if developer IDs match
+          return p.developerId === currentProperty.developerId;
         });
         
-        // Sort by relevance (location first, then price similarity)
+        // Sort by creation date (newest first)
         const sorted = filtered.sort((a: Property, b: Property) => {
-          const aLocationMatch = a.location.toLowerCase().includes(currentProperty.location.toLowerCase().split(',')[0]);
-          const bLocationMatch = b.location.toLowerCase().includes(currentProperty.location.toLowerCase().split(',')[0]);
-          
-          if (aLocationMatch && !bLocationMatch) return -1;
-          if (!aLocationMatch && bLocationMatch) return 1;
-          
-          const aPriceDiff = Math.abs(a.price - currentProperty.price);
-          const bPriceDiff = Math.abs(b.price - currentProperty.price);
-          return aPriceDiff - bPriceDiff;
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         });
         
-        setRelatedProperties(sorted.slice(0, 6)); // Show max 6 related properties
+        setDeveloperProperties(sorted.slice(0, 6)); // Show max 6 developer properties
       } catch (error) {
-        console.error('Error fetching related properties:', error);
-        setRelatedProperties([]);
+        console.error('Error fetching developer properties:', error);
+        setDeveloperProperties([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchRelatedProperties();
+    if (currentProperty.developerId) {
+      fetchDeveloperProperties();
+    } else {
+      setIsLoading(false);
+    }
   }, [currentProperty]);
 
   const handlePropertyClick = (propertyId: string) => {
@@ -1303,13 +1327,13 @@ const RelatedPropertiesSection: React.FC<RelatedPropertiesSectionProps> = ({
   if (isLoading) {
     return (
       <section className={`py-16 px-4 sm:px-6 lg:px-8 ${
-        isDarkMode ? 'bg-[#111217]' : 'bg-gray-50'
+        isDarkMode ? 'bg-white' : 'bg-gray-100'
       }`}>
         <div className="max-w-7xl mx-auto">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#C7A667] mx-auto"></div>
             <p className={`mt-2 ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>
-              Loading related properties...
+              Loading other properties by this developer...
             </p>
           </div>
         </div>
@@ -1317,13 +1341,17 @@ const RelatedPropertiesSection: React.FC<RelatedPropertiesSectionProps> = ({
     );
   }
 
-  if (relatedProperties.length === 0) {
+  if (developerProperties.length === 0) {
     return null;
   }
 
+  const developerName = currentProperty.developer 
+    ? `${currentProperty.developer.firstName} ${currentProperty.developer.lastName}`
+    : 'This Developer';
+
   return (
     <section className={`py-16 px-4 sm:px-6 lg:px-8 ${
-      isDarkMode ? 'bg-[#111217]' : 'bg-gray-50'
+      isDarkMode ? 'bg-white' : 'bg-gray-100'
     }`}>
       <div className="max-w-7xl mx-auto">
         <motion.div
@@ -1336,17 +1364,17 @@ const RelatedPropertiesSection: React.FC<RelatedPropertiesSectionProps> = ({
           <h2 className={`text-3xl font-bold mb-4 ${
             isDarkMode ? 'text-white' : 'text-gray-900'
           }`}>
-            Related Properties
+            Other Properties by {developerName}
           </h2>
           <p className={`text-lg ${
             isDarkMode ? 'text-white/70' : 'text-gray-600'
           }`}>
-            Discover similar properties in the same area
+            Discover more properties from this developer
           </p>
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {relatedProperties.map((property, index) => (
+          {developerProperties.map((property, index) => (
             <motion.div
               key={property.id}
               className={`group cursor-pointer rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl ${
@@ -1382,7 +1410,14 @@ const RelatedPropertiesSection: React.FC<RelatedPropertiesSectionProps> = ({
                 {/* Price Badge */}
                 <div className="absolute top-4 left-4">
                   <span className="px-3 py-1 bg-[#C7A667] text-black font-bold rounded-full text-sm">
-                    ${property.price.toLocaleString()}
+                    KSh {property.price.toLocaleString()}
+                  </span>
+                </div>
+
+                {/* Developer Badge */}
+                <div className="absolute top-4 right-4">
+                  <span className="px-2 py-1 bg-black/50 backdrop-blur-sm text-white text-xs rounded-full">
+                    Same Developer
                   </span>
                 </div>
               </div>
@@ -1435,7 +1470,7 @@ const RelatedPropertiesSection: React.FC<RelatedPropertiesSectionProps> = ({
                   )}
                 </div>
 
-                {/* Property Type */}
+                {/* Property Type and Status */}
                 <div className="flex items-center justify-between">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                     property.propertyType === 'apartment' 
@@ -1458,25 +1493,213 @@ const RelatedPropertiesSection: React.FC<RelatedPropertiesSectionProps> = ({
           ))}
         </div>
 
-        {/* View All Properties Link */}
-        <motion.div
-          className="text-center mt-12"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-        >
-          <motion.a
-            href="/properties"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-[#C7A667] text-black font-medium rounded-lg hover:bg-[#B89657] transition-colors"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+        {/* Developer Contact Info */}
+        {currentProperty.developer && (
+          <motion.div
+            className="text-center mt-12"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.3 }}
           >
-            View All Properties
-            <span>→</span>
-          </motion.a>
-        </motion.div>
+            <div className={`inline-flex items-center gap-4 px-8 py-4 rounded-2xl border ${
+              isDarkMode 
+                ? 'border-white/10 bg-white/5' 
+                : 'border-gray-200 bg-white'
+            }`}>
+              <div className="text-center">
+                <p className={`text-sm font-medium mb-1 ${
+                  isDarkMode ? 'text-white/80' : 'text-gray-700'
+                }`}>
+                  Interested in more properties?
+                </p>
+                <p className={`text-xs ${
+                  isDarkMode ? 'text-white/60' : 'text-gray-500'
+                }`}>
+                  Contact {developerName} directly
+                </p>
+              </div>
+              {currentProperty.developer.phone && (
+                <motion.a
+                  href={`tel:${currentProperty.developer.phone}`}
+                  className="px-6 py-3 bg-[#C7A667] text-black font-medium rounded-lg hover:bg-[#B89657] transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  📞 Call Developer
+                </motion.a>
+              )}
+            </div>
+          </motion.div>
+        )}
       </div>
     </section>
+  );
+};
+
+// Reusable Contact Modal Component
+interface ContactModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  developer: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    companyName?: string;
+    phone?: string;
+  } | null;
+  propertyName?: string;
+  isDarkMode: boolean;
+}
+
+export const ContactModal: React.FC<ContactModalProps> = ({
+  isOpen,
+  onClose,
+  developer,
+  propertyName,
+  isDarkMode
+}) => {
+  console.log('ContactModal rendered with:', { isOpen, developer, propertyName });
+  
+  if (!isOpen || !developer) {
+    console.log('ContactModal not rendering because:', { isOpen, developer: !!developer });
+    return null;
+  }
+
+  const developerName = `${developer.firstName} ${developer.lastName}`;
+  console.log('ContactModal developer name:', developerName);
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      {/* Backdrop */}
+      <motion.div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        onClick={onClose}
+      />
+      
+      {/* Modal Content */}
+      <motion.div
+        className={`relative w-full max-w-sm rounded-2xl border p-6 ${
+          isDarkMode 
+            ? 'border-white/10 bg-[#111217]' 
+            : 'border-gray-200 bg-white'
+        }`}
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+      >
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className={`absolute top-4 right-4 p-2 rounded-full hover:bg-opacity-10 transition-colors ${
+            isDarkMode 
+              ? 'hover:bg-white text-white/60 hover:text-white' 
+              : 'hover:bg-gray-900 text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        {/* Developer Info */}
+        <div className="text-center">
+          <div className={`w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl ${
+            isDarkMode ? 'bg-[#C7A667]/20 text-[#C7A667]' : 'bg-[#C7A667]/10 text-[#C7A667]'
+          }`}>
+            👨‍💼
+          </div>
+          
+          <h3 className={`text-xl font-heading mb-2 transition-colors duration-300 ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`} style={{ 
+            fontFamily: "'Cinzel', 'Playfair Display', serif",
+            fontWeight: 500,
+            letterSpacing: '0.05em'
+          }}>
+            {developerName}
+          </h3>
+          
+          {developer.companyName && (
+            <p className={`text-sm mb-4 transition-colors duration-300 ${
+              isDarkMode ? 'text-white/70' : 'text-gray-600'
+            }`}>
+              {developer.companyName}
+            </p>
+          )}
+
+          {propertyName && (
+            <p className={`text-xs mb-4 transition-colors duration-300 ${
+              isDarkMode ? 'text-white/60' : 'text-gray-500'
+            }`}>
+              Property: {propertyName}
+            </p>
+          )}
+          
+          {developer.phone && (
+            <div className="space-y-3">
+              <div className={`p-3 rounded-lg border transition-colors duration-300 ${
+                isDarkMode ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-gray-50'
+              }`}>
+                <p className={`text-sm font-medium mb-1 transition-colors duration-300 ${
+                  isDarkMode ? 'text-white/80' : 'text-gray-700'
+                }`}>
+                  Phone Number
+                </p>
+                <p className={`text-lg font-mono transition-colors duration-300 ${
+                  isDarkMode ? 'text-[#C7A667]' : 'text-[#C7A667]'
+                }`}>
+                  {developer.phone}
+                </p>
+              </div>
+              
+              <div className="flex gap-3">
+                <motion.a
+                  href={`tel:${developer.phone}`}
+                  className="flex-1 px-4 py-3 bg-[#C7A667] text-black font-medium rounded-lg hover:bg-[#B89657] transition-colors text-center"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  📞 Call
+                </motion.a>
+                
+                <motion.button
+                  onClick={() => {
+                    const phoneNumber = developer.phone!.replace(/\D/g, '');
+                    const formattedPhone = phoneNumber.startsWith('254') ? phoneNumber : `254${phoneNumber}`;
+                    const message = propertyName 
+                      ? `Hi, I'm interested in the property "${propertyName}". Could you please provide more information?`
+                      : `Hi, I'm interested in your properties. Could you please provide more information?`;
+                    const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
+                    window.open(whatsappUrl, '_blank');
+                  }}
+                  className="flex-1 px-4 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  💬 WhatsApp
+                </motion.button>
+              </div>
+            </div>
+          )}
+          
+          {!developer.phone && (
+            <p className={`text-sm transition-colors duration-300 ${
+              isDarkMode ? 'text-white/50' : 'text-gray-500'
+            }`}>
+              Contact information not available
+            </p>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
   );
 };

@@ -4,9 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from './ThemeContext';
 import { propertiesService, Property } from './services/propertiesService';
 import { Header } from './components/Header';
-import { tabFocusHandler } from './utils/tabFocusHandler';
 import { unifiedCacheService } from './services/unifiedCacheService';
 import { useAuth } from './contexts/AuthContext';
+import { ContactModal } from './PropertyDetails';
+import { shareToWhatsApp, PropertyShareData } from './utils/whatsappShare';
+import { Share2 } from 'lucide-react';
 
 // Helper function to get icon for fact type
 const getFactIcon = (factIndex: number, isDarkMode: boolean = true) => {
@@ -99,7 +101,8 @@ const convertPropertyToHouse = (property: Property) => {
     image: property.images && property.images.length > 0 ? property.images[0] : "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: property.status.charAt(0).toUpperCase() + property.status.slice(1),
     type: property.propertyType,
-    landArea
+    landArea,
+    developer: property.developer
   };
 };
 
@@ -114,7 +117,14 @@ const houses = [
     factLabels: ["Beds", "Baths", "Square Feet"],
     image: "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Available",
-    type: "Apartments"
+    type: "Apartments",
+    developer: {
+      id: "dev-1",
+      firstName: "John",
+      lastName: "Mwangi",
+      companyName: "Escada Developers",
+      phone: "+254 700 123 456"
+    }
   },
   {
     id: "hardcoded-2",
@@ -125,7 +135,14 @@ const houses = [
     factLabels: ["Beds", "Baths", "Square Feet"],
     image: "https://images.pexels.com/photos/1029599/pexels-photo-1029599.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Pre-Launch",
-    type: "Beach Villas"
+    type: "Beach Villas",
+    developer: {
+      id: "dev-2",
+      firstName: "Sarah",
+      lastName: "Kimani",
+      companyName: "Azure Properties",
+      phone: "+254 700 234 567"
+    }
   },
   {
     id: "hardcoded-3",
@@ -136,7 +153,14 @@ const houses = [
     factLabels: ["Beds", "Baths", "Square Feet"],
     image: "https://images.pexels.com/photos/1396132/pexels-photo-1396132.jpeg?auto=compress&cs=tinysrgb&w=1600",
     status: "Available",
-    type: "Townhouses"
+    type: "Townhouses",
+    developer: {
+      id: "dev-3",
+      firstName: "Michael",
+      lastName: "Ochieng",
+      companyName: "Grove Developments",
+      phone: "+254 700 345 678"
+    }
   },
   {
     id: "hardcoded-4",
@@ -308,7 +332,7 @@ const houses = [
 export default function HousesPage() {
   const navigate = useNavigate();
   const { isDarkMode, toggleTheme } = useTheme();
-  const { isAuthenticated } = useAuth();
+  const { } = useAuth();
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filteredHouses, setFilteredHouses] = useState<any[]>([]);
@@ -325,6 +349,8 @@ export default function HousesPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [selectedProperty, setSelectedProperty] = useState<any>(null);
   const propertiesPerPage = 12;
 
   const propertyTypes = ['All', 'Apartment Complex', 'Villa Development', 'Townhouse Complex', 'Penthouse', 'Studio Complex', 'Commercial Building', 'Mixed Use Development', 'Beach Villas', 'Gated Communities', 'Off-plan', 'Land'];
@@ -472,8 +498,8 @@ export default function HousesPage() {
           
           const convertedHouses = fetchedProperties.map(convertPropertyToHouse);
           // Remove duplicates by ID
-          const uniqueHouses = convertedHouses.filter((house, index, self) => 
-            index === self.findIndex(h => h.id === house.id)
+          const uniqueHouses = convertedHouses.filter((house: any, index: number, self: any[]) => 
+            index === self.findIndex((h: any) => h.id === house.id)
           );
           setFilteredHouses(uniqueHouses);
           setIsOfflineMode(false);
@@ -511,8 +537,8 @@ export default function HousesPage() {
         if (properties.length > 0) {
           console.log('HousesPage: Error occurred, using existing properties from previous successful fetch');
           const convertedHouses = properties.map(convertPropertyToHouse);
-          const uniqueHouses = convertedHouses.filter((house, index, self) => 
-            index === self.findIndex(h => h.id === house.id)
+          const uniqueHouses = convertedHouses.filter((house: any, index: number, self: any[]) => 
+            index === self.findIndex((h: any) => h.id === house.id)
           );
           setFilteredHouses(uniqueHouses);
         } else {
@@ -683,6 +709,19 @@ export default function HousesPage() {
     navigate('/');
   };
 
+  const handleWhatsAppShare = (house: any) => {
+    const propertyData: PropertyShareData = {
+      title: house.name || 'Amazing Property',
+      location: house.location || 'Prime Location',
+      price: house.price || 'Contact for Price',
+      imageUrl: house.image || 'https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600',
+      description: `Discover this ${house.type || 'property'} in ${house.location || 'a prime location'}.`,
+      propertyUrl: `${window.location.origin}/property/${house.id}`
+    };
+
+    shareToWhatsApp(propertyData);
+  };
+
   // Manual refresh function
   const handleManualRefresh = async () => {
     if (isRefreshing) return;
@@ -693,7 +732,8 @@ export default function HousesPage() {
     try {
       // Clear all caches and fetch fresh data
       unifiedCacheService.clearAll();
-      await loadProperties(true);
+      // Trigger a page reload to refresh all data
+      window.location.reload();
     } catch (error) {
       console.error('HousesPage: Manual refresh failed:', error);
     } finally {
@@ -1190,18 +1230,23 @@ export default function HousesPage() {
                           </div>
                         )}
 
-                        <div className="flex gap-3">
+                        <div className="flex gap-2">
                           <motion.a 
                             href={`/property/${house.id}`}
-                            className="btn-3d flex-1 px-4 py-2 rounded-lg bg-[#C7A667] text-black font-medium text-sm inline-block text-center"
+                            className="btn-3d flex-1 px-3 py-2 rounded-lg bg-[#C7A667] text-black font-medium text-xs inline-block text-center"
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                           >
                             View Details
                           </motion.a>
                           <motion.button 
-                            onClick={() => navigate('/')}
-                            className={`btn-3d px-4 py-2 rounded-lg border text-sm transition-all flex items-center gap-2 ${
+                            onClick={() => {
+                              console.log('Contact button clicked for house:', house);
+                              console.log('House developer:', house.developer);
+                              setSelectedProperty(house);
+                              setContactModalOpen(true);
+                            }}
+                            className={`btn-3d px-3 py-2 rounded-lg border text-xs transition-all flex items-center gap-1 ${
                               isDarkMode 
                                 ? 'border-white/20 text-white hover:border-[#C7A667] hover:text-[#C7A667]' 
                                 : 'border-gray-300 text-gray-700 hover:border-[#C7A667] hover:text-[#C7A667]'
@@ -1212,7 +1257,7 @@ export default function HousesPage() {
                             <img 
                               src="/icons/phone.png" 
                               alt="Phone" 
-                              className="w-4 h-4 object-contain"
+                              className="w-3 h-3 object-contain"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
                                 target.style.display = 'none';
@@ -1220,6 +1265,21 @@ export default function HousesPage() {
                               style={{ filter: isDarkMode ? 'brightness(0) invert(1)' : 'brightness(0)' }}
                             />
                             Contact
+                          </motion.button>
+                          <motion.button 
+                            onClick={() => handleWhatsAppShare(house)}
+                            className="btn-3d px-3 py-2 rounded-lg bg-green-600 text-white text-xs transition-all flex items-center gap-1 hover:bg-green-700 relative group"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            title="Share property on WhatsApp"
+                          >
+                            <Share2 className="w-3 h-3" />
+                            Share
+                            {/* Tooltip */}
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                              Share on WhatsApp
+                              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-gray-900"></div>
+                            </div>
                           </motion.button>
                         </div>
                       </div>
@@ -1334,6 +1394,18 @@ export default function HousesPage() {
           </motion.section>
         </div>
       </div>
+
+      {/* Contact Modal */}
+      <ContactModal
+        isOpen={contactModalOpen}
+        onClose={() => {
+          setContactModalOpen(false);
+          setSelectedProperty(null);
+        }}
+        developer={selectedProperty?.developer || null}
+        propertyName={selectedProperty?.name}
+        isDarkMode={isDarkMode}
+      />
     </>
   );
 }

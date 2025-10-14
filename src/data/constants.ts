@@ -12,7 +12,7 @@ export const searchExamples = [
 ];
 
 export const partners = [
-  { name: "BlackRock", logo: "/logos/BlackRock-logo.png" },
+  
   
   
   { name: "Mwangi", logo: "/logos/mwangi.png" },
