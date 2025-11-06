@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { campaignsService } from '../../services/campaignsService';
 import { formatKES } from '../../utils/currency';
+import { supabase } from '../../lib/supabase';
 
 interface Campaign {
   id: string;
@@ -17,6 +18,8 @@ interface Campaign {
   platform_fee: number;
   total_paid: number;
   status: 'active' | 'pending' | 'failed' | 'completed';
+  payment_status?: 'pending' | 'processing' | 'success' | 'failed' | 'refunded' | 'cancelled';
+  payment_id?: string;
   google_ads_campaign_id?: string;
   property_ids: string[];
   platforms: string[];
@@ -31,10 +34,6 @@ export default function CampaignManagement() {
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [processing, setProcessing] = useState<string | null>(null);
-
-  useEffect(() => {
-    loadCampaigns();
-  }, []);
 
   const loadCampaigns = async () => {
     setLoading(true);
@@ -52,6 +51,102 @@ export default function CampaignManagement() {
     }
   };
 
+  useEffect(() => {
+    // Initial load
+    loadCampaigns();
+
+    // Set up Realtime subscription for campaign updates
+    const channel = supabase
+      .channel('admin-campaigns')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'campaigns',
+        },
+        (payload) => {
+          console.log('Campaign updated via Realtime:', payload);
+          
+          // Update the campaign in the local state
+          setCampaigns((prevCampaigns) => {
+            const updatedCampaign = payload.new as Campaign;
+            const existingIndex = prevCampaigns.findIndex((c) => c.id === updatedCampaign.id);
+            
+            if (existingIndex >= 0) {
+              // Update existing campaign
+              const updated = [...prevCampaigns];
+              updated[existingIndex] = {
+                ...updated[existingIndex],
+                ...updatedCampaign,
+                payment_status: updatedCampaign.payment_status || 'pending',
+                target_location: Array.isArray(updatedCampaign.target_location) 
+                  ? updatedCampaign.target_location 
+                  : [updatedCampaign.target_location],
+                audience_interests: Array.isArray(updatedCampaign.audience_interests) 
+                  ? updatedCampaign.audience_interests 
+                  : [],
+                platforms: Array.isArray(updatedCampaign.platforms) 
+                  ? updatedCampaign.platforms 
+                  : [],
+                property_ids: Array.isArray(updatedCampaign.property_ids) 
+                  ? updatedCampaign.property_ids 
+                  : [],
+              };
+              return updated;
+            } else {
+              // Campaign not in list, reload to get it with full data
+              loadCampaigns();
+              return prevCampaigns;
+            }
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'campaigns',
+        },
+        (payload) => {
+          console.log('New campaign created via Realtime:', payload);
+          
+          // Add new campaign to the local state
+          setCampaigns((prevCampaigns) => {
+            const newCampaign = payload.new as Campaign;
+            // Check if it already exists (shouldn't, but be safe)
+            if (prevCampaigns.find((c) => c.id === newCampaign.id)) {
+              return prevCampaigns;
+            }
+            // Add to the beginning of the list with proper array handling
+            return [{
+              ...newCampaign,
+              payment_status: newCampaign.payment_status || 'pending',
+              target_location: Array.isArray(newCampaign.target_location) 
+                ? newCampaign.target_location 
+                : [newCampaign.target_location],
+              audience_interests: Array.isArray(newCampaign.audience_interests) 
+                ? newCampaign.audience_interests 
+                : [],
+              platforms: Array.isArray(newCampaign.platforms) 
+                ? newCampaign.platforms 
+                : [],
+              property_ids: Array.isArray(newCampaign.property_ids) 
+                ? newCampaign.property_ids 
+                : [],
+            }, ...prevCampaigns];
+          });
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const handleApprove = async (campaignId: string) => {
     setProcessing(campaignId);
     try {
@@ -60,6 +155,7 @@ export default function CampaignManagement() {
         alert(`Failed to approve campaign: ${error}`);
       } else {
         alert('Campaign approved successfully!');
+        // Campaign will be updated via Realtime, but refresh to ensure we have latest data
         await loadCampaigns();
         setShowDetails(false);
         setSelectedCampaign(null);
@@ -80,6 +176,7 @@ export default function CampaignManagement() {
         alert(`Failed to reject campaign: ${error}`);
       } else {
         alert('Campaign rejected successfully!');
+        // Campaign will be updated via Realtime, but refresh to ensure we have latest data
         await loadCampaigns();
         setShowDetails(false);
         setSelectedCampaign(null);
@@ -252,7 +349,7 @@ export default function CampaignManagement() {
                       
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 dark:text-gray-400">
                         <div>
-                          <span className="font-medium">Budget:</span> ${campaign.user_budget}
+                          <span className="font-medium">Budget:</span> {formatKES(campaign.user_budget)}
                         </div>
                         <div>
                           <span className="font-medium">Duration:</span> {new Date(campaign.duration_start).toLocaleDateString()} - {new Date(campaign.duration_end).toLocaleDateString()}
@@ -261,7 +358,9 @@ export default function CampaignManagement() {
                           <span className="font-medium">Platforms:</span> {campaign.platforms.join(', ')}
                         </div>
                         <div>
-                          <span className="font-medium">Created:</span> {new Date(campaign.created_at).toLocaleDateString()}
+                          <span className="font-medium">Payment:</span> <span className={`font-semibold ${campaign.payment_status === 'success' ? 'text-green-600 dark:text-green-400' : campaign.payment_status === 'failed' ? 'text-red-600 dark:text-red-400' : 'text-yellow-600 dark:text-yellow-400'}`}>
+                            {campaign.payment_status === 'success' ? 'Paid' : campaign.payment_status === 'failed' ? 'Failed' : campaign.payment_status === 'processing' ? 'Processing' : 'Pending'}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -344,6 +443,23 @@ export default function CampaignManagement() {
                     </label>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedCampaign.status)}`}>
                       {selectedCampaign.status === 'pending' ? 'Pending Approval' : selectedCampaign.status}
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Payment Status
+                    </label>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      selectedCampaign.payment_status === 'success' 
+                        ? 'text-green-800 dark:text-green-200 bg-green-100 dark:bg-green-900/30'
+                        : selectedCampaign.payment_status === 'failed'
+                        ? 'text-red-800 dark:text-red-200 bg-red-100 dark:bg-red-900/30'
+                        : selectedCampaign.payment_status === 'processing'
+                        ? 'text-blue-800 dark:text-blue-200 bg-blue-100 dark:bg-blue-900/30'
+                        : 'text-yellow-800 dark:text-yellow-200 bg-yellow-100 dark:bg-yellow-900/30'
+                    }`}>
+                      {selectedCampaign.payment_status === 'success' ? 'Paid' : selectedCampaign.payment_status === 'failed' ? 'Payment Failed' : selectedCampaign.payment_status === 'processing' ? 'Processing' : selectedCampaign.payment_status || 'Payment Pending'}
                     </span>
                   </div>
 

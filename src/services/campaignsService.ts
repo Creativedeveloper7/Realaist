@@ -261,49 +261,73 @@ class CampaignsService {
   // Admin methods for campaign approval workflow
   async getAllCampaignsForAdmin(): Promise<{ campaigns: Campaign[]; error: string | null }> {
     try {
-      // This would typically check for admin permissions
-      // For now, we'll fetch all campaigns
-      const { data, error } = await supabase
+      // Fetch campaigns - campaigns.user_id references auth.users.id
+      // profiles.id also references auth.users.id, so user_id = profiles.id
+      // We'll fetch profiles separately and join in code
+      const { data: campaignsData, error: campaignsError } = await supabase
         .from('campaigns')
-        .select(`
-          *,
-          user:profiles!campaigns_user_id_fkey(
-            id,
-            first_name,
-            last_name,
-            company_name,
-            email
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching campaigns for admin:', error);
-        return { campaigns: [], error: error.message };
+      if (campaignsError) {
+        console.error('Error fetching campaigns for admin:', campaignsError);
+        return { campaigns: [], error: campaignsError.message };
       }
 
-      const campaigns: Campaign[] = data.map((item: any) => ({
-        id: item.id,
-        user_id: item.user_id,
-        campaign_name: item.campaign_name,
-        target_location: Array.isArray(item.target_location) ? item.target_location : [item.target_location],
-        target_age_group: item.target_age_group,
-        duration_start: item.duration_start,
-        duration_end: item.duration_end,
-        audience_interests: Array.isArray(item.audience_interests) ? item.audience_interests : [],
-        user_budget: item.user_budget,
-        ad_spend: item.ad_spend,
-        platform_fee: item.platform_fee,
-        total_paid: item.total_paid,
-        status: item.status,
-        payment_status: item.payment_status || 'pending',
-        payment_id: item.payment_id,
-        google_ads_campaign_id: item.google_ads_campaign_id,
-        property_ids: Array.isArray(item.property_ids) ? item.property_ids : [],
-        platforms: Array.isArray(item.platforms) ? item.platforms : [],
-        created_at: item.created_at,
-        updated_at: item.updated_at
-      }));
+      if (!campaignsData || campaignsData.length === 0) {
+        return { campaigns: [], error: null };
+      }
+
+      // Get unique user IDs
+      const userIds = [...new Set(campaignsData.map((c: any) => c.user_id))];
+
+      // Fetch profiles for these users
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, company_name, email')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.warn('Error fetching profiles for campaigns:', profilesError);
+        // Continue without profile data
+      }
+
+      // Create a map of user_id -> profile for quick lookup
+      const profilesMap = new Map();
+      if (profilesData) {
+        profilesData.forEach((profile: any) => {
+          profilesMap.set(profile.id, profile);
+        });
+      }
+
+      // Map campaigns with profile data
+      const campaigns: Campaign[] = campaignsData.map((item: any) => {
+        const profile = profilesMap.get(item.user_id);
+        return {
+          id: item.id,
+          user_id: item.user_id,
+          campaign_name: item.campaign_name,
+          target_location: Array.isArray(item.target_location) ? item.target_location : [item.target_location],
+          target_age_group: item.target_age_group,
+          duration_start: item.duration_start,
+          duration_end: item.duration_end,
+          audience_interests: Array.isArray(item.audience_interests) ? item.audience_interests : [],
+          user_budget: item.user_budget,
+          ad_spend: item.ad_spend,
+          platform_fee: item.platform_fee,
+          total_paid: item.total_paid,
+          status: item.status,
+          payment_status: item.payment_status || 'pending',
+          payment_id: item.payment_id,
+          google_ads_campaign_id: item.google_ads_campaign_id,
+          property_ids: Array.isArray(item.property_ids) ? item.property_ids : [],
+          platforms: Array.isArray(item.platforms) ? item.platforms : [],
+          created_at: item.created_at,
+          updated_at: item.updated_at,
+          // Store profile data if needed (for future use)
+          _profile: profile || null
+        };
+      });
 
       return { campaigns, error: null };
     } catch (error) {

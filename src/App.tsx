@@ -20,6 +20,7 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { AdminLogin } from './pages/AdminLogin';
 import { AdminLayout } from './components/dashboard/AdminLayout';
 import PropertiesPage from './pages/admin/PropertiesPage';
+import CampaignManagement from './pages/admin/CampaignManagement';
 import RevenuePage from './pages/admin/RevenuePage';
 import MessagesPage from './pages/admin/MessagesPage';
 import ReportsPage from './pages/admin/ReportsPage';
@@ -206,6 +207,17 @@ function AppContent() {
             <ProtectedRoute requireAdmin={true}>
               <AdminLayout isDarkMode={isDarkMode}>
                 <PropertiesPage isDarkMode={isDarkMode} />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/campaigns"
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <AdminLayout isDarkMode={isDarkMode}>
+                <CampaignManagement />
               </AdminLayout>
             </ProtectedRoute>
           }
