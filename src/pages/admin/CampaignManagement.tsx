@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { campaignsService } from '../../services/campaignsService';
+import { formatKES } from '../../utils/currency';
 
 interface Campaign {
   id: string;
@@ -350,7 +351,7 @@ export default function CampaignManagement() {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Budget
                     </label>
-                    <p className="text-gray-900 dark:text-white">${selectedCampaign.user_budget}</p>
+                    <p className="text-gray-900 dark:text-white">{formatKES(selectedCampaign.user_budget)}</p>
                   </div>
 
                   <div>

@@ -15,6 +15,8 @@ export interface Campaign {
   platform_fee: number;
   total_paid: number;
   status: 'active' | 'pending' | 'failed' | 'completed';
+  payment_status?: 'pending' | 'processing' | 'success' | 'failed' | 'refunded' | 'cancelled';
+  payment_id?: string;
   google_ads_campaign_id?: string;
   property_ids: string[];
   platforms: string[];
@@ -108,6 +110,7 @@ class CampaignsService {
       const adSpend = data.budget - platformFee;
 
       // Prepare campaign data - status starts as 'pending' for admin approval
+      // Payment status starts as 'pending' - payment will be collected before approval
       const campaignData: any = {
         user_id: user.id,
         campaign_name,
@@ -121,6 +124,7 @@ class CampaignsService {
         platform_fee: platformFee,
         total_paid: data.budget,
         status: 'pending', // Campaign starts as pending admin approval
+        payment_status: 'pending', // Payment status starts as pending
         property_ids: data.property_ids
       };
 
@@ -162,6 +166,8 @@ class CampaignsService {
         platform_fee: campaign.platform_fee,
         total_paid: campaign.total_paid,
         status: campaign.status,
+        payment_status: campaign.payment_status || 'pending',
+        payment_id: campaign.payment_id,
         google_ads_campaign_id: campaign.google_ads_campaign_id,
         property_ids: Array.isArray(campaign.property_ids) ? campaign.property_ids : [],
         platforms: Array.isArray(campaign.platforms) ? campaign.platforms : [],

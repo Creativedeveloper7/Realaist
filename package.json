@@ -24,6 +24,7 @@
     "deploy": "npm run optimize && npm run build"
   },
   "dependencies": {
+    "@paystack/inline-js": "^1.0.0",
     "@supabase/auth-helpers-react": "^0.5.0",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.57.4",
@@ -50,13 +51,13 @@
     "vite": "^5.4.2"
   },
   "optionalDependencies": {
+    "@rollup/rollup-linux-s390x-gnu": "^4.52.4",
     "@rollup/rollup-linux-x64-gnu": "^4.52.4",
     "@rollup/rollup-linux-x64-musl": "^4.52.4",
-    "@rollup/rollup-linux-s390x-gnu": "^4.52.4",
-    "@rollup/rollup-win32-x64-msvc": "^4.52.4",
-    "@rollup/rollup-win32-x64-gnu": "^4.52.4",
-    "@rollup/rollup-win32-ia32-msvc": "^4.52.4",
+    "@rollup/rollup-openharmony-arm64": "^4.52.4",
     "@rollup/rollup-win32-arm64-msvc": "^4.52.4",
-    "@rollup/rollup-openharmony-arm64": "^4.52.4"
+    "@rollup/rollup-win32-ia32-msvc": "^4.52.4",
+    "@rollup/rollup-win32-x64-gnu": "^4.52.4",
+    "@rollup/rollup-win32-x64-msvc": "^4.52.4"
   }
 }

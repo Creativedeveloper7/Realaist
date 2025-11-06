@@ -8,6 +8,10 @@ import { HelpIcon } from '../components/Tooltip';
 import { getFilteredInterests } from '../data/audienceInterests';
 import { propertiesService } from '../services/propertiesService';
 import { campaignsService } from '../services/campaignsService';
+import { initializePayment, openPaystackPopup, isPaymentRequired } from '../services/paymentService';
+import { campaignsConfig } from '../config/campaigns';
+import { formatKES, formatKESNumber, MIN_CAMPAIGN_BUDGET } from '../utils/currency';
+import { supabase } from '../lib/supabase';
 
 interface Campaign {
 	id: string;
@@ -22,6 +26,8 @@ interface Campaign {
 	platform_fee: number;
 	total_paid: number;
 	status: 'active' | 'pending' | 'failed' | 'completed';
+	payment_status?: 'pending' | 'processing' | 'success' | 'failed' | 'refunded' | 'cancelled';
+	payment_id?: string;
 	google_ads_campaign_id?: string;
 	property_ids: string[];
 	platforms: string[];
@@ -53,9 +59,9 @@ export default function DashboardCampaignAds() {
 
 	// Load user's campaigns
 	useEffect(() => {
+		if (!user?.id) return;
+
 		const loadCampaigns = async () => {
-			if (!user?.id) return;
-			
 			setLoading(true);
 			try {
 				const { campaigns, error } = await campaignsService.getUserCampaigns();
@@ -71,7 +77,68 @@ export default function DashboardCampaignAds() {
 			}
 		};
 
+		// Initial load
 		loadCampaigns();
+
+		// Set up Realtime subscription for campaign updates
+		const channel = supabase
+			.channel(`campaigns:${user.id}`)
+			.on(
+				'postgres_changes',
+				{
+					event: 'UPDATE',
+					schema: 'public',
+					table: 'campaigns',
+					filter: `user_id=eq.${user.id}`,
+				},
+				(payload) => {
+					console.log('Campaign updated via Realtime:', payload);
+					
+					// Update the campaign in the local state
+					setCampaigns((prevCampaigns) => {
+						const updatedCampaign = payload.new as Campaign;
+						const existingIndex = prevCampaigns.findIndex((c) => c.id === updatedCampaign.id);
+						
+						if (existingIndex >= 0) {
+							// Update existing campaign
+							const updated = [...prevCampaigns];
+							updated[existingIndex] = updatedCampaign;
+							return updated;
+						} else {
+							// New campaign (shouldn't happen with UPDATE, but handle it)
+							return [updatedCampaign, ...prevCampaigns];
+						}
+					});
+				}
+			)
+			.on(
+				'postgres_changes',
+				{
+					event: 'INSERT',
+					schema: 'public',
+					table: 'campaigns',
+					filter: `user_id=eq.${user.id}`,
+				},
+				(payload) => {
+					console.log('New campaign created via Realtime:', payload);
+					
+					// Add new campaign to the local state
+					setCampaigns((prevCampaigns) => {
+						const newCampaign = payload.new as Campaign;
+						// Check if it already exists (shouldn't, but be safe)
+						if (prevCampaigns.find((c) => c.id === newCampaign.id)) {
+							return prevCampaigns;
+						}
+						return [newCampaign, ...prevCampaigns];
+					});
+				}
+			)
+			.subscribe();
+
+		// Cleanup subscription on unmount
+		return () => {
+			supabase.removeChannel(channel);
+		};
 	}, [user?.id]);
 
 	// Load user's properties for creative assets
@@ -260,22 +327,34 @@ export default function DashboardCampaignAds() {
 				alert('Please log in to create a campaign');
 				return;
 			}
-			
-			setSubmitting(true);
-			
-			const campaignData = {
-				target_location: Array.isArray(form.targetLocation) ? form.targetLocation : [form.targetLocation],
-				target_age_group: form.targetAgeGroup,
-				duration_start: form.startDate,
-				duration_end: form.endDate,
-				audience_interests: Array.isArray(form.audienceInterests) ? form.audienceInterests : [],
-				budget: Number(form.budget),
-				property_ids: form.propertyIds,
-				platforms: Array.isArray(form.platforms) ? form.platforms : []
-			};
+
+		if (!user?.email) {
+			alert('Email is required for payment processing');
+			return;
+		}
+
+		const budget = Number(form.budget);
+		if (!budget || budget < MIN_CAMPAIGN_BUDGET) {
+			alert(`Minimum campaign budget is ${formatKES(MIN_CAMPAIGN_BUDGET)}`);
+			return;
+		}
+		
+		setSubmitting(true);
+		
+		const campaignData = {
+			target_location: Array.isArray(form.targetLocation) ? form.targetLocation : [form.targetLocation],
+			target_age_group: form.targetAgeGroup,
+			duration_start: form.startDate,
+			duration_end: form.endDate,
+			audience_interests: Array.isArray(form.audienceInterests) ? form.audienceInterests : [],
+			budget: budget,
+			property_ids: form.propertyIds,
+			platforms: Array.isArray(form.platforms) ? form.platforms : []
+		};
 			
 			console.log('Creating campaign with data:', campaignData);
 			
+			// Step 1: Create campaign
 			const { campaign, error } = await campaignsService.createCampaign(campaignData);
 			
 			if (error) {
@@ -286,17 +365,62 @@ export default function DashboardCampaignAds() {
 				throw new Error('Campaign creation failed - no campaign returned');
 			}
 			
-			console.log('Campaign submitted for approval:', campaign);
+			console.log('Campaign created:', campaign);
 			
-			// Show success message
-			alert('Your campaign has been submitted for admin approval! You will be notified once it\'s reviewed and approved.');
+			// Step 2: Initialize payment
+			try {
+				const paymentInit = await initializePayment(
+					campaign.id,
+					Number(form.budget),
+					user.email,
+					{
+						campaign_name: campaign.campaign_name,
+						user_id: user.id
+					}
+				);
+
+				console.log('Payment initialized:', paymentInit);
+
+				// Step 3: Open Paystack popup
+				if (campaignsConfig.payment.publicKey && paymentInit.payment.access_code) {
+					try {
+						console.log('Attempting to open Paystack popup...');
+						
+						// Get authorization URL from payment init response if available
+						const authorizationUrl = paymentInit.payment.authorization_url;
+						
+						await openPaystackPopup(
+							campaignsConfig.payment.publicKey,
+							paymentInit.payment.access_code,
+							authorizationUrl
+						);
+						console.log('Paystack popup opened successfully');
+
+						// Note: Payment verification will be handled by webhook
+						// The webhook will update the payment status automatically
+						// Don't show alert immediately - let the popup open first
+					} catch (popupError: any) {
+						console.error('Error opening Paystack popup:', popupError);
+						alert(`Failed to open payment popup: ${popupError.message}. Please try again or contact support.`);
+					}
+				} else {
+					throw new Error('Payment configuration missing');
+				}
+			} catch (paymentError: any) {
+				console.error('Payment initialization error:', {
+					message: paymentError.message,
+					error: paymentError,
+					stack: paymentError.stack,
+				});
+				alert(`Payment initialization failed: ${paymentError.message}. Campaign created but payment is required.`);
+			}
 			
 			// Clear saved draft since campaign was launched
 			if (user?.id) {
 				localStorage.removeItem(`campaign_draft_${user.id}`);
 			}
 			
-			// Reset form and close modal
+			// Reset form and close modal (but don't reload page - let popup complete)
 			setForm({
 				targetLocation: [],
 				targetAgeGroup: '18-24',
@@ -311,8 +435,8 @@ export default function DashboardCampaignAds() {
 			setSelectedProperties([]);
 			setOpen(false);
 			
-			// Reload campaigns
-			window.location.reload();
+			// Note: Payment status will be updated via webhook
+			// Campaigns list will refresh when user navigates back or page is manually refreshed
 		} catch (e: any) {
 			alert(e?.message || 'Failed to create campaign');
 		} finally {
@@ -327,6 +451,30 @@ export default function DashboardCampaignAds() {
 			case 'failed': return 'text-red-800 dark:text-red-200 bg-red-100 dark:bg-red-900/30';
 			case 'completed': return 'text-blue-800 dark:text-blue-200 bg-blue-100 dark:bg-blue-900/30';
 			default: return 'text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-900/30';
+		}
+	};
+
+	const getPaymentStatusColor = (status?: string) => {
+		switch (status) {
+			case 'success': return 'text-green-800 dark:text-green-200 bg-green-100 dark:bg-green-900/30';
+			case 'pending': return 'text-yellow-800 dark:text-yellow-200 bg-yellow-100 dark:bg-yellow-900/30';
+			case 'processing': return 'text-blue-800 dark:text-blue-200 bg-blue-100 dark:bg-blue-900/30';
+			case 'failed': return 'text-red-800 dark:text-red-200 bg-red-100 dark:bg-red-900/30';
+			case 'refunded': return 'text-purple-800 dark:text-purple-200 bg-purple-100 dark:bg-purple-900/30';
+			case 'cancelled': return 'text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-900/30';
+			default: return 'text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-900/30';
+		}
+	};
+
+	const getPaymentStatusText = (status?: string) => {
+		switch (status) {
+			case 'success': return 'Paid';
+			case 'pending': return 'Payment Pending';
+			case 'processing': return 'Processing';
+			case 'failed': return 'Payment Failed';
+			case 'refunded': return 'Refunded';
+			case 'cancelled': return 'Cancelled';
+			default: return 'Payment Required';
 		}
 	};
 
@@ -388,7 +536,7 @@ export default function DashboardCampaignAds() {
 						<div>
 							<p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Budget</p>
 							<p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-								${campaigns.reduce((sum, c) => sum + c.user_budget, 0).toLocaleString()}
+								{formatKES(campaigns.reduce((sum, c) => sum + c.user_budget, 0))}
 							</p>
 						</div>
 						<div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
@@ -463,6 +611,22 @@ export default function DashboardCampaignAds() {
 												<span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(campaign.status)}`}>
 													{campaign.status === 'pending' ? 'Pending Approval' : campaign.status}
 												</span>
+												<span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getPaymentStatusColor(campaign.payment_status)}`}>
+													{campaign.payment_status === 'success' ? (
+														<svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+															<path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+														</svg>
+													) : campaign.payment_status === 'pending' || !campaign.payment_status ? (
+														<svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+															<path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+														</svg>
+													) : campaign.payment_status === 'failed' ? (
+														<svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+															<path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+														</svg>
+													) : null}
+													{getPaymentStatusText(campaign.payment_status)}
+												</span>
 											</div>
 											<div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-2">
 												<span className="flex items-center gap-1">
@@ -484,10 +648,15 @@ export default function DashboardCampaignAds() {
 											</div>
 											<div className="flex items-center gap-6 text-sm">
 												<span className="text-gray-500 dark:text-gray-400">
-													Budget: <span className="font-semibold text-gray-900 dark:text-white">${campaign.user_budget.toLocaleString()}</span>
+													Budget: <span className="font-semibold text-gray-900 dark:text-white">{formatKES(campaign.user_budget)}</span>
 												</span>
 												<span className="text-gray-500 dark:text-gray-400">
 													Properties: <span className="font-semibold text-gray-900 dark:text-white">{campaign.property_ids?.length || 0}</span>
+												</span>
+												<span className="text-gray-500 dark:text-gray-400">
+													Payment: <span className={`font-semibold ${campaign.payment_status === 'success' ? 'text-green-600 dark:text-green-400' : campaign.payment_status === 'failed' ? 'text-red-600 dark:text-red-400' : 'text-yellow-600 dark:text-yellow-400'}`}>
+														{getPaymentStatusText(campaign.payment_status)}
+													</span>
 												</span>
 												<span className="text-gray-500 dark:text-gray-400">
 													Created: <span className="font-semibold text-gray-900 dark:text-white">{new Date(campaign.created_at).toLocaleDateString()}</span>
@@ -1011,28 +1180,28 @@ export default function DashboardCampaignAds() {
 														<div className="space-y-2">
 															<p className="font-semibold">Budget allocation</p>
 															<p>Set your total campaign budget. This amount will be distributed across your campaign duration and used for ad placements on Google Ads.</p>
-															<p className="text-xs text-gray-300">💡 Tip: Start with a smaller budget to test your targeting, then scale up based on performance. Minimum budget is $100.</p>
+															<p className="text-xs text-gray-300">💡 Tip: Start with a smaller budget to test your targeting, then scale up based on performance. Minimum budget is {formatKES(MIN_CAMPAIGN_BUDGET)}.</p>
 														</div>
 													}
 													position="right"
 												/>
 											</div>
 											<p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-												Set your total campaign budget (minimum $100)
+												Set your total campaign budget (minimum {formatKES(MIN_CAMPAIGN_BUDGET)})
 											</p>
 											<div className="relative">
 												<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-													<span className="text-gray-500 dark:text-gray-400 sm:text-sm">$</span>
+													<span className="text-gray-500 dark:text-gray-400 sm:text-sm">KES</span>
 												</div>
 												<input 
 													name="budget" 
 													type="number" 
 													placeholder="0.00" 
-													className="w-full pl-8 pr-4 py-3 border border-gray-300 dark:border-white/20 rounded-lg bg-white dark:bg-white/5 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#C7A667] focus:border-transparent transition-colors" 
+													className="w-full pl-16 pr-4 py-3 border border-gray-300 dark:border-white/20 rounded-lg bg-white dark:bg-white/5 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#C7A667] focus:border-transparent transition-colors" 
 													onChange={onChange} 
 												/>
 											</div>
-											<p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Minimum budget: $100</p>
+											<p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Minimum budget: {formatKES(MIN_CAMPAIGN_BUDGET)}</p>
 										</div>
 
 										{/* Additional Creative Assets Section */}

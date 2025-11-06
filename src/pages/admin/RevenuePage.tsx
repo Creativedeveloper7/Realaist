@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { motion } from 'framer-motion';
+import { formatKES } from '../../utils/currency';
 
 type Row = { 
 	total_collected: number; 
@@ -134,7 +135,7 @@ export default function RevenuePage() {
 						animate={{ opacity: 1, y: 0 }}
 					>
 						<p className="text-sm text-gray-500 mb-2">Total Collected</p>
-						<p className="text-2xl font-bold text-blue-600">${summary.total_collected.toLocaleString()}</p>
+						<p className="text-2xl font-bold text-blue-600">{formatKES(summary.total_collected)}</p>
 						<p className="text-xs text-gray-400 mt-1">From all campaigns</p>
 					</motion.div>
 					
@@ -145,7 +146,7 @@ export default function RevenuePage() {
 						transition={{ delay: 0.1 }}
 					>
 						<p className="text-sm text-gray-500 mb-2">Total Ad Spend</p>
-						<p className="text-2xl font-bold text-orange-600">${summary.total_ad_spend.toLocaleString()}</p>
+						<p className="text-2xl font-bold text-orange-600">{formatKES(summary.total_ad_spend)}</p>
 						<p className="text-xs text-gray-400 mt-1">Actual Google Ads spend</p>
 					</motion.div>
 					
@@ -156,7 +157,7 @@ export default function RevenuePage() {
 						transition={{ delay: 0.2 }}
 					>
 						<p className="text-sm text-gray-500 mb-2">Platform Profit</p>
-						<p className="text-2xl font-bold text-green-600">${summary.platform_profit.toLocaleString()}</p>
+						<p className="text-2xl font-bold text-green-600">{formatKES(summary.platform_profit)}</p>
 						<p className="text-xs text-gray-400 mt-1">Hidden fee revenue</p>
 					</motion.div>
 					
@@ -220,11 +221,11 @@ export default function RevenuePage() {
 													<p className="text-sm text-gray-500">{campaign.user_email || 'N/A'}</p>
 												</div>
 											</td>
-											<td className="py-3 px-4">${campaign.user_budget.toLocaleString()}</td>
-											<td className="py-3 px-4">${campaign.ad_spend.toLocaleString()}</td>
+											<td className="py-3 px-4">{formatKES(campaign.user_budget)}</td>
+											<td className="py-3 px-4">{formatKES(campaign.ad_spend)}</td>
 											<td className="py-3 px-4">
 												<span className="text-green-600 font-medium">
-													${campaign.platform_fee.toLocaleString()}
+													{formatKES(campaign.platform_fee)}
 												</span>
 											</td>
 											<td className="py-3 px-4">
