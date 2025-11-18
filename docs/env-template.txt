@@ -1,0 +1,28 @@
+# ============================================
+# COPY THIS TEMPLATE TO SUPABASE
+# ============================================
+# Go to: Supabase Dashboard > Project Settings > Edge Functions > Secrets
+# Add each variable below (paste value without quotes)
+# ============================================
+
+# REQUIRED (5 variables - must have all 5)
+GADS_DEV_TOKEN=
+GADS_CLIENT_ID=
+GADS_CLIENT_SECRET=
+GADS_REFRESH_TOKEN=
+GADS_CUSTOMER_ID=
+
+# OPTIONAL (only if using MCC account)
+GADS_LOGIN_CUSTOMER_ID=
+GADS_MCC_ID=
+
+# ============================================
+# QUICK REFERENCE
+# ============================================
+# GADS_DEV_TOKEN       → https://ads.google.com/aw/apicenter
+# GADS_CLIENT_ID       → https://console.cloud.google.com/apis/credentials
+# GADS_CLIENT_SECRET   → Same as above (when creating OAuth client)
+# GADS_REFRESH_TOKEN   → https://developers.google.com/oauthplayground/
+# GADS_CUSTOMER_ID     → Top right in Google Ads (10 digits, no hyphens)
+# ============================================
+

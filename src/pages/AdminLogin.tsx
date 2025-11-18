@@ -35,7 +35,20 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ isDarkMode }) => {
         return;
       }
 
-      // For development: Create a mock admin user
+      // Try to use real Supabase authentication first
+      // This creates a proper session for Edge Function calls
+      const loginResult = await login(email, password);
+      
+      if (loginResult.success) {
+        // Real Supabase session created, navigate to admin dashboard
+        navigate('/admin');
+        return;
+      }
+
+      // If real login fails, fall back to mock admin user for development
+      // This is only for development when admin account doesn't exist in Supabase
+      console.warn('Real Supabase login failed, using mock admin user (development mode)');
+      
       const mockAdminUser = {
         id: 'admin-1',
         email: email,

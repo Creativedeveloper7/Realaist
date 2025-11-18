@@ -207,10 +207,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       const timeoutId = setTimeout(() => setIsLoading(false), 15000);
 
-      const signupUserType = userData.userType === 'admin' ? 'developer' : userData.userType;
+      // Preserve admin userType - database now supports it
       const result = await authService.signUp({
         ...userData,
-        userType: signupUserType as 'buyer' | 'developer',
+        userType: userData.userType, // Keep original userType including 'admin'
       });
 
       clearTimeout(timeoutId);

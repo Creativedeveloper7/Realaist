@@ -1,0 +1,140 @@
+=====================================================
+GOOGLE ADS API - ENVIRONMENT VARIABLES
+=====================================================
+
+Configure these in Supabase Dashboard:
+Project Settings > Edge Functions > Secrets
+
+-----------------------------------------------------
+REQUIRED VARIABLES (5)
+-----------------------------------------------------
+
+GADS_DEV_TOKEN=your_developer_token_here
+├─ Where: https://ads.google.com/aw/apicenter
+└─ Type: String token from Google Ads Manager account
+
+GADS_CLIENT_ID=your_client_id.apps.googleusercontent.com
+├─ Where: https://console.cloud.google.com/apis/credentials
+└─ Type: OAuth 2.0 Client ID (Desktop App or Web App)
+
+GADS_CLIENT_SECRET=your_client_secret_here
+├─ Where: Same as Client ID (shown when you create it)
+└─ Type: OAuth 2.0 Client Secret
+
+GADS_REFRESH_TOKEN=your_refresh_token_here
+├─ Where: Generate via OAuth 2.0 Playground or auth flow
+└─ Guide: https://developers.google.com/oauthplayground/
+
+GADS_CUSTOMER_ID=1234567890
+├─ Where: Top right corner in Google Ads dashboard
+└─ Format: 10-digit number WITHOUT hyphens
+
+-----------------------------------------------------
+OPTIONAL VARIABLES (For MCC Accounts Only)
+-----------------------------------------------------
+
+GADS_LOGIN_CUSTOMER_ID=9876543210
+└─ Your MCC (Manager) account ID (10 digits, no hyphens)
+
+GADS_MCC_ID=9876543210
+└─ Same as Login Customer ID (alternative field)
+
+-----------------------------------------------------
+SETUP STEPS
+-----------------------------------------------------
+
+1. CREATE GOOGLE CLOUD PROJECT
+   → https://console.cloud.google.com/
+   → Enable Google Ads API
+
+2. CREATE OAUTH CREDENTIALS
+   → APIs & Services > Credentials
+   → + CREATE CREDENTIALS > OAuth client ID
+   → Desktop app (recommended)
+   → Copy Client ID & Secret
+
+3. GENERATE REFRESH TOKEN
+   → https://developers.google.com/oauthplayground/
+   → Settings (⚙️) > Use your own OAuth credentials
+   → Scope: https://www.googleapis.com/auth/adwords
+   → Authorize > Exchange > Copy refresh token
+
+4. GET DEVELOPER TOKEN
+   → https://ads.google.com/aw/apicenter
+   → Apply for developer token
+   → Test token available immediately
+
+5. FIND CUSTOMER ID
+   → Log in to Google Ads
+   → Top right corner: XXX-XXX-XXXX
+   → Remove hyphens: XXXXXXXXXX
+
+6. ADD TO SUPABASE
+   → Supabase Dashboard > Project Settings
+   → Edge Functions > Secrets
+   → Add each variable (paste values without quotes)
+
+-----------------------------------------------------
+VERIFICATION
+-----------------------------------------------------
+
+Test by:
+1. Create test campaign in admin dashboard
+2. Approve campaign
+3. Check Edge Function logs for success/errors
+
+-----------------------------------------------------
+COMMON ERRORS
+-----------------------------------------------------
+
+"Missing: GADS_DEV_TOKEN"
+└─ Fix: Add all 5 required variables to Supabase
+
+"Could not authenticate"
+└─ Fix: Regenerate refresh token
+
+"Customer ID not found"
+└─ Fix: Verify 10-digit number (no hyphens)
+
+"PERMISSION_DENIED"
+└─ Fix: Use test token or apply for standard access
+
+-----------------------------------------------------
+SECURITY
+-----------------------------------------------------
+
+✓ NEVER commit credentials to Git
+✓ Only store in Supabase Edge Function secrets
+✓ Use test tokens during development
+✓ Rotate credentials periodically
+
+-----------------------------------------------------
+RESOURCES
+-----------------------------------------------------
+
+Google Ads API Docs:
+https://developers.google.com/google-ads/api/docs/start
+
+OAuth Setup:
+https://developers.google.com/google-ads/api/docs/oauth/cloud-project
+
+OAuth Playground:
+https://developers.google.com/oauthplayground/
+
+Developer Token:
+https://developers.google.com/google-ads/api/docs/first-call/dev-token
+
+-----------------------------------------------------
+EXCHANGE RATE
+-----------------------------------------------------
+
+Hardcoded: 134 KES = 1 USD
+Location: create-google-ads-campaign/index.ts
+Constant: KES_TO_USD_RATE = 134
+
+-----------------------------------------------------
+STATUS: Production Ready ✅
+VERSION: 4
+LAST UPDATED: 2025-11-17
+-----------------------------------------------------
+

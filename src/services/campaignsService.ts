@@ -304,25 +304,25 @@ class CampaignsService {
       const campaigns: Campaign[] = campaignsData.map((item: any) => {
         const profile = profilesMap.get(item.user_id);
         return {
-          id: item.id,
-          user_id: item.user_id,
-          campaign_name: item.campaign_name,
-          target_location: Array.isArray(item.target_location) ? item.target_location : [item.target_location],
-          target_age_group: item.target_age_group,
-          duration_start: item.duration_start,
-          duration_end: item.duration_end,
-          audience_interests: Array.isArray(item.audience_interests) ? item.audience_interests : [],
-          user_budget: item.user_budget,
-          ad_spend: item.ad_spend,
-          platform_fee: item.platform_fee,
-          total_paid: item.total_paid,
-          status: item.status,
+        id: item.id,
+        user_id: item.user_id,
+        campaign_name: item.campaign_name,
+        target_location: Array.isArray(item.target_location) ? item.target_location : [item.target_location],
+        target_age_group: item.target_age_group,
+        duration_start: item.duration_start,
+        duration_end: item.duration_end,
+        audience_interests: Array.isArray(item.audience_interests) ? item.audience_interests : [],
+        user_budget: item.user_budget,
+        ad_spend: item.ad_spend,
+        platform_fee: item.platform_fee,
+        total_paid: item.total_paid,
+        status: item.status,
           payment_status: item.payment_status || 'pending',
           payment_id: item.payment_id,
-          google_ads_campaign_id: item.google_ads_campaign_id,
-          property_ids: Array.isArray(item.property_ids) ? item.property_ids : [],
-          platforms: Array.isArray(item.platforms) ? item.platforms : [],
-          created_at: item.created_at,
+        google_ads_campaign_id: item.google_ads_campaign_id,
+        property_ids: Array.isArray(item.property_ids) ? item.property_ids : [],
+        platforms: Array.isArray(item.platforms) ? item.platforms : [],
+        created_at: item.created_at,
           updated_at: item.updated_at,
           // Store profile data if needed (for future use)
           _profile: profile || null
@@ -354,22 +354,173 @@ class CampaignsService {
         return { error: 'Campaign is not in pending status' };
       }
 
-      // Generate Google Ads campaign ID when approved
-      const googleAdsResult = {
-        success: true,
-        campaignId: `gads_${Date.now()}_${campaign.user_id.slice(0, 8)}`
+      // Check if payment is successful
+      if (campaign.payment_status !== 'success') {
+        return { error: 'Campaign payment must be successful before approval' };
+      }
+
+      // Check if Google Ads platform is selected
+      const platforms = campaign.platforms || [];
+      const hasGooglePlatform = platforms.includes('google');
+
+      let googleAdsCampaignId: string | null = null;
+
+      // Create Google Ads campaign if Google platform is selected
+      if (hasGooglePlatform) {
+        try {
+          console.log('Creating Google Ads campaign for campaign:', id);
+          
+          // Verify user is authenticated with a REAL Supabase session (not mock admin)
+          // This is required for Edge Function calls which need a valid JWT token
+          const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
+          if (userError || !authUser) {
+            console.error('Authentication error:', userError);
+            return { 
+              error: 'Valid Supabase authentication required. Please log in with a real admin account (not mock admin).' 
+            };
+          }
+
+          // Get session after getUser (which refreshes it if needed)
+          const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+          let session = sessionData?.session;
+          
+          if (sessionError || !session) {
+            console.error('Session error:', sessionError);
+            // Try to refresh the session explicitly
+            const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+            if (refreshError || !refreshData.session) {
+              console.error('Failed to refresh session:', refreshError);
+              return { 
+                error: 'No valid Supabase session found. Please log in with a real admin account. Mock admin accounts cannot approve campaigns.' 
+              };
+            }
+            session = refreshData.session;
+          }
+          
+          if (!session || !session.access_token) {
+            return { 
+              error: 'No valid session token available. Please log in with a real Supabase admin account to approve campaigns.' 
+            };
+          }
+          
+          // Additional check: Ensure this is a real Supabase user, not a mock admin
+          // Mock admin users have IDs like 'admin-1' which are not valid UUIDs
+          if (authUser.id && !authUser.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+            console.error('Invalid user ID format (likely mock admin):', authUser.id);
+            return { 
+              error: 'Mock admin accounts cannot approve campaigns. Please log in with a real Supabase admin account.' 
+            };
+          }
+
+          // Get Supabase URL from environment
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          if (!supabaseUrl) {
+            return { error: 'Supabase URL not configured' };
+          }
+
+          const functionSuffix =
+            import.meta.env.VITE_GOOGLE_ADS_EDGE_FUNCTION || 'create-google-ads-campaign-rest';
+          const functionUrl = `${supabaseUrl}/functions/v1/${functionSuffix}`;
+
+          console.log('Calling Google Ads Edge Function:', {
+            url: functionUrl,
+            campaign_id: campaign.id,
+            hasToken: !!session.access_token,
+            tokenPrefix: session.access_token?.substring(0, 20) + '...',
+          });
+
+          // Call Google Ads Edge Function
+          let response: Response;
+          try {
+            response = await fetch(functionUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`,
+                'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+              },
+              body: JSON.stringify({
+                campaign_id: campaign.id,
+                campaign_name: campaign.campaign_name,
+                budget: Number(campaign.ad_spend), // Use ad_spend (after platform fee)
+                target_location: campaign.target_location || [],
+                target_age_group: campaign.target_age_group,
+                duration_start: campaign.duration_start,
+                duration_end: campaign.duration_end,
+                audience_interests: campaign.audience_interests || [],
+                property_ids: campaign.property_ids || [],
+                platforms: platforms,
+              }),
+            });
+          } catch (fetchError: any) {
+            console.error('Fetch error (network/CORS):', fetchError);
+            return { 
+              error: `Network error: ${fetchError.message || 'Failed to connect to server'}. Please check your internet connection and try again.` 
+            };
+          }
+
+          // Check if response is ok before trying to parse JSON
+          let result: any;
+          try {
+            const text = await response.text();
+            console.log('Edge Function response status:', response.status);
+            console.log('Edge Function response text:', text.substring(0, 500));
+            
+            if (!text) {
+              return { 
+                error: `Empty response from server (status ${response.status}). Please check Edge Function logs.` 
+      };
+            }
+            
+            result = JSON.parse(text);
+          } catch (parseError: any) {
+            console.error('Failed to parse response as JSON:', parseError);
+            return { 
+              error: `Invalid response from server (status ${response.status}). Please check Edge Function logs.` 
+            };
+          }
+
+          if (!response.ok) {
+            console.error('Google Ads API error response:', {
+              status: response.status,
+              statusText: response.statusText,
+              result,
+            });
+            return { 
+              error: result.error || result.message || `Failed to create Google Ads campaign (status ${response.status}). Please check Google Ads configuration in settings.` 
+            };
+          }
+
+          if (result.success && result.googleAdsCampaignId) {
+            googleAdsCampaignId = result.googleAdsCampaignId;
+            console.log('Google Ads campaign created successfully:', googleAdsCampaignId);
+          } else {
+            console.warn('Google Ads campaign creation returned unexpected result:', result);
+            return { error: 'Failed to create Google Ads campaign: Invalid response from API' };
+          }
+        } catch (googleAdsError: any) {
+          console.error('Error creating Google Ads campaign:', googleAdsError);
+          return { 
+            error: `Failed to create Google Ads campaign: ${googleAdsError.message || 'Unknown error'}. Please verify Google Ads configuration in admin settings.` 
+          };
+        }
+      }
+
+      // Update campaign status to active and add Google Ads ID (if created)
+      const updateData: any = {
+        status: 'active',
+        updated_at: new Date().toISOString(),
+        approved_by: (await supabase.auth.getUser()).data.user?.id,
+        approved_at: new Date().toISOString(),
       };
 
-      console.log(`Approving campaign and creating Google Ads campaign: ${googleAdsResult.campaignId}`);
+      if (googleAdsCampaignId) {
+        updateData.google_ads_campaign_id = googleAdsCampaignId;
+      }
 
-      // Update campaign status to active and add Google Ads ID
       const { error } = await supabase
         .from('campaigns')
-        .update({ 
-          status: 'active',
-          google_ads_campaign_id: googleAdsResult.campaignId,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', id);
 
       if (error) {
@@ -378,9 +529,9 @@ class CampaignsService {
 
       console.log('Campaign approved successfully:', id);
       return { error: null };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error approving campaign:', error);
-      return { error: 'An unexpected error occurred' };
+      return { error: error.message || 'An unexpected error occurred' };
     }
   }
 
