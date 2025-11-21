@@ -37,5 +37,5 @@ export function getKESSymbol(): string {
 /**
  * Minimum campaign budget in KES
  */
-export const MIN_CAMPAIGN_BUDGET = 10000; // 10,000 KES minimum
+export const MIN_CAMPAIGN_BUDGET = 1000; // 1000 KES minimum
 
