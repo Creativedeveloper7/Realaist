@@ -209,32 +209,27 @@ export default function CampaignManagement() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C7A667]"></div>
-          </div>
-        </div>
+      <div className="p-6 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C7A667]" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Campaign Management
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Review and approve advertising campaigns from developers
-          </p>
-        </div>
+    <div className="space-y-4 sm:space-y-6 pb-24 px-1 sm:px-0">
+      {/* Header */}
+      <div className="space-y-1">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+          Campaign Management
+        </h1>
+        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+          Review and approve advertising campaigns from developers
+        </p>
+      </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 xl:gap-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 shadow-sm border border-gray-200 dark:border-gray-700">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                 <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -289,89 +284,90 @@ export default function CampaignManagement() {
               </div>
             </div>
           </div>
-        </div>
+      </div>
 
-        {/* Filter Tabs */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
-          <div className="border-b border-gray-200 dark:border-gray-700">
-            <nav className="flex space-x-8 px-6">
-              {[
-                { key: 'all', label: 'All Campaigns', count: campaigns.length },
-                { key: 'pending', label: 'Pending Review', count: pendingCount },
-                { key: 'active', label: 'Active', count: activeCount },
-                { key: 'failed', label: 'Rejected', count: failedCount }
-              ].map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setFilter(tab.key as any)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    filter === tab.key
-                      ? 'border-[#C7A667] text-[#C7A667]'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                  }`}
-                >
-                  {tab.label} ({tab.count})
-                </button>
-              ))}
-            </nav>
-          </div>
+      {/* Filter Tabs */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="border-b border-gray-200 dark:border-gray-700">
+          <nav className="flex gap-2 sm:gap-4 px-2 sm:px-4 md:px-6 overflow-x-auto pb-1">
+            {[
+              { key: 'all', label: 'All Campaigns', count: campaigns.length },
+              { key: 'pending', label: 'Pending Review', count: pendingCount },
+              { key: 'active', label: 'Active', count: activeCount },
+              { key: 'failed', label: 'Rejected', count: failedCount }
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setFilter(tab.key as any)}
+                className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${
+                  filter === tab.key
+                    ? 'border-[#C7A667] text-[#C7A667]'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                }`}
+              >
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="sm:hidden">{tab.label.split(' ')[0]}</span> ({tab.count})
+              </button>
+            ))}
+          </nav>
         </div>
+      </div>
 
-        {/* Campaigns List */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+      {/* Campaigns List */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           {filteredCampaigns.length === 0 ? (
-            <div className="p-8 text-center">
-              <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="p-6 sm:p-8 text-center">
+              <svg className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
-              <p className="text-gray-500 dark:text-gray-400">No campaigns found</p>
+              <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">No campaigns found</p>
             </div>
           ) : (
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
               {filteredCampaigns.map((campaign) => (
                 <motion.div
                   key={campaign.id}
-                  className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                  className="p-3 sm:p-4 md:p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex-1 space-y-2 sm:space-y-3 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white break-words">
                           {campaign.campaign_name}
                         </h3>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(campaign.status)}`}>
+                        <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 ${getStatusColor(campaign.status)}`}>
                           {campaign.status === 'pending' ? 'Pending Approval' : campaign.status}
                         </span>
                       </div>
                       
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 dark:text-gray-400">
-                        <div>
-                          <span className="font-medium">Budget:</span> {formatKES(campaign.user_budget)}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                        <div className="break-words">
+                          <span className="font-medium">Budget:</span> <span className="block sm:inline">{formatKES(campaign.user_budget)}</span>
                         </div>
-                        <div>
-                          <span className="font-medium">Duration:</span> {new Date(campaign.duration_start).toLocaleDateString()} - {new Date(campaign.duration_end).toLocaleDateString()}
+                        <div className="break-words">
+                          <span className="font-medium">Duration:</span> <span className="block sm:inline text-xs">{new Date(campaign.duration_start).toLocaleDateString()} - {new Date(campaign.duration_end).toLocaleDateString()}</span>
                         </div>
-                        <div>
-                          <span className="font-medium">Platforms:</span> {campaign.platforms.join(', ')}
+                        <div className="break-words">
+                          <span className="font-medium">Platforms:</span> <span className="block sm:inline break-words">{campaign.platforms.join(', ')}</span>
                         </div>
-                        <div>
-                          <span className="font-medium">Payment:</span> <span className={`font-semibold ${campaign.payment_status === 'success' ? 'text-green-600 dark:text-green-400' : campaign.payment_status === 'failed' ? 'text-red-600 dark:text-red-400' : 'text-yellow-600 dark:text-yellow-400'}`}>
+                        <div className="break-words">
+                          <span className="font-medium">Payment:</span> <span className={`block sm:inline font-semibold ${campaign.payment_status === 'success' ? 'text-green-600 dark:text-green-400' : campaign.payment_status === 'failed' ? 'text-red-600 dark:text-red-400' : 'text-yellow-600 dark:text-yellow-400'}`}>
                             {campaign.payment_status === 'success' ? 'Paid' : campaign.payment_status === 'failed' ? 'Failed' : campaign.payment_status === 'processing' ? 'Processing' : 'Pending'}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-col sm:flex-row gap-2 sm:justify-end flex-shrink-0">
                       <button
                         onClick={() => {
                           setSelectedCampaign(campaign);
                           setShowDetails(true);
                         }}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                        className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors whitespace-nowrap"
                       >
                         View Details
                       </button>
@@ -381,14 +377,14 @@ export default function CampaignManagement() {
                           <button
                             onClick={() => handleApprove(campaign.id)}
                             disabled={processing === campaign.id}
-                            className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+                            className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors whitespace-nowrap"
                           >
                             {processing === campaign.id ? 'Approving...' : 'Approve'}
                           </button>
                           <button
                             onClick={() => handleReject(campaign.id)}
                             disabled={processing === campaign.id}
-                            className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+                            className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors whitespace-nowrap"
                           >
                             {processing === campaign.id ? 'Rejecting...' : 'Reject'}
                           </button>
@@ -402,16 +398,16 @@ export default function CampaignManagement() {
           )}
         </div>
 
-        {/* Campaign Details Modal */}
-        {showDetails && selectedCampaign && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      {/* Campaign Details Modal */}
+      {showDetails && selectedCampaign && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <motion.div
               className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
             >
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                     Campaign Details
@@ -545,7 +541,6 @@ export default function CampaignManagement() {
             </motion.div>
           </div>
         )}
-      </div>
     </div>
   );
 }

@@ -88,33 +88,33 @@ export default function RevenuePage() {
 			</div>
 
 			{/* Filters */}
-			<div className="bg-white dark:bg-[#0E0E10] rounded-lg border border-gray-200 dark:border-white/10 p-6">
+			<div className="bg-white dark:bg-[#0E0E10] rounded-lg border border-gray-200 dark:border-white/10 p-4 sm:p-6">
 				<h2 className="text-lg font-semibold mb-4">Filters</h2>
-				<div className="flex flex-wrap gap-4">
-					<div>
+				<div className="flex flex-col sm:flex-row gap-4">
+					<div className="flex-1">
 						<label className="block text-sm font-medium mb-1">From Date</label>
 						<input 
 							type="date" 
-							className="px-3 py-2 border rounded-lg dark:bg-white/5 dark:border-white/10 dark:text-white" 
+							className="w-full px-3 py-2 border rounded-lg dark:bg-white/5 dark:border-white/10 dark:text-white text-sm" 
 							value={from} 
 							onChange={(e) => setFrom(e.target.value)} 
 						/>
 					</div>
-					<div>
+					<div className="flex-1">
 						<label className="block text-sm font-medium mb-1">To Date</label>
 						<input 
 							type="date" 
-							className="px-3 py-2 border rounded-lg dark:bg-white/5 dark:border-white/10 dark:text-white" 
+							className="w-full px-3 py-2 border rounded-lg dark:bg-white/5 dark:border-white/10 dark:text-white text-sm" 
 							value={to} 
 							onChange={(e) => setTo(e.target.value)} 
 						/>
 					</div>
-					<div>
+					<div className="flex-1">
 						<label className="block text-sm font-medium mb-1">User Email</label>
 						<input 
 							type="text" 
 							placeholder="Filter by user email" 
-							className="px-3 py-2 border rounded-lg dark:bg-white/5 dark:border-white/10 dark:text-white" 
+							className="w-full px-3 py-2 border rounded-lg dark:bg-white/5 dark:border-white/10 dark:text-white text-sm" 
 							value={userEmail} 
 							onChange={(e) => setUserEmail(e.target.value)} 
 						/>
@@ -192,18 +192,20 @@ export default function RevenuePage() {
 			{/* Campaign Details Table */}
 			{campaigns.length > 0 && (
 				<div className="bg-white dark:bg-[#0E0E10] rounded-lg border border-gray-200 dark:border-white/10">
-					<div className="p-6">
+					<div className="p-4 sm:p-6">
 						<h2 className="text-lg font-semibold mb-4">Campaign Details</h2>
-						<div className="overflow-x-auto">
+						
+						{/* Desktop Table View */}
+						<div className="hidden lg:block overflow-x-auto">
 							<table className="w-full">
 								<thead>
 									<tr className="border-b border-gray-200 dark:border-white/10">
-										<th className="text-left py-3 px-4 font-medium">Campaign</th>
-										<th className="text-left py-3 px-4 font-medium">User Budget</th>
-										<th className="text-left py-3 px-4 font-medium">Ad Spend</th>
-										<th className="text-left py-3 px-4 font-medium">Platform Fee</th>
-										<th className="text-left py-3 px-4 font-medium">Status</th>
-										<th className="text-left py-3 px-4 font-medium">Created</th>
+										<th className="text-left py-3 px-4 font-medium text-sm">Campaign</th>
+										<th className="text-left py-3 px-4 font-medium text-sm">User Budget</th>
+										<th className="text-left py-3 px-4 font-medium text-sm">Ad Spend</th>
+										<th className="text-left py-3 px-4 font-medium text-sm">Platform Fee</th>
+										<th className="text-left py-3 px-4 font-medium text-sm">Status</th>
+										<th className="text-left py-3 px-4 font-medium text-sm">Created</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -217,34 +219,84 @@ export default function RevenuePage() {
 										>
 											<td className="py-3 px-4">
 												<div>
-													<p className="font-medium">{campaign.campaign_name}</p>
-													<p className="text-sm text-gray-500">{campaign.user_email || 'N/A'}</p>
+													<p className="font-medium text-sm">{campaign.campaign_name}</p>
+													<p className="text-xs text-gray-500">{campaign.user_email || 'N/A'}</p>
 												</div>
 											</td>
-											<td className="py-3 px-4">{formatKES(campaign.user_budget)}</td>
-											<td className="py-3 px-4">{formatKES(campaign.ad_spend)}</td>
+											<td className="py-3 px-4 text-sm">{formatKES(campaign.user_budget)}</td>
+											<td className="py-3 px-4 text-sm">{formatKES(campaign.ad_spend)}</td>
 											<td className="py-3 px-4">
-												<span className="text-green-600 font-medium">
+												<span className="text-green-600 font-medium text-sm">
 													{formatKES(campaign.platform_fee)}
 												</span>
 											</td>
 											<td className="py-3 px-4">
 												<span className={`px-2 py-1 rounded-full text-xs font-medium ${
-													campaign.status === 'active' ? 'bg-green-100 text-green-800' :
-													campaign.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-													campaign.status === 'failed' ? 'bg-red-100 text-red-800' :
-													'bg-gray-100 text-gray-800'
+													campaign.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+													campaign.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+													campaign.status === 'failed' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
+													'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
 												}`}>
 													{campaign.status}
 												</span>
 											</td>
-											<td className="py-3 px-4 text-sm text-gray-500">
+											<td className="py-3 px-4 text-xs text-gray-500">
 												{new Date(campaign.created_at).toLocaleDateString()}
 											</td>
 										</motion.tr>
 									))}
 								</tbody>
 							</table>
+						</div>
+
+						{/* Mobile Card View */}
+						<div className="lg:hidden space-y-4">
+							{campaigns.map((campaign, index) => (
+								<motion.div
+									key={campaign.id}
+									className="p-4 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5"
+									initial={{ opacity: 0, y: 20 }}
+									animate={{ opacity: 1, y: 0 }}
+									transition={{ delay: index * 0.1 }}
+								>
+									<div className="space-y-3">
+										<div>
+											<h3 className="font-semibold text-sm mb-1">{campaign.campaign_name}</h3>
+											<p className="text-xs text-gray-500">{campaign.user_email || 'N/A'}</p>
+										</div>
+										<div className="grid grid-cols-2 gap-3 text-sm">
+											<div>
+												<p className="text-xs text-gray-500 mb-1">User Budget</p>
+												<p className="font-medium">{formatKES(campaign.user_budget)}</p>
+											</div>
+											<div>
+												<p className="text-xs text-gray-500 mb-1">Ad Spend</p>
+												<p className="font-medium">{formatKES(campaign.ad_spend)}</p>
+											</div>
+											<div>
+												<p className="text-xs text-gray-500 mb-1">Platform Fee</p>
+												<p className="font-medium text-green-600">{formatKES(campaign.platform_fee)}</p>
+											</div>
+											<div>
+												<p className="text-xs text-gray-500 mb-1">Status</p>
+												<span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+													campaign.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+													campaign.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+													campaign.status === 'failed' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
+													'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+												}`}>
+													{campaign.status}
+												</span>
+											</div>
+										</div>
+										<div className="pt-2 border-t border-gray-200 dark:border-white/10">
+											<p className="text-xs text-gray-500">
+												Created: {new Date(campaign.created_at).toLocaleDateString()}
+											</p>
+										</div>
+									</div>
+								</motion.div>
+							))}
 						</div>
 					</div>
 				</div>

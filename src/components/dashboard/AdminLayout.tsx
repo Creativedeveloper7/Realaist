@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -54,6 +54,17 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth >= 1024;
+  });
+
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   
   // Determine active item based on current route
   const getActiveItem = () => {
@@ -119,50 +130,50 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       isDarkMode ? 'bg-[#111217] text-white' : 'bg-gray-50 text-gray-900'
     }`}>
       {/* Mobile Header */}
-      <div className={`lg:hidden flex items-center justify-between p-4 border-b ${
-        isDarkMode ? 'border-white/10' : 'border-gray-200'
+      <div className={`lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3 border-b backdrop-blur ${
+        isDarkMode ? 'border-white/10 bg-[#111217]/90' : 'border-gray-200 bg-white/90'
       }`}>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setSidebarOpen(true)}
             className={`p-2 rounded-lg ${
               isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'
             }`}
           >
-            <Menu size={24} />
+            <Menu size={22} />
           </button>
+          <div>
+            <p className="text-xs uppercase tracking-wide opacity-70">Realaist</p>
+            <p className="text-base font-semibold">Admin Panel</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
           <motion.button
             onClick={() => navigate('/')}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border transition-colors ${
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border transition-colors text-sm ${
               isDarkMode 
                 ? 'border-white/20 text-white hover:bg-white/10' 
                 : 'border-gray-200 text-gray-700 hover:bg-gray-50'
             }`}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
             <ArrowLeft size={14} />
-            <span className="text-sm">Home</span>
+            Home
           </motion.button>
-          <h1 className="text-xl font-bold">Admin Panel</h1>
-        </div>
-        <div className="flex items-center gap-3">
           <button className={`p-2 rounded-lg relative ${
             isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100'
           }`}>
-            <Bell size={20} />
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+            <Bell size={18} />
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full"></span>
           </button>
-          <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white font-bold">
-            <Shield size={16} />
-          </div>
         </div>
       </div>
 
       <div className="flex">
         {/* Sidebar */}
         <AnimatePresence>
-          {(sidebarOpen || window.innerWidth >= 1024) && (
+          {(sidebarOpen || isDesktop) && (
             <motion.aside
               className={`fixed lg:static inset-y-0 left-0 z-50 w-64 ${
                 isDarkMode ? 'bg-[#0E0E10] border-r border-white/10' : 'bg-white border-r border-gray-200'
@@ -229,7 +240,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         </AnimatePresence>
 
         {/* Main Content */}
-        <div className="flex-1 lg:ml-0">
+        <div className="flex-1 lg:ml-0 flex flex-col">
           {/* Desktop Header */}
           <div className={`hidden lg:flex items-center justify-between p-6 border-b ${
             isDarkMode ? 'border-white/10' : 'border-gray-200'
@@ -267,14 +278,14 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           </div>
 
           {/* Page Content */}
-          <main className="p-6">
+          <main className="flex-1 p-4 sm:p-6 pb-6 lg:pb-8">
             {children}
           </main>
         </div>
       </div>
 
       {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && (
+      {sidebarOpen && !isDesktop && (
         <motion.div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           initial={{ opacity: 0 }}

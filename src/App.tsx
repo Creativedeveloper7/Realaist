@@ -17,6 +17,8 @@ import { Analytics } from './pages/Analytics';
 import { Blogs } from './pages/Blogs';
 import DashboardCampaignAds from './pages/DashboardCampaignAds';
 import { AdminDashboard } from './pages/AdminDashboard';
+import OverviewPage from './pages/admin/OverviewPage';
+import AnalyticsPage from './pages/admin/AnalyticsPage';
 import { AdminLogin } from './pages/AdminLogin';
 import { AdminLayout } from './components/dashboard/AdminLayout';
 import PropertiesPage from './pages/admin/PropertiesPage';
@@ -184,7 +186,7 @@ function AppContent() {
           element={
             <ProtectedRoute requireAdmin={true}>
               <AdminLayout isDarkMode={isDarkMode}>
-                <AdminDashboard isDarkMode={isDarkMode} />
+                <OverviewPage isDarkMode={isDarkMode} />
               </AdminLayout>
             </ProtectedRoute>
           }
@@ -228,7 +230,7 @@ function AppContent() {
           element={
             <ProtectedRoute requireAdmin={true}>
               <AdminLayout isDarkMode={isDarkMode}>
-                <AdminDashboard isDarkMode={isDarkMode} />
+                <AnalyticsPage isDarkMode={isDarkMode} />
               </AdminLayout>
             </ProtectedRoute>
           }
@@ -250,7 +252,7 @@ function AppContent() {
           element={
             <ProtectedRoute requireAdmin={true}>
               <AdminLayout isDarkMode={isDarkMode}>
-                <MessagesPage />
+                <MessagesPage isDarkMode={isDarkMode} />
               </AdminLayout>
             </ProtectedRoute>
           }
