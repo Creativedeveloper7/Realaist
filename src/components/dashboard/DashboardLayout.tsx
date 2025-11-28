@@ -36,7 +36,7 @@ interface NavItem {
 const allNavItems: NavItem[] = [
   { id: 'overview', label: 'Overview', icon: Home, href: '/dashboard' },
   { id: 'properties', label: 'My Properties', icon: Search, href: '/dashboard/properties' },
-  { id: 'scheduled-visits', label: 'Scheduled Visits', icon: MessageSquare, href: '/dashboard/scheduled-visits', badge: 3 },
+  { id: 'scheduled-visits', label: 'Client Data', icon: MessageSquare, href: '/dashboard/scheduled-visits', badge: 3 },
   { id: 'documents', label: 'Documents', icon: FileText, href: '/dashboard/documents' },
   { id: 'blogs', label: 'Blogs', icon: BookOpen, href: '/dashboard/blogs' },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/dashboard/analytics' },
@@ -46,7 +46,7 @@ const allNavItems: NavItem[] = [
 // Navigation items for buyers (investors)
 const buyerNavItems: NavItem[] = [
   { id: 'overview', label: 'Overview', icon: Home, href: '/dashboard' },
-  { id: 'scheduled-visits', label: 'Scheduled Visits', icon: MessageSquare, href: '/dashboard/scheduled-visits', badge: 3 },
+  { id: 'scheduled-visits', label: 'Client Data', icon: MessageSquare, href: '/dashboard/scheduled-visits', badge: 3 },
   { id: 'profile', label: 'Profile', icon: User, href: '/dashboard/profile' },
 ];
 
@@ -54,7 +54,7 @@ const buyerNavItems: NavItem[] = [
 const developerNavItems: NavItem[] = [
   { id: 'overview', label: 'Overview', icon: Home, href: '/dashboard' },
   { id: 'properties', label: 'My Properties', icon: Search, href: '/dashboard/properties' },
-  { id: 'scheduled-visits', label: 'Scheduled Visits', icon: MessageSquare, href: '/dashboard/scheduled-visits', badge: 3 },
+  { id: 'scheduled-visits', label: 'Client Data', icon: MessageSquare, href: '/dashboard/scheduled-visits', badge: 3 },
   { id: 'documents', label: 'Documents', icon: FileText, href: '/dashboard/documents' },
   { id: 'blogs', label: 'Blogs', icon: BookOpen, href: '/dashboard/blogs' },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/dashboard/analytics' },

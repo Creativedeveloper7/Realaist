@@ -123,21 +123,21 @@ export default function ScheduledVisits({ isDarkMode }: ScheduledVisitsProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 pb-6 overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Scheduled Visits</h1>
+          <h1 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Client Data</h1>
           <p className={`${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>Manage property visit requests from potential buyers</p>
         </div>
         
         {/* Status Filter */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {(['all', 'scheduled', 'confirmed', 'completed', 'cancelled'] as const).map((status) => (
             <button
               key={status}
               onClick={() => setSelectedStatus(status)}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+              className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
                 selectedStatus === status
                   ? 'bg-[#C7A667] text-black'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -150,30 +150,30 @@ export default function ScheduledVisits({ isDarkMode }: ScheduledVisitsProps) {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className={`p-4 rounded-lg border ${isDarkMode ? 'bg-[#0E0E10] border-white/10' : 'bg-white border-gray-200'}`}>
-          <div className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{visits.length}</div>
-          <div className={`text-sm ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>Total Visits</div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+        <div className={`p-3 sm:p-4 rounded-lg border ${isDarkMode ? 'bg-[#0E0E10] border-white/10' : 'bg-white border-gray-200'}`}>
+          <div className={`text-xl sm:text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{visits.length}</div>
+          <div className={`text-xs sm:text-sm ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>Total Visits</div>
         </div>
-        <div className={`p-4 rounded-lg border ${isDarkMode ? 'bg-[#0E0E10] border-white/10' : 'bg-white border-gray-200'}`}>
-          <div className="text-2xl font-bold text-blue-600">
+        <div className={`p-3 sm:p-4 rounded-lg border ${isDarkMode ? 'bg-[#0E0E10] border-white/10' : 'bg-white border-gray-200'}`}>
+          <div className="text-xl sm:text-2xl font-bold text-blue-600">
             {visits.filter(v => v.status === 'scheduled').length}
           </div>
-          <div className={`text-sm ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>Scheduled</div>
+          <div className={`text-xs sm:text-sm ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>Scheduled</div>
         </div>
-        <div className={`p-4 rounded-lg border ${isDarkMode ? 'bg-[#0E0E10] border-white/10' : 'bg-white border-gray-200'}`}>
-          <div className="text-2xl font-bold text-green-600">
+        <div className={`p-3 sm:p-4 rounded-lg border ${isDarkMode ? 'bg-[#0E0E10] border-white/10' : 'bg-white border-gray-200'}`}>
+          <div className="text-xl sm:text-2xl font-bold text-green-600">
             {visits.filter(v => v.status === 'confirmed').length}
           </div>
-          <div className={`text-sm ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>Confirmed</div>
+          <div className={`text-xs sm:text-sm ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>Confirmed</div>
         </div>
-        <div className={`p-4 rounded-lg border ${isDarkMode ? 'bg-[#0E0E10] border-white/10' : 'bg-white border-gray-200'}`}>
-          <div className="text-2xl font-bold text-gray-600">
+        <div className={`p-3 sm:p-4 rounded-lg border ${isDarkMode ? 'bg-[#0E0E10] border-white/10' : 'bg-white border-gray-200'}`}>
+          <div className="text-xl sm:text-2xl font-bold text-gray-600">
             {visits.filter(v => v.status === 'completed').length}
           </div>
-          <div className={`text-sm ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>Completed</div>
+          <div className={`text-xs sm:text-sm ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>Completed</div>
         </div>
-          </div>
+      </div>
           
       {/* Visits List */}
       {filteredVisits.length === 0 ? (
@@ -198,87 +198,90 @@ export default function ScheduledVisits({ isDarkMode }: ScheduledVisitsProps) {
               key={visit.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-              className={`rounded-lg border p-6 hover:shadow-md transition-shadow ${
+              className={`rounded-lg border p-3 sm:p-6 hover:shadow-md transition-shadow ${
                 isDarkMode 
                   ? 'bg-[#0E0E10] border-white/10 hover:bg-white/5' 
                   : 'bg-white border-gray-200'
               }`}
             >
-              <div className="flex flex-col lg:flex-row lg:items-start gap-6">
+              <div className="flex flex-col gap-4">
                 {/* Property Info */}
                 <div className="flex-1">
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-start gap-3 sm:gap-4">
                     {visit.property?.images && visit.property.images.length > 0 && (
                       <img
                         src={visit.property.images[0]}
                         alt={visit.property.title}
-                        className="w-20 h-20 rounded-lg object-cover"
+                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-cover flex-shrink-0"
                       />
                     )}
-                    <div className="flex-1">
-                      <h3 className={`text-lg font-semibold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    <div className="flex-1 min-w-0">
+                      <h3 className={`text-base sm:text-lg font-semibold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'} truncate`}>
                         {visit.property?.title || 'Property'}
                       </h3>
-                      <p className={`mb-2 ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>
+                      <p className={`mb-2 text-sm ${isDarkMode ? 'text-white/70' : 'text-gray-600'} truncate`}>
                         {visit.property?.location || 'Location not specified'}
                       </p>
-                      <div className={`flex items-center gap-4 text-sm ${isDarkMode ? 'text-white/50' : 'text-gray-500'}`}>
-                        <span>📅 {formatDate(visit.scheduledDate)}</span>
-                        <span>🕐 {formatTime(visit.scheduledTime)}</span>
+                      <div className={`flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm ${isDarkMode ? 'text-white/50' : 'text-gray-500'}`}>
+                        <span className="whitespace-nowrap">📅 {formatDate(visit.scheduledDate)}</span>
+                        <span className="whitespace-nowrap">🕐 {formatTime(visit.scheduledTime)}</span>
                       </div>
                     </div>
                   </div>
-              </div>
+                </div>
 
-                {/* Buyer Info */}
-                <div className="lg:w-64">
-                  <h4 className={`font-medium mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Contact Details</h4>
-                  <div className="space-y-1 text-sm">
-                    <p className={isDarkMode ? 'text-white' : 'text-gray-900'}>
-                      {visit.buyer ? `${visit.buyer.firstName} ${visit.buyer.lastName}` : 'Unknown Buyer'}
-                    </p>
-                    <p className={isDarkMode ? 'text-white/70' : 'text-gray-600'}>{visit.buyer?.email || 'No email'}</p>
-                    {visit.buyer?.phone && (
-                      <p className={isDarkMode ? 'text-white/70' : 'text-gray-600'}>{visit.buyer.phone}</p>
-                    )}
-              </div>
-            </div>
+                {/* Buyer Info and Actions Row */}
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 border-t pt-4 border-gray-200 dark:border-white/10">
+                  {/* Buyer Info */}
+                  <div className="flex-1 min-w-0">
+                    <h4 className={`font-medium mb-2 text-sm sm:text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Contact Details</h4>
+                    <div className="space-y-1 text-xs sm:text-sm">
+                      <p className={`truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                        {visit.buyer ? `${visit.buyer.firstName} ${visit.buyer.lastName}` : 'Unknown Buyer'}
+                      </p>
+                      <p className={`truncate ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>{visit.buyer?.email || 'No email'}</p>
+                      {visit.buyer?.phone && (
+                        <p className={`truncate ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>{visit.buyer.phone}</p>
+                      )}
+                    </div>
+                  </div>
 
-                {/* Status and Actions */}
-                <div className="lg:w-48">
-                  <div className="flex flex-col gap-3">
-                    <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(visit.status)}`}>
-                      {visit.status.charAt(0).toUpperCase() + visit.status.slice(1)}
-      </div>
-
-                    {visit.status === 'scheduled' && (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleStatusUpdate(visit.id, 'confirmed')}
-                          className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
-                        >
-                          Confirm
-                        </button>
-                        <button
-                          onClick={() => handleStatusUpdate(visit.id, 'cancelled')}
-                          className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
-                        >
-                          Cancel
-                        </button>
+                  {/* Status and Actions */}
+                  <div className="flex-shrink-0">
+                    <div className="flex flex-col gap-3">
+                      <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border w-fit ${getStatusColor(visit.status)}`}>
+                        {visit.status.charAt(0).toUpperCase() + visit.status.slice(1)}
                       </div>
-                    )}
-                    
-                    {visit.status === 'confirmed' && (
-                      <button
-                        onClick={() => handleStatusUpdate(visit.id, 'completed')}
-                        className="px-3 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 transition-colors"
-                      >
-                        Mark Complete
-                      </button>
-                    )}
+
+                      {visit.status === 'scheduled' && (
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <button
+                            onClick={() => handleStatusUpdate(visit.id, 'confirmed')}
+                            className="px-3 py-1.5 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors whitespace-nowrap"
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            onClick={() => handleStatusUpdate(visit.id, 'cancelled')}
+                            className="px-3 py-1.5 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors whitespace-nowrap"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      )}
+                      
+                      {visit.status === 'confirmed' && (
+                        <button
+                          onClick={() => handleStatusUpdate(visit.id, 'completed')}
+                          className="px-3 py-1.5 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 transition-colors whitespace-nowrap w-full sm:w-auto"
+                        >
+                          Mark Complete
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-          </div>
+              </div>
 
               {/* Message */}
               {visit.message && (

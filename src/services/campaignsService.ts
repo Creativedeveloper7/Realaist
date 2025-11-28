@@ -557,6 +557,103 @@ class CampaignsService {
       return { error: 'An unexpected error occurred' };
     }
   }
+
+  // Get Google Ads analytics for a campaign
+  async getCampaignAnalytics(
+    googleAdsCampaignId: string,
+    dateRange?: { startDate?: string; endDate?: string }
+  ): Promise<{ analytics: any | null; error: string | null }> {
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        return { analytics: null, error: 'User not authenticated' };
+      }
+
+      // Get session for Edge Function call
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      let session = sessionData?.session;
+      
+      if (sessionError || !session) {
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError || !refreshData.session) {
+          return { analytics: null, error: 'No valid session found' };
+        }
+        session = refreshData.session;
+      }
+
+      if (!session || !session.access_token) {
+        return { analytics: null, error: 'No valid session token available' };
+      }
+
+      // Get Supabase URL
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl) {
+        return { analytics: null, error: 'Supabase URL not configured' };
+      }
+
+      const functionUrl = `${supabaseUrl}/functions/v1/get-google-ads-analytics`;
+
+      // Prepare request body
+      const requestBody: any = {
+        google_ads_campaign_id: googleAdsCampaignId,
+      };
+
+      if (dateRange) {
+        requestBody.date_range = {
+          start_date: dateRange.startDate,
+          end_date: dateRange.endDate,
+        };
+      }
+
+      // Call Edge Function
+      let response: Response;
+      try {
+        response = await fetch(functionUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+          },
+          body: JSON.stringify(requestBody),
+        });
+      } catch (fetchError: any) {
+        console.error('Fetch error:', fetchError);
+        return { analytics: null, error: `Network error: ${fetchError.message}` };
+      }
+
+      // Parse response
+      let result: any;
+      try {
+        const text = await response.text();
+        if (!text) {
+          return { analytics: null, error: `Empty response from server (status ${response.status})` };
+        }
+        result = JSON.parse(text);
+      } catch (parseError: any) {
+        console.error('Failed to parse response:', parseError);
+        return { analytics: null, error: `Invalid response from server (status ${response.status})` };
+      }
+
+      if (!response.ok) {
+        console.error('Analytics API error:', result);
+        return { 
+          analytics: null, 
+          error: result.error || `Failed to fetch analytics (status ${response.status})` 
+        };
+      }
+
+      if (result.success && result.analytics) {
+        return { analytics: result.analytics, error: null };
+      }
+
+      return { analytics: null, error: 'Invalid response from analytics API' };
+    } catch (error: any) {
+      console.error('Error fetching campaign analytics:', error);
+      return { analytics: null, error: error.message || 'An unexpected error occurred' };
+    }
+  }
 }
 
 export const campaignsService = new CampaignsService();

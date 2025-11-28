@@ -34,6 +34,26 @@ interface Campaign {
 	created_at: string;
 }
 
+interface CampaignAnalytics {
+	campaign_id: string;
+	campaign_name: string;
+	metrics: {
+		impressions: number;
+		clicks: number;
+		cost_micros: number;
+		cost: number;
+		conversions: number;
+		conversion_value: number;
+		ctr: number;
+		average_cpc: number;
+		cpm: number;
+	};
+	date_range?: {
+		start_date?: string;
+		end_date?: string;
+	};
+}
+
 export default function DashboardCampaignAds() {
 	const { user } = useAuth();
 	const [open, setOpen] = useState(false);
@@ -56,6 +76,8 @@ export default function DashboardCampaignAds() {
 	const [submitting, setSubmitting] = useState(false);
 	const [savingDraft, setSavingDraft] = useState(false);
 	const [isPropertySelectorOpen, setIsPropertySelectorOpen] = useState(false);
+	const [campaignAnalytics, setCampaignAnalytics] = useState<{ [key: string]: CampaignAnalytics }>({});
+	const [loadingAnalytics, setLoadingAnalytics] = useState<{ [key: string]: boolean }>({});
 
 	// Load user's campaigns
 	useEffect(() => {
@@ -140,6 +162,47 @@ export default function DashboardCampaignAds() {
 			supabase.removeChannel(channel);
 		};
 	}, [user?.id]);
+
+	// Fetch analytics for campaigns with Google Ads IDs
+	useEffect(() => {
+		const fetchAnalytics = async () => {
+			if (!user?.id || campaigns.length === 0) return;
+
+			// Filter campaigns that have Google Ads IDs and are active
+			const activeGoogleAdsCampaigns = campaigns.filter(
+				(c) => c.google_ads_campaign_id && c.status === 'active' && c.platforms?.includes('google')
+			);
+
+			// Fetch analytics for each campaign
+			for (const campaign of activeGoogleAdsCampaigns) {
+				// Skip if already loading or already loaded
+				if (loadingAnalytics[campaign.id] || campaignAnalytics[campaign.id]) continue;
+
+				setLoadingAnalytics((prev) => ({ ...prev, [campaign.id]: true }));
+
+				try {
+					const { analytics, error } = await campaignsService.getCampaignAnalytics(
+						campaign.google_ads_campaign_id!
+					);
+
+					if (error) {
+						console.error(`Error fetching analytics for campaign ${campaign.id}:`, error);
+					} else if (analytics) {
+						setCampaignAnalytics((prev) => ({
+							...prev,
+							[campaign.id]: analytics,
+						}));
+					}
+				} catch (error) {
+					console.error(`Error fetching analytics for campaign ${campaign.id}:`, error);
+				} finally {
+					setLoadingAnalytics((prev) => ({ ...prev, [campaign.id]: false }));
+				}
+			}
+		};
+
+		fetchAnalytics();
+	}, [campaigns, user?.id]);
 
 	// Load user's properties for creative assets
 	useEffect(() => {
@@ -479,20 +542,20 @@ export default function DashboardCampaignAds() {
 	};
 
 	return (
-		<div className="space-y-6">
+		<div className="space-y-4 sm:space-y-6 pb-6 overflow-x-hidden">
 			{/* Header Section */}
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-3xl font-bold text-gray-900 dark:text-white">Campaign Ads</h1>
-					<p className="text-gray-600 dark:text-gray-400 mt-2">Create and manage your advertising campaigns to reach more customers</p>
+			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+				<div className="min-w-0 flex-1">
+					<h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Campaign Ads</h1>
+					<p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-2">Create and manage your advertising campaigns to reach more customers</p>
 				</div>
 				<motion.button
-					className="px-6 py-3 rounded-lg bg-gradient-to-r from-[#C7A667] to-yellow-600 text-black font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2"
+					className="px-4 sm:px-6 py-2 sm:py-3 rounded-lg bg-gradient-to-r from-[#C7A667] to-yellow-600 text-black font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap"
 					onClick={() => setOpen(true)}
 					whileHover={{ scale: 1.05 }}
 					whileTap={{ scale: 0.98 }}
 				>
-					<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
 					</svg>
 					New Campaign
@@ -500,47 +563,47 @@ export default function DashboardCampaignAds() {
 			</div>
 
 			{/* Stats Cards */}
-			<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-				<div className="bg-white dark:bg-[#0E0E10] rounded-xl border border-gray-200 dark:border-white/10 p-6">
-					<div className="flex items-center justify-between">
-						<div>
-							<p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Campaigns</p>
-							<p className="text-2xl font-bold text-gray-900 dark:text-white">{campaigns.length}</p>
+			<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
+				<div className="bg-white dark:bg-[#0E0E10] rounded-xl border border-gray-200 dark:border-white/10 p-4 sm:p-6">
+					<div className="flex items-center justify-between gap-3">
+						<div className="min-w-0 flex-1">
+							<p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Total Campaigns</p>
+							<p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white truncate">{campaigns.length}</p>
 						</div>
-						<div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-							<svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<div className="p-2 sm:p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex-shrink-0">
+							<svg className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
 							</svg>
 						</div>
 					</div>
 				</div>
 				
-				<div className="bg-white dark:bg-[#0E0E10] rounded-xl border border-gray-200 dark:border-white/10 p-6">
-					<div className="flex items-center justify-between">
-						<div>
-							<p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Campaigns</p>
-							<p className="text-2xl font-bold text-green-600 dark:text-green-400">
+				<div className="bg-white dark:bg-[#0E0E10] rounded-xl border border-gray-200 dark:border-white/10 p-4 sm:p-6">
+					<div className="flex items-center justify-between gap-3">
+						<div className="min-w-0 flex-1">
+							<p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Active Campaigns</p>
+							<p className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400 truncate">
 								{campaigns.filter(c => c.status === 'active').length}
 							</p>
 						</div>
-						<div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-							<svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<div className="p-2 sm:p-3 bg-green-100 dark:bg-green-900/30 rounded-lg flex-shrink-0">
+							<svg className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
 							</svg>
 						</div>
 					</div>
 				</div>
 				
-				<div className="bg-white dark:bg-[#0E0E10] rounded-xl border border-gray-200 dark:border-white/10 p-6">
-					<div className="flex items-center justify-between">
-						<div>
-							<p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Budget</p>
-							<p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+				<div className="bg-white dark:bg-[#0E0E10] rounded-xl border border-gray-200 dark:border-white/10 p-4 sm:p-6 sm:col-span-2 md:col-span-1">
+					<div className="flex items-center justify-between gap-3">
+						<div className="min-w-0 flex-1">
+							<p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Total Budget</p>
+							<p className="text-xl sm:text-2xl font-bold text-purple-600 dark:text-purple-400 truncate">
 								{formatKES(campaigns.reduce((sum, c) => sum + c.user_budget, 0))}
 							</p>
 						</div>
-						<div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-							<svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<div className="p-2 sm:p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex-shrink-0">
+							<svg className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
 							</svg>
 						</div>
@@ -550,10 +613,10 @@ export default function DashboardCampaignAds() {
 
 			{/* Campaigns List */}
 			<div className="bg-white dark:bg-[#0E0E10] rounded-xl border border-gray-200 dark:border-white/10 shadow-sm">
-				<div className="p-6 border-b border-gray-200 dark:border-white/10">
-					<div className="flex items-center justify-between">
-						<h2 className="text-xl font-semibold text-gray-900 dark:text-white">Your Campaigns</h2>
-						<div className="flex items-center gap-2">
+				<div className="p-4 sm:p-6 border-b border-gray-200 dark:border-white/10">
+					<div className="flex items-center justify-between gap-3">
+						<h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">Your Campaigns</h2>
+						<div className="flex items-center gap-2 flex-shrink-0">
 							<button className="p-2 rounded-lg border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
 								<svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
@@ -568,7 +631,7 @@ export default function DashboardCampaignAds() {
 					</div>
 				</div>
 				
-				<div className="p-6">
+				<div className="p-4 sm:p-6">
 					{loading ? (
 						<div className="flex items-center justify-center py-12">
 							<div className="flex flex-col items-center gap-4">
@@ -599,19 +662,19 @@ export default function DashboardCampaignAds() {
 							{campaigns.map((campaign) => (
 								<motion.div 
 									key={campaign.id} 
-									className="p-6 border border-gray-200 dark:border-white/10 rounded-xl hover:shadow-md dark:hover:shadow-lg transition-all duration-300 bg-white dark:bg-[#0E0E10]"
+									className="p-4 sm:p-6 border border-gray-200 dark:border-white/10 rounded-xl hover:shadow-md dark:hover:shadow-lg transition-all duration-300 bg-white dark:bg-[#0E0E10]"
 									initial={{ opacity: 0, y: 20 }}
 									animate={{ opacity: 1, y: 0 }}
 									whileHover={{ scale: 1.02 }}
 								>
-									<div className="flex items-center justify-between">
-										<div className="flex-1">
-											<div className="flex items-center gap-3 mb-2">
-												<h3 className="text-lg font-semibold text-gray-900 dark:text-white">{campaign.campaign_name}</h3>
-												<span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(campaign.status)}`}>
+									<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+										<div className="flex-1 min-w-0">
+											<div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+												<h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate flex-1 min-w-[200px]">{campaign.campaign_name}</h3>
+												<span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusColor(campaign.status)}`}>
 													{campaign.status === 'pending' ? 'Pending Approval' : campaign.status}
 												</span>
-												<span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getPaymentStatusColor(campaign.payment_status)}`}>
+												<span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 whitespace-nowrap ${getPaymentStatusColor(campaign.payment_status)}`}>
 													{campaign.payment_status === 'success' ? (
 														<svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
 															<path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -628,42 +691,152 @@ export default function DashboardCampaignAds() {
 													{getPaymentStatusText(campaign.payment_status)}
 												</span>
 											</div>
-											<div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-2">
-												<span className="flex items-center gap-1">
-													<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2">
+												<span className="flex items-center gap-1 whitespace-nowrap">
+													<svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 														<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
 														<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
 													</svg>
-													{Array.isArray(campaign.target_location) 
-														? campaign.target_location.join(', ') 
-														: campaign.target_location
-													}
+													<span className="truncate max-w-[150px] sm:max-w-none">
+														{Array.isArray(campaign.target_location) 
+															? campaign.target_location.join(', ') 
+															: campaign.target_location
+														}
+													</span>
 												</span>
-												<span className="flex items-center gap-1">
-													<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<span className="flex items-center gap-1 whitespace-nowrap">
+													<svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 														<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
 													</svg>
 													{campaign.target_age_group}
 												</span>
 											</div>
-											<div className="flex items-center gap-6 text-sm">
-												<span className="text-gray-500 dark:text-gray-400">
+											<div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm mb-4">
+												<span className="text-gray-500 dark:text-gray-400 whitespace-nowrap">
 													Budget: <span className="font-semibold text-gray-900 dark:text-white">{formatKES(campaign.user_budget)}</span>
 												</span>
-												<span className="text-gray-500 dark:text-gray-400">
+												<span className="text-gray-500 dark:text-gray-400 whitespace-nowrap">
 													Properties: <span className="font-semibold text-gray-900 dark:text-white">{campaign.property_ids?.length || 0}</span>
 												</span>
-												<span className="text-gray-500 dark:text-gray-400">
+												<span className="text-gray-500 dark:text-gray-400 whitespace-nowrap">
 													Payment: <span className={`font-semibold ${campaign.payment_status === 'success' ? 'text-green-600 dark:text-green-400' : campaign.payment_status === 'failed' ? 'text-red-600 dark:text-red-400' : 'text-yellow-600 dark:text-yellow-400'}`}>
 														{getPaymentStatusText(campaign.payment_status)}
 													</span>
 												</span>
-												<span className="text-gray-500 dark:text-gray-400">
+												<span className="text-gray-500 dark:text-gray-400 whitespace-nowrap">
 													Created: <span className="font-semibold text-gray-900 dark:text-white">{new Date(campaign.created_at).toLocaleDateString()}</span>
 												</span>
 											</div>
+
+											{/* Campaign Analytics Section */}
+											{campaign.status === 'active' && campaign.google_ads_campaign_id && campaign.platforms?.includes('google') && (
+												<div className="mt-4 pt-4 border-t border-gray-200 dark:border-white/10">
+													<div className="flex items-center justify-between mb-3">
+														<h4 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+															<svg className="w-4 h-4 text-[#C7A667]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+															</svg>
+															Campaign Analytics
+														</h4>
+														<button
+															onClick={async () => {
+																if (!campaign.google_ads_campaign_id) return;
+																setLoadingAnalytics((prev) => ({ ...prev, [campaign.id]: true }));
+																try {
+																	const { analytics, error } = await campaignsService.getCampaignAnalytics(
+																		campaign.google_ads_campaign_id
+																	);
+																	if (!error && analytics) {
+																		setCampaignAnalytics((prev) => ({
+																			...prev,
+																			[campaign.id]: analytics,
+																		}));
+																	}
+																} catch (error) {
+																	console.error('Error refreshing analytics:', error);
+																} finally {
+																	setLoadingAnalytics((prev) => ({ ...prev, [campaign.id]: false }));
+																}
+															}}
+															disabled={loadingAnalytics[campaign.id]}
+															className="p-1.5 rounded-lg border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+															title="Refresh analytics"
+														>
+															<svg 
+																className={`w-4 h-4 text-gray-600 dark:text-gray-400 ${loadingAnalytics[campaign.id] ? 'animate-spin' : ''}`} 
+																fill="none" 
+																stroke="currentColor" 
+																viewBox="0 0 24 24"
+															>
+																<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+															</svg>
+														</button>
+													</div>
+													{loadingAnalytics[campaign.id] ? (
+														<div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+															<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#C7A667]"></div>
+															Loading analytics...
+														</div>
+													) : campaignAnalytics[campaign.id] ? (
+														<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-4">
+															<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
+																<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Impressions</p>
+																<p className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white break-words">
+																	{campaignAnalytics[campaign.id].metrics.impressions.toLocaleString()}
+																</p>
+															</div>
+															<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
+																<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Clicks</p>
+																<p className="text-sm sm:text-lg font-bold text-blue-600 dark:text-blue-400 break-words">
+																	{campaignAnalytics[campaign.id].metrics.clicks.toLocaleString()}
+																</p>
+															</div>
+															<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
+																<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">CTR</p>
+																<p className="text-sm sm:text-lg font-bold text-green-600 dark:text-green-400 break-words">
+																	{campaignAnalytics[campaign.id].metrics.ctr.toFixed(2)}%
+																</p>
+															</div>
+															<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
+																<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Spent</p>
+																<p className="text-sm sm:text-lg font-bold text-purple-600 dark:text-purple-400 break-words">
+																	${campaignAnalytics[campaign.id].metrics.cost.toFixed(2)}
+																</p>
+															</div>
+															<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
+																<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Avg. CPC</p>
+																<p className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white break-words">
+																	${campaignAnalytics[campaign.id].metrics.average_cpc.toFixed(2)}
+																</p>
+															</div>
+															<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
+																<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Conversions</p>
+																<p className="text-sm sm:text-lg font-bold text-green-600 dark:text-green-400 break-words">
+																	{campaignAnalytics[campaign.id].metrics.conversions.toLocaleString()}
+																</p>
+															</div>
+															<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
+																<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">CPM</p>
+																<p className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white break-words">
+																	${campaignAnalytics[campaign.id].metrics.cpm.toFixed(2)}
+																</p>
+															</div>
+															<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
+																<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Conversion Value</p>
+																<p className="text-sm sm:text-lg font-bold text-green-600 dark:text-green-400 break-words">
+																	${campaignAnalytics[campaign.id].metrics.conversion_value.toFixed(2)}
+																</p>
+															</div>
+														</div>
+													) : (
+														<div className="text-sm text-gray-500 dark:text-gray-400">
+															No analytics data available yet. Data will appear once the campaign starts receiving traffic.
+														</div>
+													)}
+												</div>
+											)}
 										</div>
-										<div className="flex items-center gap-2">
+										<div className="flex items-center gap-2 flex-shrink-0">
 											<button className="p-2 rounded-lg border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
 												<svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -687,36 +860,36 @@ export default function DashboardCampaignAds() {
 			<AnimatePresence>
 				{open && (
 					<motion.div 
-						className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+						className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4"
 						initial={{ opacity: 0 }}
 						animate={{ opacity: 1 }}
 						exit={{ opacity: 0 }}
 						onClick={() => setOpen(false)}
 					>
 						<motion.div
-							className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-[#0E0E10] border border-gray-200 dark:border-white/10 shadow-2xl"
+							className="w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-2xl bg-white dark:bg-[#0E0E10] border border-gray-200 dark:border-white/10 shadow-2xl"
 							initial={{ scale: 0.95, opacity: 0, y: 20 }}
 							animate={{ scale: 1, opacity: 1, y: 0 }}
 							exit={{ scale: 0.95, opacity: 0, y: 20 }}
 							onClick={(e) => e.stopPropagation()}
 						>
 							{/* Modal Header */}
-							<div className="p-6 border-b border-gray-200 dark:border-white/10">
-								<div className="flex items-center justify-between">
-									<div className="flex items-center gap-3">
-										<div className="p-2 bg-gradient-to-r from-[#C7A667] to-yellow-600 rounded-lg">
-											<svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<div className="p-4 sm:p-6 border-b border-gray-200 dark:border-white/10">
+								<div className="flex items-start sm:items-center justify-between gap-3">
+									<div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+										<div className="p-2 bg-gradient-to-r from-[#C7A667] to-yellow-600 rounded-lg flex-shrink-0">
+											<svg className="w-5 h-5 sm:w-6 sm:h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
 											</svg>
 										</div>
-										<div>
-											<h2 className="text-2xl font-bold text-gray-900 dark:text-white">Create New Campaign</h2>
-											<p className="text-gray-600 dark:text-gray-400">Set up your advertising campaign to reach your target audience</p>
+										<div className="min-w-0 flex-1">
+											<h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Create New Campaign</h2>
+											<p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Set up your advertising campaign to reach your target audience</p>
 										</div>
 									</div>
 									<button
 										onClick={() => setOpen(false)}
-										className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+										className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors flex-shrink-0"
 									>
 										<svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -726,8 +899,8 @@ export default function DashboardCampaignAds() {
 							</div>
 
 							{/* Modal Content */}
-							<div className="p-6">
-								<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+							<div className="p-4 sm:p-6">
+								<div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
 									{/* Left Column */}
 									<div className="space-y-6">
 										{/* Property Selection Section */}

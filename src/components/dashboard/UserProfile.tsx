@@ -98,54 +98,54 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 pb-6 overflow-x-hidden">
       {/* Profile Header */}
       <motion.div
-        className={`p-6 rounded-2xl ${
+        className={`p-4 sm:p-6 rounded-2xl ${
           isDarkMode ? 'bg-[#0E0E10] border border-white/10' : 'bg-white border border-gray-200'
         }`}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="flex items-center gap-6">
-          <div className="relative">
-            <div className="w-24 h-24 bg-[#C7A667] rounded-full flex items-center justify-center text-black font-bold text-2xl">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+          <div className="relative flex-shrink-0 self-center sm:self-auto">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-[#C7A667] rounded-full flex items-center justify-center text-black font-bold text-xl sm:text-2xl">
               {user?.firstName?.[0]}{user?.lastName?.[0]}
             </div>
-            <button className="absolute -bottom-2 -right-2 w-8 h-8 bg-[#C7A667] rounded-full flex items-center justify-center text-black">
-              <Camera size={16} />
+            <button className="absolute -bottom-1 -right-1 sm:-bottom-2 sm:-right-2 w-7 h-7 sm:w-8 sm:h-8 bg-[#C7A667] rounded-full flex items-center justify-center text-black">
+              <Camera size={14} />
             </button>
           </div>
-          <div className="flex-1">
-            <h2 className="text-2xl font-bold mb-1">
+          <div className="flex-1 min-w-0 text-center sm:text-left">
+            <h2 className="text-xl sm:text-2xl font-bold mb-1 truncate">
               {user?.firstName} {user?.lastName}
             </h2>
-            <p className="text-gray-600 mb-2">{user?.email}</p>
+            <p className="text-sm sm:text-base text-gray-600 mb-2 truncate">{user?.email}</p>
             {user?.userType === 'developer' && user?.companyName && (
-              <p className="text-gray-600 mb-2 flex items-center gap-1">
-                <Globe size={16} />
-                {user.companyName}
+              <p className="text-sm sm:text-base text-gray-600 mb-2 flex items-center justify-center sm:justify-start gap-1 truncate">
+                <Globe size={14} className="flex-shrink-0" />
+                <span className="truncate">{user.companyName}</span>
               </p>
             )}
-            <div className="flex items-center gap-4 text-sm text-gray-500">
-              <span className="flex items-center gap-1">
-                <Calendar size={16} />
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500">
+              <span className="flex items-center justify-center sm:justify-start gap-1 whitespace-nowrap">
+                <Calendar size={14} className="flex-shrink-0" />
                 Member since {new Date(user?.createdAt || '').toLocaleDateString()}
               </span>
-              <span className="flex items-center gap-1">
-                <Shield size={16} />
+              <span className="flex items-center justify-center sm:justify-start gap-1 whitespace-nowrap">
+                <Shield size={14} className="flex-shrink-0" />
                 {user?.userType === 'developer' ? 'Developer' : 'Buyer'}
               </span>
               {user?.userType === 'developer' && user?.licenseNumber && (
-                <span className="flex items-center gap-1">
-                  <Shield size={16} />
-                  Business Number: {user.licenseNumber}
+                <span className="flex items-center justify-center sm:justify-start gap-1 truncate">
+                  <Shield size={14} className="flex-shrink-0" />
+                  <span className="truncate">Business Number: {user.licenseNumber}</span>
                 </span>
               )}
             </div>
           </div>
           <motion.button
-            className="px-4 py-2 bg-[#C7A667] text-black rounded-lg font-medium"
+            className="px-4 py-2 bg-[#C7A667] text-black rounded-lg font-medium text-sm sm:text-base whitespace-nowrap self-center sm:self-auto"
             onClick={() => setIsEditing(!isEditing)}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -155,23 +155,23 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Personal Information */}
         <motion.div
-          className={`p-6 rounded-2xl ${
+          className={`p-4 sm:p-6 rounded-2xl ${
             isDarkMode ? 'bg-[#0E0E10] border border-white/10' : 'bg-white border border-gray-200'
           }`}
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <div className="flex items-center gap-2 mb-6">
-            <User className="w-5 h-5 text-[#C7A667]" />
-            <h3 className="text-xl font-bold">Personal Information</h3>
+          <div className="flex items-center gap-2 mb-4 sm:mb-6">
+            <User className="w-4 h-4 sm:w-5 sm:h-5 text-[#C7A667]" />
+            <h3 className="text-lg sm:text-xl font-bold">Personal Information</h3>
           </div>
 
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-3 sm:space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="block text-sm font-medium mb-2">First Name</label>
                 <input
@@ -355,19 +355,19 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
 
         {/* Preferences */}
         <motion.div
-          className={`p-6 rounded-2xl ${
+          className={`p-4 sm:p-6 rounded-2xl ${
             isDarkMode ? 'bg-[#0E0E10] border border-white/10' : 'bg-white border border-gray-200'
           }`}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <div className="flex items-center gap-2 mb-6">
-            <Bell className="w-5 h-5 text-[#C7A667]" />
-            <h3 className="text-xl font-bold">Preferences</h3>
+          <div className="flex items-center gap-2 mb-4 sm:mb-6">
+            <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-[#C7A667]" />
+            <h3 className="text-lg sm:text-xl font-bold">Preferences</h3>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div>
               <label className="flex items-center justify-between">
                 <span className="text-sm font-medium">Email Notifications</span>
@@ -443,34 +443,34 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
 
       {/* Account Security */}
       <motion.div
-        className={`p-6 rounded-2xl ${
+        className={`p-4 sm:p-6 rounded-2xl ${
           isDarkMode ? 'bg-[#0E0E10] border border-white/10' : 'bg-white border border-gray-200'
         }`}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <div className="flex items-center gap-2 mb-6">
-          <Shield className="w-5 h-5 text-[#C7A667]" />
-          <h3 className="text-xl font-bold">Account Security</h3>
+        <div className="flex items-center gap-2 mb-4 sm:mb-6">
+          <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-[#C7A667]" />
+          <h3 className="text-lg sm:text-xl font-bold">Account Security</h3>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <motion.button
-            className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 dark:border-white/20 hover:border-[#C7A667] transition-colors"
+            className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg border border-gray-200 dark:border-white/20 hover:border-[#C7A667] transition-colors text-sm sm:text-base"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <Edit3 className="w-5 h-5 text-[#C7A667]" />
-            <span>Change Password</span>
+            <Edit3 className="w-4 h-4 sm:w-5 sm:h-5 text-[#C7A667] flex-shrink-0" />
+            <span className="truncate">Change Password</span>
           </motion.button>
           <motion.button
-            className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 dark:border-white/20 hover:border-[#C7A667] transition-colors"
+            className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg border border-gray-200 dark:border-white/20 hover:border-[#C7A667] transition-colors text-sm sm:text-base"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <Globe className="w-5 h-5 text-[#C7A667]" />
-            <span>Two-Factor Authentication</span>
+            <Globe className="w-4 h-4 sm:w-5 sm:h-5 text-[#C7A667] flex-shrink-0" />
+            <span className="truncate">Two-Factor Authentication</span>
           </motion.button>
         </div>
       </motion.div>
