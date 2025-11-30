@@ -8,9 +8,9 @@ import { HelpIcon } from '../components/Tooltip';
 import { getFilteredInterests } from '../data/audienceInterests';
 import { propertiesService } from '../services/propertiesService';
 import { campaignsService } from '../services/campaignsService';
-import { initializePayment, openPaystackPopup, isPaymentRequired } from '../services/paymentService';
+import { initializePayment, openPaystackPopup } from '../services/paymentService';
 import { campaignsConfig } from '../config/campaigns';
-import { formatKES, formatKESNumber, MIN_CAMPAIGN_BUDGET } from '../utils/currency';
+import { formatKES } from '../utils/currency';
 import { supabase } from '../lib/supabase';
 
 interface Campaign {
@@ -64,7 +64,7 @@ export default function DashboardCampaignAds() {
 	const [selectedProperties, setSelectedProperties] = useState<any[]>([]);
 	const [form, setForm] = useState<any>({
 		targetLocation: [] as string[],
-		targetAgeGroup: '18-24',
+		targetAgeGroups: ['18-24'] as string[],
 		startDate: '',
 		endDate: '',
 		audienceInterests: [] as string[],
@@ -288,7 +288,12 @@ export default function DashboardCampaignAds() {
 					if (draftAge < sevenDays) {
 						setForm({
 							targetLocation: draftData.targetLocation || [],
-							targetAgeGroup: draftData.targetAgeGroup || '18-24',
+							targetAgeGroups:
+								Array.isArray(draftData.targetAgeGroups) && draftData.targetAgeGroups.length > 0
+									? draftData.targetAgeGroups
+									: draftData.targetAgeGroup
+									? [draftData.targetAgeGroup]
+									: ['18-24'],
 							startDate: draftData.startDate || '',
 							endDate: draftData.endDate || '',
 							audienceInterests: draftData.audienceInterests || [],
@@ -397,16 +402,18 @@ export default function DashboardCampaignAds() {
 		}
 
 		const budget = Number(form.budget);
-		if (!budget || budget < MIN_CAMPAIGN_BUDGET) {
-			alert(`Minimum campaign budget is ${formatKES(MIN_CAMPAIGN_BUDGET)}`);
+		if (!budget || budget <= 0) {
+			alert('Please enter a campaign budget greater than 0');
 			return;
 		}
-		
+
 		setSubmitting(true);
 		
 		const campaignData = {
 			target_location: Array.isArray(form.targetLocation) ? form.targetLocation : [form.targetLocation],
-			target_age_group: form.targetAgeGroup,
+			target_age_group: Array.isArray(form.targetAgeGroups)
+				? form.targetAgeGroups.join(', ')
+				: form.targetAgeGroups || '',
 			duration_start: form.startDate,
 			duration_end: form.endDate,
 			audience_interests: Array.isArray(form.audienceInterests) ? form.audienceInterests : [],
@@ -486,7 +493,7 @@ export default function DashboardCampaignAds() {
 			// Reset form and close modal (but don't reload page - let popup complete)
 			setForm({
 				targetLocation: [],
-				targetAgeGroup: '18-24',
+				targetAgeGroups: ['18-24'],
 				startDate: '',
 				endDate: '',
 				audienceInterests: [],
@@ -1230,33 +1237,57 @@ export default function DashboardCampaignAds() {
 													<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
 												</svg>
 												<label className="text-lg font-semibold text-gray-900 dark:text-white">
-												Target Age Group *
-											</label>
-												<HelpIcon 
+													Target Age Group *
+												</label>
+												<HelpIcon
 													content={
 														<div className="space-y-2">
 															<p className="font-semibold">Demographic targeting</p>
-															<p>Select the age range of your ideal customers. This helps show your ads to people most likely to be interested in your properties.</p>
-															<p className="text-xs text-gray-300">💡 Tip: Consider your property type - luxury properties often target older demographics, while starter homes target younger buyers.</p>
+															<p>Select the age ranges of your ideal customers. This helps show your ads to people most likely to be interested in your properties.</p>
+															<p className="text-xs text-gray-300">💡 Tip: You can pick multiple age brackets if your campaign targets a broader audience.</p>
 														</div>
 													}
 													position="right"
 												/>
 											</div>
 											<p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-												Select the age range of your target audience
+												Select one or more age ranges for your target audience
 											</p>
-											<select 
-												name="targetAgeGroup" 
-												className="w-full px-4 py-3 border border-gray-300 dark:border-white/20 rounded-lg bg-white dark:bg-white/5 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#C7A667] focus:border-transparent transition-colors" 
-												onChange={onChange}
-											>
-												<option value="18-24">18-24 years</option>
-												<option value="25-34">25-34 years</option>
-												<option value="35-44">35-44 years</option>
-												<option value="45-54">45-54 years</option>
-												<option value="55+">55+ years</option>
-											</select>
+											<div className="grid grid-cols-2 gap-2">
+												{[
+													{ value: '18-24', label: '18-24 years' },
+													{ value: '25-34', label: '25-34 years' },
+													{ value: '35-44', label: '35-44 years' },
+													{ value: '45-54', label: '45-54 years' },
+													{ value: '55+', label: '55+ years' },
+												].map((option) => (
+													<label
+														key={option.value}
+														className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 cursor-pointer hover:border-[#C7A667] dark:hover:border-[#C7A667] transition-colors"
+													>
+														<input
+															type="checkbox"
+															className="rounded border-gray-300 dark:border-white/30 text-[#C7A667] focus:ring-[#C7A667]"
+															checked={form.targetAgeGroups?.includes(option.value)}
+															onChange={(e) => {
+																const checked = e.target.checked;
+																setForm((f: any) => {
+																	const current: string[] = Array.isArray(f.targetAgeGroups) ? f.targetAgeGroups : [];
+																	if (checked) {
+																		if (current.includes(option.value)) return f;
+																		return { ...f, targetAgeGroups: [...current, option.value] };
+																	}
+																	return {
+																		...f,
+																		targetAgeGroups: current.filter((v) => v !== option.value),
+																	};
+																});
+															}}
+														/>
+														<span>{option.label}</span>
+													</label>
+												))}
+											</div>
 										</div>
 
 										{/* Audience Interests Section */}
@@ -1266,8 +1297,8 @@ export default function DashboardCampaignAds() {
 													<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
 												</svg>
 												<label className="text-lg font-semibold text-gray-900 dark:text-white">
-												Audience Interests
-											</label>
+													Audience Interests
+												</label>
 												<HelpIcon 
 													content={
 														<div className="space-y-2">
@@ -1301,8 +1332,8 @@ export default function DashboardCampaignAds() {
 													<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
 												</svg>
 												<label className="text-lg font-semibold text-gray-900 dark:text-white">
-												Campaign Duration *
-											</label>
+													Campaign Duration *
+												</label>
 												<HelpIcon 
 													content={
 														<div className="space-y-2">
@@ -1347,20 +1378,22 @@ export default function DashboardCampaignAds() {
 												</svg>
 												<label className="text-lg font-semibold text-gray-900 dark:text-white">
 													Campaign Budget *
-											</label>
+												</label>
 												<HelpIcon 
 													content={
 														<div className="space-y-2">
 															<p className="font-semibold">Budget allocation</p>
-															<p>Set your total campaign budget. This amount will be distributed across your campaign duration and used for ad placements on Google Ads.</p>
-															<p className="text-xs text-gray-300">💡 Tip: Start with a smaller budget to test your targeting, then scale up based on performance. Minimum budget is {formatKES(MIN_CAMPAIGN_BUDGET)}.</p>
+															<p>Set your total campaign budget. This amount will be distributed across your campaign duration and used for ad placements on your selected platforms.</p>
+															<p className="text-xs text-gray-300">
+																💡 Tip: Start with a smaller budget to test your targeting, then scale up based on performance.
+															</p>
 														</div>
 													}
 													position="right"
 												/>
 											</div>
 											<p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-												Set your total campaign budget (minimum {formatKES(MIN_CAMPAIGN_BUDGET)})
+												Set your total campaign budget
 											</p>
 											<div className="relative">
 												<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -1374,127 +1407,86 @@ export default function DashboardCampaignAds() {
 													onChange={onChange} 
 												/>
 											</div>
-											<p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Minimum budget: {formatKES(MIN_CAMPAIGN_BUDGET)}</p>
 										</div>
 
-										{/* Additional Creative Assets Section */}
-										<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-4 border border-gray-200 dark:border-white/10">
-											<div className="flex items-center gap-2 mb-3">
-												<svg className="w-5 h-5 text-[#C7A667]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-												</svg>
-												<label className="text-lg font-semibold text-gray-900 dark:text-white">
-													Additional Creative Assets (Optional)
-											</label>
-														</div>
-											<p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-												Upload custom images or videos to enhance your campaign
-											</p>
-											
-											{/* File Upload */}
-												<div className="border-2 border-dashed border-gray-300 dark:border-white/20 rounded-lg p-4 text-center hover:border-[#C7A667] dark:hover:border-[#C7A667] transition-colors">
-													<svg className="mx-auto h-8 w-8 text-gray-400 dark:text-gray-500 mb-2" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-														<path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-													</svg>
-													<div>
-														<label htmlFor="creative" className="cursor-pointer">
-															<span className="block text-sm font-medium text-gray-900 dark:text-white">
-															Upload custom assets
-															</span>
-															<span className="block text-xs text-gray-500 dark:text-gray-400 mt-1">
-																PNG, JPG, MP4 up to 10MB
-															</span>
-														</label>
-														<input 
-															id="creative"
-															name="creative" 
-															type="file" 
-															accept="image/*,video/*"
-															className="sr-only" 
-															onChange={(e) => setForm((f: any) => ({ ...f, creative: e.target.files?.[0] || null }))} 
-														/>
-												</div>
+										{/* Action Buttons */}
+										<div className="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+											{/* Left side - Save Draft */}
+											<motion.button 
+												className="px-6 py-3 bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-white/20 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 border border-gray-200 dark:border-white/20" 
+												onClick={handleSaveDraft}
+												disabled={savingDraft || submitting}
+												whileHover={{ scale: savingDraft || submitting ? 1 : 1.02 }}
+												whileTap={{ scale: savingDraft || submitting ? 1 : 0.98 }}
+											>
+												{savingDraft ? (
+													<>
+														<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 dark:border-gray-300"></div>
+														Saving Draft...
+													</>
+												) : (
+													<>
+														<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+															<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+														</svg>
+														Save Draft
+													</>
+												)}
+											</motion.button>
+
+											{/* Right side - Cancel and Launch */}
+											<div className="flex gap-3">
+												<button 
+													className="px-6 py-3 border border-gray-300 dark:border-white/20 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
+													onClick={() => setOpen(false)}
+													disabled={submitting || savingDraft}
+												>
+													Cancel
+												</button>
+												
+												<motion.button 
+													className="relative px-8 py-3 bg-gradient-to-r from-[#C7A667] to-yellow-600 text-black font-bold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 overflow-hidden" 
+													onClick={handleLaunch} 
+													disabled={submitting || savingDraft}
+													whileHover={{ 
+														scale: submitting || savingDraft ? 1 : 1.05,
+														boxShadow: submitting || savingDraft ? '0 10px 25px rgba(199, 166, 103, 0.4)' : '0 15px 35px rgba(199, 166, 103, 0.6)'
+													}}
+													whileTap={{ scale: submitting || savingDraft ? 1 : 0.95 }}
+													animate={{
+														boxShadow: submitting || savingDraft ? 
+															'0 10px 25px rgba(199, 166, 103, 0.4)' : 
+															[
+																'0 10px 25px rgba(199, 166, 103, 0.4)',
+																'0 15px 35px rgba(199, 166, 103, 0.6)',
+																'0 10px 25px rgba(199, 166, 103, 0.4)'
+															]
+													}}
+													transition={{
+														duration: 2,
+														repeat: Infinity,
+														ease: "easeInOut"
+													}}
+												>
+													{/* Animated background effect */}
+													<div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-[#C7A667] opacity-0 hover:opacity-20 transition-opacity duration-300"></div>
+													
+												{submitting ? (
+													<>
+															<div className="animate-spin rounded-full h-5 w-5 border-b-2 border-black"></div>
+															<span className="relative z-10">Launching Campaign...</span>
+													</>
+												) : (
+													<>
+															<svg className="w-5 h-5 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+															<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+														</svg>
+															<span className="relative z-10">Launch Campaign</span>
+													</>
+												)}
+											</motion.button>
 											</div>
 										</div>
-									</div>
-								</div>
-
-								{/* Action Buttons */}
-								<div className="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-									{/* Left side - Save Draft */}
-									<motion.button 
-										className="px-6 py-3 bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-white/20 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 border border-gray-200 dark:border-white/20" 
-										onClick={handleSaveDraft}
-										disabled={savingDraft || submitting}
-										whileHover={{ scale: savingDraft || submitting ? 1 : 1.02 }}
-										whileTap={{ scale: savingDraft || submitting ? 1 : 0.98 }}
-									>
-										{savingDraft ? (
-											<>
-												<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 dark:border-gray-300"></div>
-												Saving Draft...
-											</>
-										) : (
-											<>
-												<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-												</svg>
-												Save Draft
-											</>
-										)}
-									</motion.button>
-
-									{/* Right side - Cancel and Launch */}
-									<div className="flex gap-3">
-									<button 
-											className="px-6 py-3 border border-gray-300 dark:border-white/20 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
-										onClick={() => setOpen(false)}
-											disabled={submitting || savingDraft}
-									>
-										Cancel
-								</button>
-										
-									<motion.button 
-											className="relative px-8 py-3 bg-gradient-to-r from-[#C7A667] to-yellow-600 text-black font-bold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 overflow-hidden" 
-										onClick={handleLaunch} 
-											disabled={submitting || savingDraft}
-											whileHover={{ 
-												scale: submitting || savingDraft ? 1 : 1.05,
-												boxShadow: submitting || savingDraft ? '0 10px 25px rgba(199, 166, 103, 0.4)' : '0 15px 35px rgba(199, 166, 103, 0.6)'
-											}}
-											whileTap={{ scale: submitting || savingDraft ? 1 : 0.95 }}
-											animate={{
-												boxShadow: submitting || savingDraft ? 
-													'0 10px 25px rgba(199, 166, 103, 0.4)' : 
-													[
-														'0 10px 25px rgba(199, 166, 103, 0.4)',
-														'0 15px 35px rgba(199, 166, 103, 0.6)',
-														'0 10px 25px rgba(199, 166, 103, 0.4)'
-													]
-											}}
-											transition={{
-												duration: 2,
-												repeat: Infinity,
-												ease: "easeInOut"
-											}}
-										>
-											{/* Animated background effect */}
-											<div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-[#C7A667] opacity-0 hover:opacity-20 transition-opacity duration-300"></div>
-											
-										{submitting ? (
-											<>
-													<div className="animate-spin rounded-full h-5 w-5 border-b-2 border-black"></div>
-													<span className="relative z-10">Launching Campaign...</span>
-											</>
-										) : (
-											<>
-													<svg className="w-5 h-5 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-												</svg>
-													<span className="relative z-10">Launch Campaign</span>
-											</>
-										)}
-									</motion.button>
 									</div>
 								</div>
 							</div>

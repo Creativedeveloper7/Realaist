@@ -1196,21 +1196,13 @@ export default function HousesPage() {
                         </div>
                         <div className="flex items-center gap-4 mb-4">
                           <div className="text-lg font-medium text-[#C7A667]">{house.price}</div>
-                          {house.type === 'Land' && house.landArea ? (
+                          {house.type === 'Land' && house.landArea && (
                             <div className={`text-sm font-medium px-3 py-1 rounded-full border transition-colors duration-300 ${
                               isDarkMode 
                                 ? 'border-white/20 bg-white/5 text-white' 
                                 : 'border-gray-300 bg-gray-100 text-gray-900'
                             }`}>
                               {house.landArea}
-                            </div>
-                          ) : (
-                            <div className={`text-sm font-medium px-3 py-1 rounded-full border transition-colors duration-300 ${
-                              isDarkMode 
-                                ? 'border-white/20 bg-white/5 text-white' 
-                                : 'border-gray-300 bg-gray-100 text-gray-900'
-                            }`}>
-                              Est. Income: KES 350,000/mo
                             </div>
                           )}
                         </div>

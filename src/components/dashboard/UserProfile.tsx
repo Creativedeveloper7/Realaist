@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
@@ -14,6 +14,7 @@ import {
   Globe,
   Shield
 } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 
 interface UserProfileProps {
   isDarkMode: boolean;
@@ -24,6 +25,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
@@ -32,6 +34,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
     companyName: user?.companyName || '',
     licenseNumber: user?.licenseNumber || '',
   });
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [preferences, setPreferences] = useState({
     notifications: user?.preferences?.notifications || true,
     darkMode: user?.preferences?.darkMode || false,
@@ -73,6 +76,57 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
     }
   };
 
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'Please upload an image smaller than 5MB.' });
+      return;
+    }
+
+    try {
+      setIsUploadingAvatar(true);
+      setMessage(null);
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: true,
+      });
+
+      if (uploadError) {
+        console.error('Error uploading avatar:', uploadError);
+        setMessage({ type: 'error', text: 'Failed to upload profile picture. Please try again.' });
+        return;
+      }
+
+      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      const publicUrl = data.publicUrl;
+
+      const result = await updateProfile({ avatarUrl: publicUrl });
+      if (!result.success) {
+        setMessage({ type: 'error', text: result.error || 'Failed to save profile picture.' });
+        return;
+      }
+
+      setMessage({ type: 'success', text: 'Profile picture updated successfully!' });
+      setTimeout(() => setMessage(null), 3000);
+    } catch (error) {
+      console.error('Unexpected error uploading avatar:', error);
+      setMessage({ type: 'error', text: 'Failed to upload profile picture. Please try again.' });
+    } finally {
+      setIsUploadingAvatar(false);
+      // Reset input so the same file can be selected again if needed
+      if (event.target) {
+        event.target.value = '';
+      }
+    }
+  };
+
   const handleSavePreferences = async () => {
     setIsLoading(true);
     try {
@@ -109,12 +163,31 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
       >
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
           <div className="relative flex-shrink-0 self-center sm:self-auto">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-[#C7A667] rounded-full flex items-center justify-center text-black font-bold text-xl sm:text-2xl">
-              {user?.firstName?.[0]}{user?.lastName?.[0]}
-            </div>
-            <button className="absolute -bottom-1 -right-1 sm:-bottom-2 sm:-right-2 w-7 h-7 sm:w-8 sm:h-8 bg-[#C7A667] rounded-full flex items-center justify-center text-black">
+            {user?.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={`${user.firstName} ${user.lastName}`}
+                className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border border-white/10"
+              />
+            ) : (
+              <div className="w-20 h-20 sm:w-24 sm:h-24 bg-[#C7A667] rounded-full flex items-center justify-center text-black font-bold text-xl sm:text-2xl">
+                {user?.firstName?.[0]}{user?.lastName?.[0]}
+              </div>
+            )}
+            <button
+              className="absolute -bottom-1 -right-1 sm:-bottom-2 sm:-right-2 w-7 h-7 sm:w-8 sm:h-8 bg-[#C7A667] rounded-full flex items-center justify-center text-black disabled:opacity-60 disabled:cursor-not-allowed"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploadingAvatar}
+            >
               <Camera size={14} />
             </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarChange}
+            />
           </div>
           <div className="flex-1 min-w-0 text-center sm:text-left">
             <h2 className="text-xl sm:text-2xl font-bold mb-1 truncate">

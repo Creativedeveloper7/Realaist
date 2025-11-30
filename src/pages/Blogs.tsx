@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, 
@@ -15,9 +15,11 @@ import {
   Image as ImageIcon,
   Upload
 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { blogsService, BlogRecord } from '../services/blogsService';
 
 interface Blog {
-  id: number;
+  id: string;
   title: string;
   excerpt: string;
   content: string;
@@ -35,52 +37,49 @@ interface BlogsProps {
 }
 
 export const Blogs: React.FC<BlogsProps> = ({ isDarkMode }) => {
-  const [blogs, setBlogs] = useState<Blog[]>([
-    {
-      id: 1,
-      title: "The Future of Real Estate in Nairobi",
-      excerpt: "Exploring the latest trends and developments in Nairobi's real estate market...",
-      content: "Full blog content here...",
-      author: "John Developer",
-      publishedAt: "2024-01-15",
-      status: "published",
-      tags: ["Real Estate", "Nairobi", "Market Trends"],
-      imageUrl: "/api/placeholder/400/200",
-      views: 1250,
-      likes: 45
-    },
-    {
-      id: 2,
-      title: "Sustainable Building Practices",
-      excerpt: "How modern developers are incorporating eco-friendly practices...",
-      content: "Full blog content here...",
-      author: "John Developer",
-      publishedAt: "2024-01-10",
-      status: "published",
-      tags: ["Sustainability", "Building", "Eco-friendly"],
-      imageUrl: "/api/placeholder/400/200",
-      views: 890,
-      likes: 32
-    },
-    {
-      id: 3,
-      title: "Investment Opportunities in Westlands",
-      excerpt: "A comprehensive guide to investing in Westlands properties...",
-      content: "Full blog content here...",
-      author: "John Developer",
-      publishedAt: "2024-01-05",
-      status: "draft",
-      tags: ["Investment", "Westlands", "Guide"],
-      views: 0,
-      likes: 0
-    }
-  ]);
-
+  const { user } = useAuth();
+  const [blogs, setBlogs] = useState<Blog[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published' | 'archived'>('all');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [editingBlog, setEditingBlog] = useState<Blog | null>(null);
   const [deletingBlog, setDeletingBlog] = useState<Blog | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formState, setFormState] = useState({
+    title: '',
+    excerpt: '',
+    content: '',
+    tags: '',
+    status: 'draft' as 'draft' | 'published' | 'archived',
+    imageUrl: '',
+  });
+
+  useEffect(() => {
+    const loadBlogs = async () => {
+      const { blogs: fetched, error } = await blogsService.getDeveloperBlogs();
+      if (error) {
+        console.error('Error loading blogs:', error);
+        return;
+      }
+      const mapped: Blog[] = fetched.map((b: BlogRecord) => ({
+        id: b.id,
+        title: b.title,
+        excerpt: b.excerpt,
+        content: b.content,
+        author: user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : 'You',
+        publishedAt: b.createdAt,
+        status: b.status,
+        tags: [],
+        imageUrl: b.featuredImage || undefined,
+        views: 0,
+        likes: 0,
+      }));
+      setBlogs(mapped);
+    };
+    if (user?.id) {
+      loadBlogs();
+    }
+  }, [user?.id]);
 
   const filteredBlogs = blogs.filter(blog => {
     const matchesSearch = blog.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -90,13 +89,32 @@ export const Blogs: React.FC<BlogsProps> = ({ isDarkMode }) => {
     return matchesSearch && matchesStatus;
   });
 
-  const handleDeleteBlog = (blogId: number) => {
-    setBlogs(prev => prev.filter(blog => blog.id !== blogId));
-    setDeletingBlog(null);
+  const handleDeleteBlog = async (blog: Blog) => {
+    try {
+      const { error } = await blogsService.deleteBlog(blog.id);
+      if (error) {
+        console.error('Error deleting blog:', error);
+        alert(`Failed to delete blog: ${error}`);
+        return;
+      }
+      setBlogs(prev => prev.filter(b => b.id !== blog.id));
+      setDeletingBlog(null);
+    } catch (err) {
+      console.error('Unexpected error deleting blog:', err);
+      alert('An unexpected error occurred while deleting the blog.');
+    }
   };
 
   const handleEditBlog = (blog: Blog) => {
     setEditingBlog(blog);
+    setFormState({
+      title: blog.title,
+      excerpt: blog.excerpt,
+      content: blog.content,
+      tags: blog.tags.join(', '),
+      status: blog.status,
+      imageUrl: blog.imageUrl || '',
+    });
     setShowUploadModal(true);
   };
 
@@ -120,6 +138,36 @@ export const Blogs: React.FC<BlogsProps> = ({ isDarkMode }) => {
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  const handleCreateOrUpdate = async () => {
+    setIsSaving(true);
+    try {
+      if (editingBlog) {
+        const { error } = await blogsService.updateBlog(editingBlog.id, formState);
+        if (error) {
+          console.error('Error updating blog:', error);
+          alert(`Failed to update blog: ${error}`);
+          return;
+        }
+        setBlogs(prev => prev.map(blog => blog.id === editingBlog.id ? { ...blog, ...formState } : blog));
+      } else {
+        const { blog, error } = await blogsService.createBlog(formState);
+        if (error) {
+          console.error('Error creating blog:', error);
+          alert(`Failed to create blog: ${error}`);
+          return;
+        }
+        setBlogs(prev => [...prev, blog]);
+      }
+      setShowUploadModal(false);
+      setEditingBlog(null);
+    } catch (err) {
+      console.error('Unexpected error creating or updating blog:', err);
+      alert('An unexpected error occurred while creating or updating the blog.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -398,6 +446,8 @@ export const Blogs: React.FC<BlogsProps> = ({ isDarkMode }) => {
                     <input
                       type="text"
                       placeholder="Enter blog title..."
+                      value={formState.title}
+                      onChange={(e) => setFormState(s => ({ ...s, title: e.target.value }))}
                       className={`w-full px-4 py-3 rounded-lg border ${
                         isDarkMode 
                           ? 'bg-white/5 border-white/10 text-white placeholder-gray-400' 
@@ -414,6 +464,8 @@ export const Blogs: React.FC<BlogsProps> = ({ isDarkMode }) => {
                     <textarea
                       placeholder="Enter blog excerpt..."
                       rows={3}
+                      value={formState.excerpt}
+                      onChange={(e) => setFormState(s => ({ ...s, excerpt: e.target.value }))}
                       className={`w-full px-4 py-3 rounded-lg border ${
                         isDarkMode 
                           ? 'bg-white/5 border-white/10 text-white placeholder-gray-400' 
@@ -430,6 +482,8 @@ export const Blogs: React.FC<BlogsProps> = ({ isDarkMode }) => {
                     <textarea
                       placeholder="Write your blog content here..."
                       rows={8}
+                      value={formState.content}
+                      onChange={(e) => setFormState(s => ({ ...s, content: e.target.value }))}
                       className={`w-full px-4 py-3 rounded-lg border ${
                         isDarkMode 
                           ? 'bg-white/5 border-white/10 text-white placeholder-gray-400' 
@@ -446,6 +500,8 @@ export const Blogs: React.FC<BlogsProps> = ({ isDarkMode }) => {
                     <input
                       type="text"
                       placeholder="Enter tags separated by commas..."
+                      value={formState.tags}
+                      onChange={(e) => setFormState(s => ({ ...s, tags: e.target.value }))}
                       className={`w-full px-4 py-3 rounded-lg border ${
                         isDarkMode 
                           ? 'bg-white/5 border-white/10 text-white placeholder-gray-400' 
@@ -478,6 +534,8 @@ export const Blogs: React.FC<BlogsProps> = ({ isDarkMode }) => {
                       Status
                     </label>
                     <select
+                      value={formState.status}
+                      onChange={(e) => setFormState(s => ({ ...s, status: e.target.value }))}
                       className={`w-full px-4 py-3 rounded-lg border ${
                         isDarkMode 
                           ? 'bg-white/5 border-white/10 text-white' 
@@ -494,11 +552,13 @@ export const Blogs: React.FC<BlogsProps> = ({ isDarkMode }) => {
                 {/* Action Buttons */}
                 <div className="flex items-center gap-3 mt-8">
                   <motion.button
-                    className="flex-1 px-6 py-3 bg-[#C7A667] text-black rounded-lg hover:bg-[#B8965A] transition-colors font-medium"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    className="flex-1 px-6 py-3 bg-[#C7A667] text-black rounded-lg hover:bg-[#B8965A] transition-colors font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+                    onClick={handleCreateOrUpdate}
+                    disabled={isSaving}
+                    whileHover={{ scale: isSaving ? 1 : 1.02 }}
+                    whileTap={{ scale: isSaving ? 1 : 0.98 }}
                   >
-                    {editingBlog ? 'Update Blog Post' : 'Create Blog Post'}
+                    {isSaving ? 'Saving...' : editingBlog ? 'Update Blog Post' : 'Create Blog Post'}
                   </motion.button>
                   <button
                     onClick={() => {

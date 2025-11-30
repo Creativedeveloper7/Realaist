@@ -13,7 +13,6 @@ import {
   X,
   Bell,
   MessageSquare,
-  FileText,
   BarChart3,
   BookOpen,
   ArrowLeft,
@@ -37,7 +36,6 @@ const allNavItems: NavItem[] = [
   { id: 'overview', label: 'Overview', icon: Home, href: '/dashboard' },
   { id: 'properties', label: 'My Properties', icon: Search, href: '/dashboard/properties' },
   { id: 'scheduled-visits', label: 'Client Data', icon: MessageSquare, href: '/dashboard/scheduled-visits', badge: 3 },
-  { id: 'documents', label: 'Documents', icon: FileText, href: '/dashboard/documents' },
   { id: 'blogs', label: 'Blogs', icon: BookOpen, href: '/dashboard/blogs' },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/dashboard/analytics' },
   { id: 'profile', label: 'Profile', icon: User, href: '/dashboard/profile' },
@@ -55,7 +53,6 @@ const developerNavItems: NavItem[] = [
   { id: 'overview', label: 'Overview', icon: Home, href: '/dashboard' },
   { id: 'properties', label: 'My Properties', icon: Search, href: '/dashboard/properties' },
   { id: 'scheduled-visits', label: 'Client Data', icon: MessageSquare, href: '/dashboard/scheduled-visits', badge: 3 },
-  { id: 'documents', label: 'Documents', icon: FileText, href: '/dashboard/documents' },
   { id: 'blogs', label: 'Blogs', icon: BookOpen, href: '/dashboard/blogs' },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/dashboard/analytics' },
   { id: 'campaign-ads', label: 'Campaign Ads', icon: Megaphone, href: '/dashboard/campaign-ads' },
@@ -89,7 +86,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     if (path === '/dashboard') return 'overview';
     if (path === '/dashboard/properties') return 'properties';
     if (path === '/dashboard/scheduled-visits') return 'scheduled-visits';
-    if (path === '/dashboard/documents') return 'documents';
     if (path === '/dashboard/analytics') return 'analytics';
     if (path === '/dashboard/campaign-ads') return 'campaign-ads';
     if (path === '/dashboard/profile') return 'profile';

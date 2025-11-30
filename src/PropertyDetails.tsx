@@ -89,6 +89,7 @@ export default function PropertyDetails() {
   const [developerInfoModalOpen, setDeveloperInfoModalOpen] = useState(false);
   const [isSubmittingVisit, setIsSubmittingVisit] = useState(false);
   const [visitSubmissionMessage, setVisitSubmissionMessage] = useState('');
+  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   
   // Helper function to convert database property to display format
   const convertPropertyToDisplay = (dbProperty: Property) => {
@@ -476,10 +477,11 @@ export default function PropertyDetails() {
               key={currentImageIndex}
               src={property.images[currentImageIndex]}
               alt={property.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover cursor-zoom-in"
               initial={{ opacity: 0, scale: 1.1 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5 }}
+              onClick={() => setIsImageViewerOpen(true)}
             />
             
             {/* Overlay */}
@@ -544,7 +546,10 @@ export default function PropertyDetails() {
               {property.images.map((image: string, index: number) => (
                 <button
                   key={index}
-                  onClick={() => goToImage(index)}
+                  onClick={() => {
+                    goToImage(index);
+                    setIsImageViewerOpen(true);
+                  }}
                   className={`w-16 h-12 rounded-lg overflow-hidden border-2 transition-all ${
                     index === currentImageIndex 
                       ? 'border-[#C7A667] scale-110' 
@@ -561,6 +566,39 @@ export default function PropertyDetails() {
             </div>
           </div>
 
+          {/* Fullscreen Image Viewer */}
+          {isImageViewerOpen && property.images && property.images.length > 0 && (
+            <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center">
+              {/* Close Button */}
+              <button
+                className="absolute top-6 right-6 w-10 h-10 rounded-full bg-black/60 border border-white/30 flex items-center justify-center text-white hover:bg-black/80"
+                onClick={() => setIsImageViewerOpen(false)}
+              >
+                <span className="text-xl">×</span>
+              </button>
+
+              {/* Prev / Next */}
+              <button
+                className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/60 border border-white/30 text-white flex items-center justify-center hover:bg-black/80"
+                onClick={prevImage}
+              >
+                ←
+              </button>
+              <button
+                className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/60 border border-white/30 text-white flex items-center justify-center hover:bg-black/80"
+                onClick={nextImage}
+              >
+                →
+              </button>
+
+              {/* Image */}
+              <img
+                src={property.images[currentImageIndex]}
+                alt={property.title}
+                className="max-h-[80vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
+              />
+            </div>
+          )}
           {/* Property Information Section */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="grid md:grid-cols-3 gap-8">

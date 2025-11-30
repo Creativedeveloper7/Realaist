@@ -133,14 +133,18 @@ export const MyProperties: React.FC<MyPropertiesProps> = ({ isDarkMode }) => {
   const confirmDelete = async () => {
     if (deletingProperty) {
       try {
-        // TODO: Implement actual property deletion with Supabase
-        console.log('Deleting property:', deletingProperty.id);
-        // await propertiesService.deleteProperty(deletingProperty.id);
+        const { error } = await propertiesService.deleteProperty(deletingProperty.id);
+        if (error) {
+          console.error('Error deleting property:', error);
+          alert(`Failed to delete property: ${error}`);
+          return;
+        }
+        // Local state will also be updated by the realaist:property-deleted event, but
+        // clear the dialog immediately for better UX.
         setDeletingProperty(null);
-        // Show success message
       } catch (error) {
         console.error('Error deleting property:', error);
-        // Show error message
+        alert('An unexpected error occurred while deleting the property.');
       }
     }
   };

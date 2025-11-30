@@ -12,7 +12,6 @@ import { DeveloperDashboard } from './pages/DeveloperDashboard';
 import { HomePage } from './pages/HomePage';
 import { MyProperties } from './pages/MyProperties';
 import ScheduledVisits from './pages/ScheduledVisits';
-import { Documents } from './pages/Documents';
 import { Analytics } from './pages/Analytics';
 import { Blogs } from './pages/Blogs';
 import DashboardCampaignAds from './pages/DashboardCampaignAds';
@@ -28,6 +27,7 @@ import MessagesPage from './pages/admin/MessagesPage';
 import ReportsPage from './pages/admin/ReportsPage';
 import SettingsPage from './pages/admin/SettingsPage';
 import { default as PublicBlogsPage } from './BlogsPage';
+import BlogDetailsPage from './BlogDetailsPage';
 import PropertyDetails from './PropertyDetails';
 import HousesPage from './HousesPage';
 
@@ -75,6 +75,7 @@ function AppContent() {
         <Route path="/properties" element={<HousesPage />} />
 
         <Route path="/blogs" element={<PublicBlogsPage />} />
+        <Route path="/blog/:blogId" element={<BlogDetailsPage />} />
 
         {/* Admin Login Route */}
         <Route path="/admin/login" element={<AdminLogin isDarkMode={isDarkMode} />} />
@@ -119,17 +120,6 @@ function AppContent() {
             <ProtectedRoute>
               <DashboardLayout isDarkMode={isDarkMode}>
                 <ScheduledVisits isDarkMode={isDarkMode} />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/dashboard/documents"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout isDarkMode={isDarkMode}>
-                <Documents isDarkMode={isDarkMode} />
               </DashboardLayout>
             </ProtectedRoute>
           }
