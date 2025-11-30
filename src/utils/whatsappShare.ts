@@ -76,11 +76,9 @@ export const createWhatsAppShareMessage = (property: PropertyShareData): string 
 
 ${tagline ? `📝 *Description:* ${tagline}` : ''}
 
-🖼️ *Property Image:* ${imageUrl || 'Image available on website'}
-
 🔗 *View Full Details:* ${shortUrl}
 
-*Powered by Realaist - Your Trusted Real Estate Partner*`;
+✳️ *Powered by Realaist - Your Trusted Real Estate Partner*`;
 
   return whatsappMessage;
 };

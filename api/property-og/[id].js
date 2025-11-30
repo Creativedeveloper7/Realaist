@@ -66,7 +66,8 @@ export default async function handler(req, res) {
       images[0] ||
       'https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600';
 
-    const fullUrl = `https://www.realaist.tech/p/${id}`;
+    const ogUrl = `https://www.realaist.tech/p/${id}`;
+    const redirectUrl = `https://www.realaist.tech/property/${id}`;
 
     // 3) HTML with OG tags
     const html = `<!doctype html>
@@ -80,7 +81,7 @@ export default async function handler(req, res) {
     `${description} (${priceText})`
   )}" />
   <meta property="og:image" content="${escapeHtml(imageUrl)}" />
-  <meta property="og:url" content="${escapeHtml(fullUrl)}" />
+  <meta property="og:url" content="${escapeHtml(ogUrl)}" />
   <meta property="og:type" content="website" />
 
   <meta name="twitter:card" content="summary_large_image" />
@@ -92,7 +93,7 @@ export default async function handler(req, res) {
   <p>Redirecting to property...</p>
   <script>
     if (typeof window !== 'undefined') {
-      window.location.href = "${fullUrl}";
+      window.location.href = "${redirectUrl}";
     }
   </script>
 </body>
