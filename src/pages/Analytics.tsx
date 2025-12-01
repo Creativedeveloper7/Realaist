@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useAuth } from '../contexts/AuthContext';
+import { propertiesService } from '../services/propertiesService';
+import { scheduledVisitsService } from '../services/scheduledVisitsService';
 import { 
   BarChart3,
   TrendingUp,
@@ -23,7 +26,7 @@ interface AnalyticsProps {
 }
 
 interface PropertyAnalytics {
-  id: number;
+  id: string;
   title: string;
   location: string;
   price: number;
@@ -32,7 +35,7 @@ interface PropertyAnalytics {
   inquiries: number;
   conversionRate: number;
   avgTimeOnPage: number;
-  status: 'Active' | 'Draft' | 'Sold' | 'Pending';
+  status: string;
   uploadDate: string;
   lastUpdated: string;
 }
@@ -54,119 +57,92 @@ interface LocationAnalytics {
 }
 
 export const Analytics: React.FC<AnalyticsProps> = ({ isDarkMode }) => {
+  const { user } = useAuth();
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
   const [selectedMetric, setSelectedMetric] = useState<'views' | 'visits' | 'inquiries' | 'revenue'>('views');
+  const [propertyAnalytics, setPropertyAnalytics] = useState<PropertyAnalytics[]>([]);
+  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
+  const [locationAnalytics, setLocationAnalytics] = useState<LocationAnalytics[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const propertyAnalytics: PropertyAnalytics[] = [
-    {
-      id: 1,
-      title: 'Luxury Apartments - Westlands',
-      location: 'Westlands, Nairobi',
-      price: 450000,
-      views: 1247,
-      visits: 23,
-      inquiries: 8,
-      conversionRate: 0.64,
-      avgTimeOnPage: 3.2,
-      status: 'Active',
-      uploadDate: '2024-01-01',
-      lastUpdated: '2024-01-15'
-    },
-    {
-      id: 2,
-      title: 'Modern Villas - Karen',
-      location: 'Karen, Nairobi',
-      price: 1200000,
-      views: 892,
-      visits: 15,
-      inquiries: 5,
-      conversionRate: 0.56,
-      avgTimeOnPage: 4.1,
-      status: 'Active',
-      uploadDate: '2024-01-05',
-      lastUpdated: '2024-01-14'
-    },
-    {
-      id: 3,
-      title: 'Townhouses - Runda',
-      location: 'Runda, Nairobi',
-      price: 800000,
-      views: 0,
-      visits: 0,
-      inquiries: 0,
-      conversionRate: 0,
-      avgTimeOnPage: 0,
-      status: 'Draft',
-      uploadDate: '2024-01-10',
-      lastUpdated: '2024-01-12'
-    },
-    {
-      id: 4,
-      title: 'Penthouse Suites - Kilimani',
-      location: 'Kilimani, Nairobi',
-      price: 2500000,
-      views: 2341,
-      visits: 45,
-      inquiries: 15,
-      conversionRate: 0.64,
-      avgTimeOnPage: 5.8,
-      status: 'Sold',
-      uploadDate: '2023-12-15',
-      lastUpdated: '2024-01-10'
-    },
-    {
-      id: 5,
-      title: 'Studio Apartments - CBD',
-      location: 'CBD, Nairobi',
-      price: 180000,
-      views: 567,
-      visits: 12,
-      inquiries: 12,
-      conversionRate: 2.12,
-      avgTimeOnPage: 2.1,
-      status: 'Pending',
-      uploadDate: '2024-01-08',
-      lastUpdated: '2024-01-13'
-    }
-  ];
+  useEffect(() => {
+    const load = async () => {
+      if (!user?.id) {
+        setPropertyAnalytics([]);
+        setMonthlyData([]);
+        setLocationAnalytics([]);
+        return;
+      }
+      setLoading(true);
+      try {
+        const [{ properties }, { visits, error: visitsError }] = await Promise.all([
+          propertiesService.getDeveloperProperties(user.id),
+          scheduledVisitsService.getDeveloperScheduledVisits(user.id),
+        ]);
 
-  const monthlyData: MonthlyData[] = [
-    { month: 'Oct', views: 1200, visits: 25, inquiries: 8, revenue: 450000 },
-    { month: 'Nov', views: 1800, visits: 35, inquiries: 12, revenue: 800000 },
-    { month: 'Dec', views: 2200, visits: 45, inquiries: 18, revenue: 1200000 },
-    { month: 'Jan', views: 2800, visits: 55, inquiries: 22, revenue: 1500000 }
-  ];
+        const safeVisits = visitsError || !visits ? [] : visits;
 
-  const locationAnalytics: LocationAnalytics[] = [
-    {
-      location: 'Westlands',
-      properties: 2,
-      totalViews: 1247,
-      avgPrice: 450000,
-      conversionRate: 0.64
-    },
-    {
-      location: 'Karen',
-      properties: 1,
-      totalViews: 892,
-      avgPrice: 1200000,
-      conversionRate: 0.56
-    },
-    {
-      location: 'Kilimani',
-      properties: 1,
-      totalViews: 2341,
-      avgPrice: 2500000,
-      conversionRate: 0.64
-    },
-    {
-      location: 'CBD',
-      properties: 1,
-      totalViews: 567,
-      avgPrice: 180000,
-      conversionRate: 2.12
-    }
-  ];
+        // Map properties to analytics structure
+        const analytics: PropertyAnalytics[] = properties.map((p) => {
+          const propVisits = safeVisits.filter((v: any) => v.propertyId === p.id || v.property_id === p.id);
+          return {
+            id: p.id,
+            title: p.title,
+            location: p.location || 'Unknown location',
+            price: typeof p.price === 'number' ? p.price : 0,
+            views: 0,
+            visits: propVisits.length,
+            inquiries: 0,
+            conversionRate: propVisits.length > 0 ? 0.5 : 0,
+            avgTimeOnPage: 0,
+            status: (p as any).status || 'Active',
+            uploadDate: p.createdAt,
+            lastUpdated: p.updatedAt,
+          };
+        });
+        setPropertyAnalytics(analytics);
+
+        // Build simple monthly data based on property creation and visits
+        const monthlyMap: Record<string, MonthlyData> = {};
+        analytics.forEach((prop) => {
+          const d = new Date(prop.uploadDate);
+          const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+          if (!monthlyMap[key]) {
+            monthlyMap[key] = { month: key, views: 0, visits: 0, inquiries: 0, revenue: 0 };
+          }
+          monthlyMap[key].revenue += prop.price;
+          monthlyMap[key].visits += prop.visits;
+        });
+        const monthly = Object.values(monthlyMap).sort((a, b) => a.month.localeCompare(b.month));
+        setMonthlyData(monthly);
+
+        // Location analytics grouped by property location
+        const locMap: Record<string, { properties: number; totalViews: number; totalPrice: number }> = {};
+        analytics.forEach((prop) => {
+          const loc = prop.location || 'Unknown';
+          if (!locMap[loc]) {
+            locMap[loc] = { properties: 0, totalViews: 0, totalPrice: 0 };
+          }
+          locMap[loc].properties += 1;
+          locMap[loc].totalViews += prop.views;
+          locMap[loc].totalPrice += prop.price;
+        });
+        const locations: LocationAnalytics[] = Object.entries(locMap).map(([location, stats]) => ({
+          location,
+          properties: stats.properties,
+          totalViews: stats.totalViews,
+          avgPrice: stats.properties > 0 ? stats.totalPrice / stats.properties : 0,
+          conversionRate: 0,
+        }));
+        setLocationAnalytics(locations);
+      } catch (error) {
+        console.error('Error loading analytics data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [user?.id]);
 
   const totalStats = {
     totalProperties: propertyAnalytics.length,
@@ -174,7 +150,10 @@ export const Analytics: React.FC<AnalyticsProps> = ({ isDarkMode }) => {
     totalVisits: propertyAnalytics.reduce((sum, prop) => sum + prop.visits, 0),
     totalInquiries: propertyAnalytics.reduce((sum, prop) => sum + prop.inquiries, 0),
     totalRevenue: propertyAnalytics.reduce((sum, prop) => sum + prop.price, 0),
-    avgConversionRate: propertyAnalytics.reduce((sum, prop) => sum + prop.conversionRate, 0) / propertyAnalytics.length
+    avgConversionRate:
+      propertyAnalytics.length > 0
+        ? propertyAnalytics.reduce((sum, prop) => sum + prop.conversionRate, 0) / propertyAnalytics.length
+        : 0,
   };
 
   const getStatusColor = (status: string) => {
@@ -274,7 +253,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ isDarkMode }) => {
       </motion.div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-3 md:gap-4 lg:gap-6 w-full max-w-full min-w-0">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-3 md:gap-4 lg:gap-6 w-full max-w-full min-w-0">
         {[
           {
             title: 'Total Properties',
@@ -282,13 +261,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ isDarkMode }) => {
             change: '+2',
             icon: Building2,
             color: 'text-blue-500'
-          },
-          {
-            title: 'Total Views',
-            value: formatNumber(totalStats.totalViews),
-            change: '+156',
-            icon: Eye,
-            color: 'text-green-500'
           },
           {
             title: 'Scheduled Visits',

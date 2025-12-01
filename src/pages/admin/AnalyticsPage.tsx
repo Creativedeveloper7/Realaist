@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import { propertiesService } from '../../services/propertiesService';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   LineChart,
   Line,
@@ -66,6 +67,7 @@ interface PropertyTypeDistribution {
 const COLORS = ['#C7A667', '#8B6F47', '#A67C52', '#D4AF37', '#B8860B', '#CD853F', '#DEB887', '#F4A460'];
 
 export default function AnalyticsPage({ isDarkMode }: AnalyticsPageProps) {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<'month' | 'year'>('month');
   const [developerGrowth, setDeveloperGrowth] = useState<DeveloperGrowth[]>([]);
@@ -75,21 +77,37 @@ export default function AnalyticsPage({ isDarkMode }: AnalyticsPageProps) {
   const [propertyTypeDistribution, setPropertyTypeDistribution] = useState<PropertyTypeDistribution[]>([]);
 
   useEffect(() => {
+    if (!user?.id) return;
     loadAnalytics();
-  }, [timeRange]);
+  }, [timeRange, user?.id]);
 
   const loadAnalytics = async () => {
     setLoading(true);
     try {
+      if (!user?.id) {
+        setDeveloperGrowth([]);
+        setPropertyGrowth([]);
+        setTopDevelopers([]);
+        setMostRequestedVisits([]);
+        setPropertyTypeDistribution([]);
+        return;
+      }
       // Load all data in parallel
       const [
         developersData,
         propertiesData,
         visitsData,
       ] = await Promise.all([
-        supabase.from('profiles').select('id, created_at, first_name, last_name, company_name').eq('user_type', 'developer') as any,
-        propertiesService.getPropertiesDirect(),
-        supabase.from('scheduled_visits').select('property_id, created_at') as any,
+        supabase
+          .from('profiles')
+          .select('id, created_at, first_name, last_name, company_name')
+          .eq('user_type', 'developer')
+          .eq('id', user.id) as any,
+        propertiesService.getDeveloperProperties(user.id),
+        supabase
+          .from('scheduled_visits')
+          .select('property_id, developer_id, created_at')
+          .eq('developer_id', user.id) as any,
       ]);
 
       const developers = developersData.data || [];

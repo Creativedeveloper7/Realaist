@@ -258,6 +258,32 @@ class CampaignsService {
     }
   }
 
+  // Delete a campaign owned by the current user
+  async deleteCampaign(id: string): Promise<{ error: string | null }> {
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        return { error: 'User not authenticated' };
+      }
+
+      const { error } = await supabase
+        .from('campaigns')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting campaign:', error);
+        return { error: error.message };
+      }
+
+      return { error: null };
+    } catch (error) {
+      console.error('Error deleting campaign:', error);
+      return { error: 'An unexpected error occurred' };
+    }
+  }
+
   // Admin methods for campaign approval workflow
   async getAllCampaignsForAdmin(): Promise<{ campaigns: Campaign[]; error: string | null }> {
     try {

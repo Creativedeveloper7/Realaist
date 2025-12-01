@@ -78,6 +78,7 @@ export default function DashboardCampaignAds() {
 	const [isPropertySelectorOpen, setIsPropertySelectorOpen] = useState(false);
 	const [campaignAnalytics, setCampaignAnalytics] = useState<{ [key: string]: CampaignAnalytics }>({});
 	const [loadingAnalytics, setLoadingAnalytics] = useState<{ [key: string]: boolean }>({});
+	const [deletingCampaignId, setDeletingCampaignId] = useState<string | null>(null);
 
 	// Load user's campaigns
 	useEffect(() => {
@@ -386,6 +387,32 @@ export default function DashboardCampaignAds() {
 			alert('Failed to save draft. Please try again.');
 		} finally {
 			setSavingDraft(false);
+		}
+	};
+
+	const handleDeleteCampaign = async (campaignId: string) => {
+		if (!campaignId) return;
+
+		const confirmDelete = window.confirm(
+			'Are you sure you want to delete this campaign? This action cannot be undone.'
+		);
+		if (!confirmDelete) return;
+
+		try {
+			setDeletingCampaignId(campaignId);
+			const { error } = await campaignsService.deleteCampaign(campaignId);
+			if (error) {
+				console.error('Error deleting campaign:', error);
+				alert('Failed to delete campaign. Please try again.');
+				return;
+			}
+
+			setCampaigns((prev) => prev.filter((c) => c.id !== campaignId));
+		} catch (err) {
+			console.error('Unexpected error deleting campaign:', err);
+			alert('An unexpected error occurred while deleting the campaign.');
+		} finally {
+			setDeletingCampaignId(null);
 		}
 	};
 
@@ -785,7 +812,7 @@ export default function DashboardCampaignAds() {
 															Loading analytics...
 														</div>
 													) : campaignAnalytics[campaign.id] ? (
-														<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-4">
+														<div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
 															<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
 																<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Impressions</p>
 																<p className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white break-words">
@@ -799,39 +826,9 @@ export default function DashboardCampaignAds() {
 																</p>
 															</div>
 															<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
-																<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">CTR</p>
-																<p className="text-sm sm:text-lg font-bold text-green-600 dark:text-green-400 break-words">
-																	{campaignAnalytics[campaign.id].metrics.ctr.toFixed(2)}%
-																</p>
-															</div>
-															<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
 																<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Spent</p>
 																<p className="text-sm sm:text-lg font-bold text-purple-600 dark:text-purple-400 break-words">
 																	${campaignAnalytics[campaign.id].metrics.cost.toFixed(2)}
-																</p>
-															</div>
-															<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
-																<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Avg. CPC</p>
-																<p className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white break-words">
-																	${campaignAnalytics[campaign.id].metrics.average_cpc.toFixed(2)}
-																</p>
-															</div>
-															<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
-																<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Conversions</p>
-																<p className="text-sm sm:text-lg font-bold text-green-600 dark:text-green-400 break-words">
-																	{campaignAnalytics[campaign.id].metrics.conversions.toLocaleString()}
-																</p>
-															</div>
-															<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
-																<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">CPM</p>
-																<p className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white break-words">
-																	${campaignAnalytics[campaign.id].metrics.cpm.toFixed(2)}
-																</p>
-															</div>
-															<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
-																<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Conversion Value</p>
-																<p className="text-sm sm:text-lg font-bold text-green-600 dark:text-green-400 break-words">
-																	${campaignAnalytics[campaign.id].metrics.conversion_value.toFixed(2)}
 																</p>
 															</div>
 														</div>
@@ -844,16 +841,26 @@ export default function DashboardCampaignAds() {
 											)}
 										</div>
 										<div className="flex items-center gap-2 flex-shrink-0">
-											<button className="p-2 rounded-lg border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-												<svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-													<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+											<button
+												type="button"
+												className="px-3 py-2 rounded-lg border border-red-200 dark:border-red-500/50 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors text-red-700 dark:text-red-300 text-xs sm:text-sm flex items-center gap-1"
+												onClick={() => handleDeleteCampaign(campaign.id)}
+												disabled={deletingCampaignId === campaign.id}
+											>
+												<svg
+													className={`w-4 h-4 ${deletingCampaignId === campaign.id ? 'animate-spin' : ''}`}
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+												>
+													<path
+														strokeLinecap="round"
+														strokeLinejoin="round"
+														strokeWidth={2}
+														d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0h8l-1-3H9l-1 3z"
+													/>
 												</svg>
-											</button>
-											<button className="p-2 rounded-lg border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-												<svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-												</svg>
+												<span>{deletingCampaignId === campaign.id ? 'Deleting...' : 'Delete'}</span>
 											</button>
 										</div>
 									</div>
