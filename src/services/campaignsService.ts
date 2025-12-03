@@ -507,28 +507,22 @@ class CampaignsService {
           }
 
           if (!response.ok) {
-            console.error('Google Ads API error response:', {
+            console.error('Google Ads API error response (non-blocking):', {
               status: response.status,
               statusText: response.statusText,
               result,
             });
-            return { 
-              error: result.error || result.message || `Failed to create Google Ads campaign (status ${response.status}). Please check Google Ads configuration in settings.` 
-            };
-          }
-
-          if (result.success && result.googleAdsCampaignId) {
+            // Do not block campaign approval on Google Ads failure
+          } else if (result.success && result.googleAdsCampaignId) {
             googleAdsCampaignId = result.googleAdsCampaignId;
             console.log('Google Ads campaign created successfully:', googleAdsCampaignId);
           } else {
-            console.warn('Google Ads campaign creation returned unexpected result:', result);
-            return { error: 'Failed to create Google Ads campaign: Invalid response from API' };
+            console.warn('Google Ads campaign creation returned unexpected result (non-blocking):', result);
+            // Also non-blocking: proceed without a Google Ads ID
           }
         } catch (googleAdsError: any) {
-          console.error('Error creating Google Ads campaign:', googleAdsError);
-          return { 
-            error: `Failed to create Google Ads campaign: ${googleAdsError.message || 'Unknown error'}. Please verify Google Ads configuration in admin settings.` 
-          };
+          console.error('Error creating Google Ads campaign (non-blocking):', googleAdsError);
+          // Do not block campaign approval here either
         }
       }
 

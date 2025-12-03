@@ -527,7 +527,7 @@ async function createCampaignAndBudget(
     campaignBudget: actualBudgetResourceName,  // Use actual budget resource name (camelCase)
     name: uniqueCampaignName,  // Unique name with property details and UUID
     advertisingChannelType: "SEARCH",  // Required field (camelCase)
-    status: "PAUSED",
+    status: "ENABLED",
     containsEuPoliticalAdvertising: "DOES_NOT_CONTAIN_EU_POLITICAL_ADVERTISING",  // Required field (camelCase)
     manualCpc: {
       enhancedCpcEnabled: false,
@@ -1105,13 +1105,24 @@ serve(async (req) => {
       );
 
       console.log(`[main] Starting ad groups and ads creation...`);
-      const stats = await createAdGroupsAds(
-        googleAdsConfig,
-        campaignId,
-        properties,
-        audience_interests,
-        accessToken
-      );
+      let stats: any = null;
+      try {
+        stats = await createAdGroupsAds(
+          googleAdsConfig,
+          campaignId,
+          properties,
+          audience_interests,
+          accessToken
+        );
+      } catch (adGroupError: any) {
+        console.error("[main] Ad groups/ads creation failed but campaign was created successfully", {
+          campaignId,
+          budgetId,
+          error: adGroupError?.message,
+          errorStack: adGroupError?.stack,
+        });
+        // Do not rethrow here so that the overall campaign creation can still be treated as success
+      }
 
       console.log(`[main] Campaign creation process completed successfully:`, {
         campaignId,
