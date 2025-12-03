@@ -812,7 +812,7 @@ export default function DashboardCampaignAds() {
 															Loading analytics...
 														</div>
 													) : campaignAnalytics[campaign.id] ? (
-														<div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
+														<div className="grid grid-cols-2 sm:grid-cols-2 gap-2 sm:gap-4">
 															<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
 																<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Impressions</p>
 																<p className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white break-words">
@@ -823,12 +823,6 @@ export default function DashboardCampaignAds() {
 																<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Clicks</p>
 																<p className="text-sm sm:text-lg font-bold text-blue-600 dark:text-blue-400 break-words">
 																	{campaignAnalytics[campaign.id].metrics.clicks.toLocaleString()}
-																</p>
-															</div>
-															<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
-																<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Spent</p>
-																<p className="text-sm sm:text-lg font-bold text-purple-600 dark:text-purple-400 break-words">
-																	${campaignAnalytics[campaign.id].metrics.cost.toFixed(2)}
 																</p>
 															</div>
 														</div>

@@ -56,7 +56,13 @@ export function HowItWorksSection({ isDarkMode, onLoginClick }: HowItWorksSectio
                       STEP {index + 1}
                     </div>
                     <motion.img
-                      src={step.image}
+                      src={
+                        index === 0
+                          ? '/logos/Screen 1.png'
+                          : index === 1
+                            ? '/logos/Screen 2.png'
+                            : '/logos/Screen 3.png'
+                      }
                       alt={step.title}
                       className="w-full h-48 object-cover rounded-xl mb-6"
                       whileHover={{ scale: 1.05 }}
@@ -107,7 +113,13 @@ export function HowItWorksSection({ isDarkMode, onLoginClick }: HowItWorksSectio
                           STEP {index + 1}
                         </div>
                         <motion.img
-                          src={step.image}
+                          src={
+                            index === 0
+                              ? '/screen 1.png'
+                              : index === 1
+                                ? '/screen 2.png'
+                                : '/screen 3.png'
+                          }
                           alt={step.title}
                           className="w-full h-32 object-cover rounded-xl mb-3"
                           whileHover={{ scale: 1.05 }}
