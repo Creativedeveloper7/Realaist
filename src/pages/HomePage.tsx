@@ -1,9 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '../ThemeContext';
 
 // Import data
-import { offPlanProjects, completedProjects } from '../data/projects';
+import { Project } from '../data/projects';
+
+// Import services
+import { propertiesService } from '../services/propertiesService';
+
+// Import Supabase client for direct DB reads
+import { supabase } from '../lib/supabase';
 
 // Import components
 import { FloatingLogo } from '../components/FloatingLogo';
@@ -26,6 +32,98 @@ export const HomePage: React.FC<HomePageProps> = ({ onLoginClick }) => {
   const { isDarkMode, toggleTheme } = useTheme();
   const [consultationModalOpen, setConsultationModalOpen] = useState(false);
   const [themeWidgetOpen, setThemeWidgetOpen] = useState(false);
+  const [offPlanLandProjects, setOffPlanLandProjects] = useState<Project[]>([]);
+  const [completedDbProjects, setCompletedDbProjects] = useState<Project[]>([]);
+
+  useEffect(() => {
+    const fetchLandProperties = async () => {
+      try {
+        const { properties, error } = await propertiesService.getProperties({
+          propertyType: 'Land',
+          status: 'active',
+        });
+
+        if (error) {
+          console.error('Error fetching land properties for homepage:', error);
+        }
+
+        const mappedLandProjects: Project[] = properties.map((p) => ({
+          id: p.id,
+          name: p.title,
+          price: `KSh ${p.price.toLocaleString()}`,
+          location: p.location,
+          summary: p.description,
+          facts: [
+            p.bedrooms ? `${p.bedrooms} Beds` : undefined,
+            p.bathrooms ? `${p.bathrooms} Baths` : undefined,
+            p.squareFeet ? `${p.squareFeet} sq ft` : undefined,
+          ].filter(Boolean) as string[],
+          factLabels: ['Beds', 'Baths', 'Square Feet'],
+          hero:
+            (p.images && p.images.length > 0
+              ? p.images[0]
+              : 'https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600'),
+          gallery: (p.images || []).slice(1, 3),
+        }));
+
+        setOffPlanLandProjects(mappedLandProjects);
+      } catch (err) {
+        console.error('Unexpected error fetching land properties for homepage:', err);
+      }
+    };
+
+    fetchLandProperties();
+  }, []);
+
+  useEffect(() => {
+    const fetchCompletedProperties = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('properties')
+          .select(
+            `id, title, description, price, location, property_type, bedrooms, bathrooms, square_feet, images, status`
+          )
+          .eq('status', 'active')
+          .neq('property_type', 'Land')
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        if (error) {
+          console.error('Error fetching completed properties for homepage (DB):', error.message);
+          setCompletedDbProjects([]);
+          return;
+        }
+
+        const safeData = data || [];
+
+        const mappedCompletedProjects: Project[] = safeData.map((p: any) => ({
+          id: p.id,
+          name: p.title,
+          price: `KSh ${p.price?.toLocaleString()}`,
+          location: p.location,
+          summary: p.description,
+          facts: [
+            p.bedrooms ? `${p.bedrooms} Beds` : undefined,
+            p.bathrooms ? `${p.bathrooms} Baths` : undefined,
+            p.square_feet ? `${p.square_feet} sq ft` : undefined,
+          ].filter(Boolean) as string[],
+          factLabels: ['Beds', 'Baths', 'Square Feet'],
+          hero:
+            (p.images && p.images.length > 0
+              ? p.images[0]
+              : 'https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600'),
+          gallery: (p.images || []).slice(1, 3),
+        }));
+
+        setCompletedDbProjects(mappedCompletedProjects);
+      } catch (err) {
+        console.error('Unexpected error fetching completed properties for homepage (DB):', err);
+        setCompletedDbProjects([]);
+      }
+    };
+
+    fetchCompletedProperties();
+  }, []);
 
   const handleConsultationClick = () => {
     setConsultationModalOpen(true);
@@ -115,15 +213,15 @@ export const HomePage: React.FC<HomePageProps> = ({ onLoginClick }) => {
 
           {/* Off-Plan Properties Carousel */}
           <PropertyCarousel 
-            title="Off-Plan Properties"
-            projects={offPlanProjects}
+            title="Land Properties"
+            projects={offPlanLandProjects}
             isDarkMode={isDarkMode}
           />
 
           {/* Completed Properties Carousel */}
           <PropertyCarousel 
-            title="Completed Properties"
-            projects={completedProjects}
+            title="Available Properties"
+            projects={completedDbProjects}
             isDarkMode={isDarkMode}
           />
 

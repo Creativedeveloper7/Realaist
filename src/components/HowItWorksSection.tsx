@@ -58,10 +58,10 @@ export function HowItWorksSection({ isDarkMode, onLoginClick }: HowItWorksSectio
                     <motion.img
                       src={
                         index === 0
-                          ? '/logos/Screen 1.png'
+                          ? '/logos/Screen 3.png'
                           : index === 1
                             ? '/logos/Screen 2.png'
-                            : '/logos/Screen 3.png'
+                            : '/logos/Screen 1.png'
                       }
                       alt={step.title}
                       className="w-full h-48 object-cover rounded-xl mb-6"
@@ -115,10 +115,10 @@ export function HowItWorksSection({ isDarkMode, onLoginClick }: HowItWorksSectio
                         <motion.img
                           src={
                             index === 0
-                              ? '/screen 1.png'
+                              ? '/logos/Screen 3.png'
                               : index === 1
-                                ? '/screen 2.png'
-                                : '/screen 3.png'
+                                ? '/logos/Screen 2.png'
+                                : '/logos/Screen 1.png'
                           }
                           alt={step.title}
                           className="w-full h-32 object-cover rounded-xl mb-3"

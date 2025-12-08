@@ -72,13 +72,6 @@ export function PropertyCarousel({ title, projects, isDarkMode }: PropertyCarous
                       </div>
                       <div className="flex items-center gap-4 mt-1">
                         <div className="text-lg font-medium text-[#C7A667]">{p.price}</div>
-                        <div className={`text-sm font-medium px-3 py-1 rounded-full border transition-colors duration-300 ${
-                          isDarkMode 
-                            ? 'border-white/20 bg-white/5 text-white' 
-                            : 'border-gray-300 bg-gray-100 text-gray-900'
-                        }`}>
-                          Est. Income: KES 350,000/mo
-                        </div>
                       </div>
                       <p className={`mt-3 text-sm transition-colors duration-300 ${
                         isDarkMode ? 'text-white/70' : 'text-gray-600'
