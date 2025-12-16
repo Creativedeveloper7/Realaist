@@ -12,6 +12,7 @@ import { initializePayment, openPaystackPopup } from '../services/paymentService
 import { campaignsConfig } from '../config/campaigns';
 import { formatKES } from '../utils/currency';
 import { supabase } from '../lib/supabase';
+import { ROIPreview } from '../components/campaigns/ROIPreview';
 
 interface Campaign {
 	id: string;
@@ -34,6 +35,35 @@ interface Campaign {
 	created_at: string;
 }
 
+interface DemographicsData {
+	age_range: string;
+	gender: string;
+	impressions: number;
+	clicks: number;
+	cost_micros: number;
+	conversions: number;
+}
+
+interface GeographyData {
+	country: string;
+	region: string;
+	city: string;
+	impressions: number;
+	clicks: number;
+	cost_micros: number;
+	conversions: number;
+}
+
+interface BudgetUsage {
+	budget_amount_micros: number;
+	budget_amount: number;
+	spent_micros: number;
+	spent: number;
+	remaining_micros: number;
+	remaining: number;
+	usage_percentage: number;
+}
+
 interface CampaignAnalytics {
 	campaign_id: string;
 	campaign_name: string;
@@ -48,6 +78,9 @@ interface CampaignAnalytics {
 		average_cpc: number;
 		cpm: number;
 	};
+	budget_usage?: BudgetUsage;
+	demographics?: DemographicsData[];
+	geography?: GeographyData[];
 	date_range?: {
 		start_date?: string;
 		end_date?: string;
@@ -68,7 +101,7 @@ export default function DashboardCampaignAds() {
 		startDate: '',
 		endDate: '',
 		audienceInterests: [] as string[],
-		budget: '' as any,
+		budget: 50000 as any, // Default to median budget (50,000 KES)
 		creative: null as File | null,
 		propertyIds: [] as string[],
 		platforms: [] as string[]
@@ -321,6 +354,10 @@ export default function DashboardCampaignAds() {
 	const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
 		const { name, value } = e.target;
 		setForm((f: any) => ({ ...f, [name]: value }));
+	};
+
+	const handleBudgetChange = (budget: number) => {
+		setForm((f: any) => ({ ...f, budget: budget }));
 	};
 
 
@@ -827,19 +864,170 @@ export default function DashboardCampaignAds() {
 															Loading analytics...
 														</div>
 													) : campaignAnalytics[campaign.id] ? (
-														<div className="grid grid-cols-2 sm:grid-cols-2 gap-2 sm:gap-4">
-															<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
-																<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Impressions</p>
-																<p className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white break-words">
-																	{campaignAnalytics[campaign.id].metrics.impressions.toLocaleString()}
-																</p>
+														<div className="space-y-4">
+															{/* Core Metrics */}
+															<div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+																<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
+																	<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Impressions</p>
+																	<p className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white break-words">
+																		{campaignAnalytics[campaign.id].metrics.impressions.toLocaleString()}
+																	</p>
+																</div>
+																<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
+																	<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Clicks</p>
+																	<p className="text-sm sm:text-lg font-bold text-blue-600 dark:text-blue-400 break-words">
+																		{campaignAnalytics[campaign.id].metrics.clicks.toLocaleString()}
+																	</p>
+																</div>
+																<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
+																	<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">CTR</p>
+																	<p className="text-sm sm:text-lg font-bold text-green-600 dark:text-green-400 break-words">
+																		{campaignAnalytics[campaign.id].metrics.ctr.toFixed(2)}%
+																	</p>
+																</div>
+																<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
+																	<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Conversions</p>
+																	<p className="text-sm sm:text-lg font-bold text-purple-600 dark:text-purple-400 break-words">
+																		{campaignAnalytics[campaign.id].metrics.conversions.toLocaleString()}
+																	</p>
+																</div>
 															</div>
-															<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
-																<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Clicks</p>
-																<p className="text-sm sm:text-lg font-bold text-blue-600 dark:text-blue-400 break-words">
-																	{campaignAnalytics[campaign.id].metrics.clicks.toLocaleString()}
-																</p>
-															</div>
+
+															{/* Budget Usage */}
+															{campaignAnalytics[campaign.id].budget_usage && (
+																<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-white/10">
+																	<h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+																		<svg className="w-4 h-4 text-[#C7A667]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																			<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+																		</svg>
+																		Budget Usage
+																	</h5>
+																	<div className="space-y-2">
+																		<div className="flex justify-between items-center text-xs sm:text-sm">
+																			<span className="text-gray-600 dark:text-gray-400">Budget Amount:</span>
+																			<span className="font-semibold text-gray-900 dark:text-white">
+																				{formatKES(campaignAnalytics[campaign.id].budget_usage!.budget_amount)}
+																			</span>
+																		</div>
+																		<div className="flex justify-between items-center text-xs sm:text-sm">
+																			<span className="text-gray-600 dark:text-gray-400">Spent:</span>
+																			<span className="font-semibold text-orange-600 dark:text-orange-400">
+																				{formatKES(campaignAnalytics[campaign.id].budget_usage!.spent)}
+																			</span>
+																		</div>
+																		<div className="flex justify-between items-center text-xs sm:text-sm">
+																			<span className="text-gray-600 dark:text-gray-400">Remaining:</span>
+																			<span className="font-semibold text-green-600 dark:text-green-400">
+																				{formatKES(campaignAnalytics[campaign.id].budget_usage!.remaining)}
+																			</span>
+																		</div>
+																		<div className="mt-3">
+																			<div className="flex justify-between items-center mb-1 text-xs sm:text-sm">
+																				<span className="text-gray-600 dark:text-gray-400">Usage:</span>
+																				<span className="font-semibold text-gray-900 dark:text-white">
+																					{campaignAnalytics[campaign.id].budget_usage!.usage_percentage.toFixed(1)}%
+																				</span>
+																			</div>
+																			<div className="w-full bg-gray-200 dark:bg-white/10 rounded-full h-2">
+																				<div
+																					className="bg-[#C7A667] h-2 rounded-full transition-all duration-300"
+																					style={{
+																						width: `${Math.min(100, campaignAnalytics[campaign.id].budget_usage!.usage_percentage)}%`
+																					}}
+																				></div>
+																			</div>
+																		</div>
+																	</div>
+																</div>
+															)}
+
+															{/* Demographics */}
+															{campaignAnalytics[campaign.id].demographics && campaignAnalytics[campaign.id].demographics!.length > 0 && (
+																<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-white/10">
+																	<h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+																		<svg className="w-4 h-4 text-[#C7A667]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																			<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+																		</svg>
+																		Demographics
+																	</h5>
+																	<div className="overflow-x-auto">
+																		<table className="w-full text-xs sm:text-sm">
+																			<thead>
+																				<tr className="border-b border-gray-200 dark:border-white/10">
+																					<th className="text-left py-2 px-2 text-gray-600 dark:text-gray-400 font-semibold">Age Range</th>
+																					<th className="text-left py-2 px-2 text-gray-600 dark:text-gray-400 font-semibold">Gender</th>
+																					<th className="text-right py-2 px-2 text-gray-600 dark:text-gray-400 font-semibold">Impressions</th>
+																					<th className="text-right py-2 px-2 text-gray-600 dark:text-gray-400 font-semibold">Clicks</th>
+																					<th className="text-right py-2 px-2 text-gray-600 dark:text-gray-400 font-semibold">Cost</th>
+																					<th className="text-right py-2 px-2 text-gray-600 dark:text-gray-400 font-semibold">Conversions</th>
+																				</tr>
+																			</thead>
+																			<tbody>
+																				{campaignAnalytics[campaign.id].demographics!.slice(0, 10).map((demo, idx) => (
+																					<tr key={idx} className="border-b border-gray-100 dark:border-white/5">
+																						<td className="py-2 px-2 text-gray-900 dark:text-white">{demo.age_range}</td>
+																						<td className="py-2 px-2 text-gray-900 dark:text-white capitalize">{demo.gender}</td>
+																						<td className="py-2 px-2 text-right text-gray-900 dark:text-white">{demo.impressions.toLocaleString()}</td>
+																						<td className="py-2 px-2 text-right text-blue-600 dark:text-blue-400">{demo.clicks.toLocaleString()}</td>
+																						<td className="py-2 px-2 text-right text-gray-900 dark:text-white">{formatKES(demo.cost_micros / 1000000)}</td>
+																						<td className="py-2 px-2 text-right text-purple-600 dark:text-purple-400">{demo.conversions.toLocaleString()}</td>
+																					</tr>
+																				))}
+																			</tbody>
+																		</table>
+																		{campaignAnalytics[campaign.id].demographics!.length > 10 && (
+																			<p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+																				Showing top 10 of {campaignAnalytics[campaign.id].demographics!.length} demographics
+																			</p>
+																		)}
+																	</div>
+																</div>
+															)}
+
+															{/* Geography */}
+															{campaignAnalytics[campaign.id].geography && campaignAnalytics[campaign.id].geography!.length > 0 && (
+																<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-white/10">
+																	<h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+																		<svg className="w-4 h-4 text-[#C7A667]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																			<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+																		</svg>
+																		Geography
+																	</h5>
+																	<div className="overflow-x-auto">
+																		<table className="w-full text-xs sm:text-sm">
+																			<thead>
+																				<tr className="border-b border-gray-200 dark:border-white/10">
+																					<th className="text-left py-2 px-2 text-gray-600 dark:text-gray-400 font-semibold">Country</th>
+																					<th className="text-left py-2 px-2 text-gray-600 dark:text-gray-400 font-semibold">Region</th>
+																					<th className="text-left py-2 px-2 text-gray-600 dark:text-gray-400 font-semibold">City</th>
+																					<th className="text-right py-2 px-2 text-gray-600 dark:text-gray-400 font-semibold">Impressions</th>
+																					<th className="text-right py-2 px-2 text-gray-600 dark:text-gray-400 font-semibold">Clicks</th>
+																					<th className="text-right py-2 px-2 text-gray-600 dark:text-gray-400 font-semibold">Cost</th>
+																					<th className="text-right py-2 px-2 text-gray-600 dark:text-gray-400 font-semibold">Conversions</th>
+																				</tr>
+																			</thead>
+																			<tbody>
+																				{campaignAnalytics[campaign.id].geography!.slice(0, 10).map((geo, idx) => (
+																					<tr key={idx} className="border-b border-gray-100 dark:border-white/5">
+																						<td className="py-2 px-2 text-gray-900 dark:text-white">{geo.country || 'N/A'}</td>
+																						<td className="py-2 px-2 text-gray-900 dark:text-white">{geo.region || 'N/A'}</td>
+																						<td className="py-2 px-2 text-gray-900 dark:text-white">{geo.city || 'N/A'}</td>
+																						<td className="py-2 px-2 text-right text-gray-900 dark:text-white">{geo.impressions.toLocaleString()}</td>
+																						<td className="py-2 px-2 text-right text-blue-600 dark:text-blue-400">{geo.clicks.toLocaleString()}</td>
+																						<td className="py-2 px-2 text-right text-gray-900 dark:text-white">{formatKES(geo.cost_micros / 1000000)}</td>
+																						<td className="py-2 px-2 text-right text-purple-600 dark:text-purple-400">{geo.conversions.toLocaleString()}</td>
+																					</tr>
+																				))}
+																			</tbody>
+																		</table>
+																		{campaignAnalytics[campaign.id].geography!.length > 10 && (
+																			<p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+																				Showing top 10 of {campaignAnalytics[campaign.id].geography!.length} locations
+																			</p>
+																		)}
+																	</div>
+																</div>
+															)}
 														</div>
 													) : (
 														<div className="text-sm text-gray-500 dark:text-gray-400">
@@ -1386,44 +1574,12 @@ export default function DashboardCampaignAds() {
 											</div>
 										</div>
 
-										{/* Budget Section */}
-										<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-4 border border-gray-200 dark:border-white/10">
-											<div className="flex items-center gap-2 mb-3">
-												<svg className="w-5 h-5 text-[#C7A667]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-												</svg>
-												<label className="text-lg font-semibold text-gray-900 dark:text-white">
-													Campaign Budget *
-												</label>
-												<HelpIcon 
-													content={
-														<div className="space-y-2">
-															<p className="font-semibold">Budget allocation</p>
-															<p>Set your total campaign budget. This amount will be distributed across your campaign duration and used for ad placements on your selected platforms.</p>
-															<p className="text-xs text-gray-300">
-																💡 Tip: Start with a smaller budget to test your targeting, then scale up based on performance.
-															</p>
-														</div>
-													}
-													position="right"
-												/>
-											</div>
-											<p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-												Set your total campaign budget
-											</p>
-											<div className="relative">
-												<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-													<span className="text-gray-500 dark:text-gray-400 sm:text-sm">KES</span>
-												</div>
-												<input 
-													name="budget" 
-													type="number" 
-													placeholder="0.00" 
-													className="w-full pl-16 pr-4 py-3 border border-gray-300 dark:border-white/20 rounded-lg bg-white dark:bg-white/5 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#C7A667] focus:border-transparent transition-colors" 
-													onChange={onChange} 
-												/>
-											</div>
-										</div>
+										{/* Budget Section with ROI Preview */}
+										<ROIPreview
+											budget={form.budget}
+											platforms={form.platforms}
+											onBudgetChange={handleBudgetChange}
+										/>
 
 										{/* Action Buttons */}
 										<div className="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
