@@ -216,6 +216,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onLoginClick }) => {
             title="Land Properties"
             projects={offPlanLandProjects}
             isDarkMode={isDarkMode}
+            showSummary={false}
           />
 
           {/* Completed Properties Carousel */}
@@ -223,6 +224,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onLoginClick }) => {
             title="Available Properties"
             projects={completedDbProjects}
             isDarkMode={isDarkMode}
+            showSummary={false}
           />
 
           {/* Testimonials Section */}

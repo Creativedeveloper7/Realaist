@@ -762,6 +762,21 @@ export default function DashboardCampaignAds() {
 												</span>
 											</div>
 
+											{campaign.payment_status === 'success' && (
+												<div className="mt-2 flex flex-wrap gap-2">
+													<button
+														type="button"
+														className="px-3 py-1.5 rounded-full border border-gray-200 dark:border-white/10 text-xs sm:text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+														onClick={() => {
+															const url = `/campaign-preview?campaign_id=${encodeURIComponent(campaign.id)}`;
+															window.open(url, '_blank', 'noopener,noreferrer');
+														}}
+													>
+														View as buyer
+													</button>
+												</div>
+											)}
+
 											{/* Campaign Analytics Section */}
 											{campaign.status === 'active' && campaign.google_ads_campaign_id && campaign.platforms?.includes('google') && (
 												<div className="mt-4 pt-4 border-t border-gray-200 dark:border-white/10">

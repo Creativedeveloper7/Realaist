@@ -675,7 +675,7 @@ class PropertiesService {
         return { property: null, error: 'User not authenticated' }
       }
 
-      const { data: propertyData, error } = await supabase
+      const { data: inserted, error } = await supabase
         .from('properties')
         .insert({
           title: data.title,
@@ -692,53 +692,24 @@ class PropertiesService {
           amenities: data.amenities || [],
           features: data.features || []
         })
-        .select(`
-          *,
-          developer:profiles!properties_developer_id_fkey(
-            id,
-            first_name,
-            last_name,
-            company_name,
-            phone
-          )
-        `)
+        .select('*')
         .single()
 
-      if (error) {
-        return { property: null, error: error.message }
+      if (error || !inserted) {
+        return { property: null, error: error?.message || 'Failed to create property' }
       }
 
-      const property: Property = {
-        id: propertyData.id,
-        title: propertyData.title,
-        description: propertyData.description,
-        price: propertyData.price,
-        location: propertyData.location,
-        propertyType: propertyData.property_type,
-        bedrooms: propertyData.bedrooms,
-        bathrooms: propertyData.bathrooms,
-        squareFeet: propertyData.square_feet,
-        images: propertyData.images || [],
-        status: propertyData.status,
-        developerId: propertyData.developer_id,
-        developer: propertyData.developer && Array.isArray(propertyData.developer) && propertyData.developer.length > 0 ? {
-          id: propertyData.developer[0].id,
-          firstName: propertyData.developer[0].first_name,
-          lastName: propertyData.developer[0].last_name,
-          companyName: propertyData.developer[0].company_name,
-          phone: propertyData.developer[0].phone
-        } : undefined,
-        createdAt: propertyData.created_at,
-        updatedAt: propertyData.updated_at,
-        amenities: propertyData.amenities || [],
-        features: propertyData.features || []
+      // Reuse existing mapping logic (with developer join and caching)
+      const { property, error: fetchError } = await this.getPropertyById(inserted.id)
+      if (fetchError) {
+        return { property: null, error: fetchError }
       }
 
       // Invalidate caches
       this.clearPropertyCaches()
 
       return { property, error: null }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error creating property:', error)
       // Offline/timeout fallback: create a local property so UI can continue
       try {

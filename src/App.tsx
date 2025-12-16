@@ -30,6 +30,7 @@ import { default as PublicBlogsPage } from './BlogsPage';
 import BlogDetailsPage from './BlogDetailsPage';
 import PropertyDetails from './PropertyDetails';
 import HousesPage from './HousesPage';
+import { CampaignPreview } from './pages/CampaignPreview';
 
 // Import styles
 import './styles/global.css';
@@ -73,6 +74,8 @@ function AppContent() {
         <Route path="/p/:propertyId" element={<PropertyDetails />} />
 
         <Route path="/properties" element={<HousesPage />} />
+
+        <Route path="/campaign-preview" element={<CampaignPreview />} />
 
         <Route path="/blogs" element={<PublicBlogsPage />} />
         <Route path="/blog/:blogId" element={<BlogDetailsPage />} />

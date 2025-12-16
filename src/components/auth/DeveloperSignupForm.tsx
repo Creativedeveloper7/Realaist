@@ -486,11 +486,11 @@ export const DeveloperSignupForm: React.FC<DeveloperSignupFormProps> = ({
         <motion.button 
           type="button"
           onClick={onSwitchToLogin}
-          className="w-full px-6 py-3 rounded-full border transition-colors font-medium ${
+          className={`w-full px-6 py-3 rounded-full border transition-colors font-medium ${
             isDarkMode 
-              ? 'border-white/20 hover:border-[#C7A667] hover:text-[#C7A667]' 
-              : 'border-gray-300 hover:border-[#C7A667] hover:text-[#C7A667]'
-          }"
+              ? 'border-white/20 text-white hover:border-[#C7A667] hover:text-[#C7A667]' 
+              : 'border-gray-300 text-gray-900 hover:border-[#C7A667] hover:text-[#C7A667]'
+          }`}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           disabled={isLoading}

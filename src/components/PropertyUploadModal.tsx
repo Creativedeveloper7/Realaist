@@ -160,14 +160,14 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
   }, [editingProperty, isOpen]);
 
   const propertyTypes = [
-    'Apartment Complex',
-    'Villa Development',
-    'Townhouse Complex',
+    'Apartment',
+    'Villa',
+    'Townhouse',
+    'Mansionette',
     'Penthouse',
-    'Studio Complex',
+    'Studio',
     'Commercial Building',
     'Mixed Use Development',
-    'Off-plan',
     'Land'
   ];
 

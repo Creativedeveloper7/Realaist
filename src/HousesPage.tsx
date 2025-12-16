@@ -353,7 +353,7 @@ export default function HousesPage() {
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
   const propertiesPerPage = 12;
 
-  const propertyTypes = ['All', 'Apartment Complex', 'Villa Development', 'Townhouse Complex', 'Penthouse', 'Studio Complex', 'Commercial Building', 'Mixed Use Development', 'Beach Villas', 'Gated Communities', 'Off-plan', 'Land'];
+  const propertyTypes = ['All', 'Apartment', 'Villa', 'Townhouse', 'Mansionette', 'Penthouse', 'Studio', 'Commercial Building', 'Mixed Use Development', 'Beach Villas', 'Gated Communities', 'Land'];
   const statuses = ['All', 'active', 'sold', 'pending', 'draft'];
   const priceRanges = ['All', 'Under KSh 5M', 'KSh 5M - 10M', 'KSh 10M - 20M', 'KSh 20M - 50M', 'Over KSh 50M'];
   const squareFootage = ['All', 'Under 1,000 sq ft', '1,000 - 2,000 sq ft', '2,000 - 5,000 sq ft', 'Over 5,000 sq ft'];
@@ -617,6 +617,39 @@ export default function HousesPage() {
     if (searchParam) {
       setSearchTerm(searchParam);
     }
+  }, []);
+
+  useEffect(() => {
+    // Keep HousesPage in sync when a property is deleted elsewhere (e.g. developer dashboard)
+    const handlePropertyDeleted = (event: any) => {
+      const id = event?.detail?.id as string | undefined;
+      if (!id) return;
+
+      // Update in-memory list
+      setProperties(prev => {
+        const updated = prev.filter(p => p.id !== id);
+
+        // Also keep localStorage in sync so future loads don't resurrect deleted items
+        try {
+          const stored = localStorage.getItem('realaist_properties');
+          if (stored) {
+            const parsed = JSON.parse(stored) as Property[];
+            const filtered = parsed.filter(p => p.id !== id);
+            localStorage.setItem('realaist_properties', JSON.stringify(filtered));
+            localStorage.setItem('realaist_properties_timestamp', Date.now().toString());
+          }
+        } catch (err) {
+          console.warn('HousesPage: Failed to sync deletion to localStorage', err);
+        }
+
+        return updated;
+      });
+    };
+
+    window.addEventListener('realaist:property-deleted' as any, handlePropertyDeleted);
+    return () => {
+      window.removeEventListener('realaist:property-deleted' as any, handlePropertyDeleted);
+    };
   }, []);
 
   useEffect(() => {

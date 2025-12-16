@@ -11,9 +11,10 @@ interface PropertyCarouselProps {
   title: string;
   projects: Project[];
   isDarkMode: boolean;
+  showSummary?: boolean;
 }
 
-export function PropertyCarousel({ title, projects, isDarkMode }: PropertyCarouselProps) {
+export function PropertyCarousel({ title, projects, isDarkMode, showSummary = true }: PropertyCarouselProps) {
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -73,9 +74,13 @@ export function PropertyCarousel({ title, projects, isDarkMode }: PropertyCarous
                       <div className="flex items-center gap-4 mt-1">
                         <div className="text-lg font-medium text-[#C7A667]">{p.price}</div>
                       </div>
-                      <p className={`mt-3 text-sm transition-colors duration-300 ${
-                        isDarkMode ? 'text-white/70' : 'text-gray-600'
-                      }`}>{p.summary}</p>
+                      {showSummary && (
+                        <p className={`mt-3 text-sm transition-colors duration-300 ${
+                          isDarkMode ? 'text-white/70' : 'text-gray-600'
+                        }`}>
+                          {p.summary}
+                        </p>
+                      )}
                       <div className="mt-4 flex flex-wrap gap-2">
                         {p.facts.map((f, factIndex) => (
                           <span key={`${p.name}-${factIndex}-${f}`} className={`text-xs px-3 py-1 rounded-full border transition-colors duration-300 flex items-center gap-1 ${
