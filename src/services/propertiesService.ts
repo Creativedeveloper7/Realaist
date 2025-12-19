@@ -329,7 +329,12 @@ class PropertiesService {
                 first_name,
                 last_name,
                 company_name,
-                phone
+                phone,
+                website,
+                instagram,
+                x,
+                facebook,
+                logo_url
               )
             `)
             .order('created_at', { ascending: false })
@@ -581,7 +586,12 @@ class PropertiesService {
                 first_name,
                 last_name,
                 company_name,
-                phone
+                phone,
+                website,
+                instagram,
+                x,
+                facebook,
+                logo_url
               )
             `)
             .eq('id', id)
@@ -611,7 +621,12 @@ class PropertiesService {
                 firstName: data.developer[0].first_name,
                 lastName: data.developer[0].last_name,
                 companyName: data.developer[0].company_name,
-                phone: data.developer[0].phone
+                phone: data.developer[0].phone,
+                website: data.developer[0].website,
+                instagram: data.developer[0].instagram,
+                x: data.developer[0].x,
+                facebook: data.developer[0].facebook,
+                logoUrl: data.developer[0].logo_url
               };
             } else if (typeof data.developer === 'object' && data.developer.id) {
               // Object format (from individual property fetch)
@@ -620,7 +635,12 @@ class PropertiesService {
                 firstName: data.developer.first_name,
                 lastName: data.developer.last_name,
                 companyName: data.developer.company_name,
-                phone: data.developer.phone
+                phone: data.developer.phone,
+                website: data.developer.website,
+                instagram: data.developer.instagram,
+                x: data.developer.x,
+                facebook: data.developer.facebook,
+                logoUrl: data.developer.logo_url
               };
             }
           }

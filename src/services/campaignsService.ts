@@ -583,36 +583,52 @@ class CampaignsService {
     googleAdsCampaignId: string,
     dateRange?: { startDate?: string; endDate?: string }
   ): Promise<{ analytics: any | null; error: string | null }> {
+    const startTime = Date.now();
+    console.log('[CampaignsService] Starting analytics fetch:', {
+      googleAdsCampaignId,
+      dateRange,
+      timestamp: new Date().toISOString(),
+    });
+
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) {
+        console.error('[CampaignsService] Authentication failed:', authError);
         return { analytics: null, error: 'User not authenticated' };
       }
+
+      console.log('[CampaignsService] User authenticated:', { userId: user.id, email: user.email });
 
       // Get session for Edge Function call
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       let session = sessionData?.session;
       
       if (sessionError || !session) {
+        console.log('[CampaignsService] No session found, refreshing...');
         const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
         if (refreshError || !refreshData.session) {
+          console.error('[CampaignsService] Session refresh failed:', refreshError);
           return { analytics: null, error: 'No valid session found' };
         }
         session = refreshData.session;
+        console.log('[CampaignsService] Session refreshed successfully');
       }
 
       if (!session || !session.access_token) {
+        console.error('[CampaignsService] No access token available');
         return { analytics: null, error: 'No valid session token available' };
       }
 
       // Get Supabase URL
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       if (!supabaseUrl) {
+        console.error('[CampaignsService] Supabase URL not configured');
         return { analytics: null, error: 'Supabase URL not configured' };
       }
 
       const functionUrl = `${supabaseUrl}/functions/v1/get-google-ads-analytics`;
+      console.log('[CampaignsService] Calling edge function:', functionUrl);
 
       // Prepare request body
       const requestBody: any = {
@@ -626,8 +642,11 @@ class CampaignsService {
         };
       }
 
+      console.log('[CampaignsService] Request body:', JSON.stringify(requestBody));
+
       // Call Edge Function
       let response: Response;
+      const fetchStartTime = Date.now();
       try {
         response = await fetch(functionUrl, {
           method: 'POST',
@@ -638,8 +657,20 @@ class CampaignsService {
           },
           body: JSON.stringify(requestBody),
         });
+        
+        const fetchDuration = Date.now() - fetchStartTime;
+        console.log('[CampaignsService] Edge function response received:', {
+          status: response.status,
+          statusText: response.statusText,
+          duration_ms: fetchDuration,
+        });
       } catch (fetchError: any) {
-        console.error('Fetch error:', fetchError);
+        const fetchDuration = Date.now() - fetchStartTime;
+        console.error('[CampaignsService] Fetch error:', {
+          error: fetchError.message,
+          stack: fetchError.stack,
+          duration_ms: fetchDuration,
+        });
         return { analytics: null, error: `Network error: ${fetchError.message}` };
       }
 
@@ -647,17 +678,33 @@ class CampaignsService {
       let result: any;
       try {
         const text = await response.text();
+        console.log('[CampaignsService] Response text length:', text.length);
+        
         if (!text) {
+          console.error('[CampaignsService] Empty response from server');
           return { analytics: null, error: `Empty response from server (status ${response.status})` };
         }
+        
         result = JSON.parse(text);
+        console.log('[CampaignsService] Response parsed successfully:', {
+          success: result.success,
+          has_analytics: !!result.analytics,
+          has_error: !!result.error,
+        });
       } catch (parseError: any) {
-        console.error('Failed to parse response:', parseError);
+        console.error('[CampaignsService] Failed to parse response:', {
+          error: parseError.message,
+          status: response.status,
+        });
         return { analytics: null, error: `Invalid response from server (status ${response.status})` };
       }
 
       if (!response.ok) {
-        console.error('Analytics API error:', result);
+        console.error('[CampaignsService] Analytics API error:', {
+          status: response.status,
+          error: result.error,
+          details: result.details,
+        });
         return { 
           analytics: null, 
           error: result.error || `Failed to fetch analytics (status ${response.status})` 
@@ -665,12 +712,33 @@ class CampaignsService {
       }
 
       if (result.success && result.analytics) {
+        const totalDuration = Date.now() - startTime;
+        console.log('[CampaignsService] Analytics fetched successfully:', {
+          campaign_id: result.analytics.campaign_id,
+          campaign_name: result.analytics.campaign_name,
+          metrics: {
+            impressions: result.analytics.metrics?.impressions,
+            clicks: result.analytics.metrics?.clicks,
+            cost: result.analytics.metrics?.cost,
+            conversions: result.analytics.metrics?.conversions,
+          },
+          has_budget_usage: !!result.analytics.budget_usage,
+          demographics_count: result.analytics.demographics?.length || 0,
+          geography_count: result.analytics.geography?.length || 0,
+          total_duration_ms: totalDuration,
+        });
         return { analytics: result.analytics, error: null };
       }
 
+      console.error('[CampaignsService] Invalid response structure:', result);
       return { analytics: null, error: 'Invalid response from analytics API' };
     } catch (error: any) {
-      console.error('Error fetching campaign analytics:', error);
+      const totalDuration = Date.now() - startTime;
+      console.error('[CampaignsService] Unexpected error:', {
+        error: error.message,
+        stack: error.stack,
+        duration_ms: totalDuration,
+      });
       return { analytics: null, error: error.message || 'An unexpected error occurred' };
     }
   }

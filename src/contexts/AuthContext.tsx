@@ -13,6 +13,11 @@ export interface User {
   userType: 'buyer' | 'developer' | 'admin';
   companyName?: string;
   licenseNumber?: string;
+  website?: string;
+  instagram?: string;
+  x?: string;
+  facebook?: string;
+  logoUrl?: string;
   preferences: {
     notifications: boolean;
     darkMode: boolean;
@@ -84,6 +89,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       userType: userType as 'buyer' | 'developer' | 'admin',
       companyName: authUser.companyName,
       licenseNumber: authUser.licenseNumber,
+      website: authUser.website,
+      instagram: authUser.instagram,
+      x: authUser.x,
+      facebook: authUser.facebook,
+      logoUrl: authUser.logoUrl,
       preferences: {
         notifications: true,
         darkMode: false,

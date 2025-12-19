@@ -12,7 +12,11 @@ import {
   Camera,
   Bell,
   Globe,
-  Shield
+  Shield,
+  Instagram,
+  Facebook,
+  Twitter,
+  Link as LinkIcon
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
@@ -33,7 +37,13 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
     phone: user?.phone || '',
     companyName: user?.companyName || '',
     licenseNumber: user?.licenseNumber || '',
+    website: user?.website || '',
+    instagram: user?.instagram || '',
+    x: user?.x || '',
+    facebook: user?.facebook || '',
   });
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [preferences, setPreferences] = useState({
     notifications: user?.preferences?.notifications || true,
@@ -51,6 +61,10 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
         phone: user.phone || '',
         companyName: user.companyName || '',
         licenseNumber: user.licenseNumber || '',
+        website: user.website || '',
+        instagram: user.instagram || '',
+        x: user.x || '',
+        facebook: user.facebook || '',
       });
     }
   }, [user]);
@@ -73,6 +87,56 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
       setMessage({ type: 'error', text: 'Failed to update profile. Please try again.' });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleLogoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'Please upload an image smaller than 5MB.' });
+      return;
+    }
+
+    try {
+      setIsUploadingLogo(true);
+      setMessage(null);
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-logo-${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/logos/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage.from('property-images').upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: true,
+      });
+
+      if (uploadError) {
+        console.error('Error uploading logo:', uploadError);
+        setMessage({ type: 'error', text: 'Failed to upload logo. Please try again.' });
+        return;
+      }
+
+      const { data } = supabase.storage.from('property-images').getPublicUrl(filePath);
+      const publicUrl = data.publicUrl;
+
+      const result = await updateProfile({ logoUrl: publicUrl });
+      if (!result.success) {
+        setMessage({ type: 'error', text: result.error || 'Failed to save logo.' });
+        return;
+      }
+
+      setMessage({ type: 'success', text: 'Logo updated successfully!' });
+      setTimeout(() => setMessage(null), 3000);
+    } catch (error) {
+      console.error('Unexpected error uploading logo:', error);
+      setMessage({ type: 'error', text: 'Failed to upload logo. Please try again.' });
+    } finally {
+      setIsUploadingLogo(false);
+      if (event.target) {
+        event.target.value = '';
+      }
     }
   };
 
@@ -379,6 +443,157 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
                             : 'bg-gray-50 border-gray-200 text-gray-500'
                       }`}
                     />
+                  </div>
+                </div>
+
+                {/* Social Links Section */}
+                <div className="mt-6 pt-6 border-t border-white/10 dark:border-gray-200/20">
+                  <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-[#C7A667]" />
+                    Social Links & Branding
+                  </h4>
+                  
+                  <div className="space-y-3 sm:space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Website</label>
+                      <div className="relative">
+                        <LinkIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                          type="url"
+                          name="website"
+                          value={formData.website}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          placeholder="https://yourwebsite.com"
+                          className={`w-full pl-12 pr-4 py-3 rounded-lg border transition-colors ${
+                            isEditing
+                              ? isDarkMode
+                                ? 'bg-white/5 border-white/15 text-white'
+                                : 'bg-white border-gray-300 text-gray-900'
+                              : isDarkMode
+                                ? 'bg-white/5 border-white/10 text-white/70'
+                                : 'bg-gray-50 border-gray-200 text-gray-500'
+                          }`}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Instagram</label>
+                      <div className="relative">
+                        <Instagram className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                          type="url"
+                          name="instagram"
+                          value={formData.instagram}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          placeholder="https://instagram.com/yourprofile"
+                          className={`w-full pl-12 pr-4 py-3 rounded-lg border transition-colors ${
+                            isEditing
+                              ? isDarkMode
+                                ? 'bg-white/5 border-white/15 text-white'
+                                : 'bg-white border-gray-300 text-gray-900'
+                              : isDarkMode
+                                ? 'bg-white/5 border-white/10 text-white/70'
+                                : 'bg-gray-50 border-gray-200 text-gray-500'
+                          }`}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">X (Twitter)</label>
+                      <div className="relative">
+                        <Twitter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                          type="url"
+                          name="x"
+                          value={formData.x}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          placeholder="https://x.com/yourprofile"
+                          className={`w-full pl-12 pr-4 py-3 rounded-lg border transition-colors ${
+                            isEditing
+                              ? isDarkMode
+                                ? 'bg-white/5 border-white/15 text-white'
+                                : 'bg-white border-gray-300 text-gray-900'
+                              : isDarkMode
+                                ? 'bg-white/5 border-white/10 text-white/70'
+                                : 'bg-gray-50 border-gray-200 text-gray-500'
+                          }`}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Facebook</label>
+                      <div className="relative">
+                        <Facebook className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                          type="url"
+                          name="facebook"
+                          value={formData.facebook}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          placeholder="https://facebook.com/yourprofile"
+                          className={`w-full pl-12 pr-4 py-3 rounded-lg border transition-colors ${
+                            isEditing
+                              ? isDarkMode
+                                ? 'bg-white/5 border-white/15 text-white'
+                                : 'bg-white border-gray-300 text-gray-900'
+                              : isDarkMode
+                                ? 'bg-white/5 border-white/10 text-white/70'
+                                : 'bg-gray-50 border-gray-200 text-gray-500'
+                          }`}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Logo Upload */}
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Company Logo</label>
+                      <div className="flex items-center gap-4">
+                        {user?.logoUrl ? (
+                          <img
+                            src={user.logoUrl}
+                            alt="Company Logo"
+                            className="w-20 h-20 object-contain rounded-lg border border-white/10 dark:border-gray-200/20"
+                          />
+                        ) : (
+                          <div className="w-20 h-20 bg-white/5 dark:bg-gray-100 border border-white/10 dark:border-gray-200/20 rounded-lg flex items-center justify-center">
+                            <Globe className="w-8 h-8 text-gray-400" />
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <button
+                            type="button"
+                            onClick={() => logoInputRef.current?.click()}
+                            disabled={!isEditing || isUploadingLogo}
+                            className={`px-4 py-2 rounded-lg border transition-colors text-sm ${
+                              isEditing
+                                ? isDarkMode
+                                  ? 'border-white/20 hover:border-[#C7A667] text-white'
+                                  : 'border-gray-300 hover:border-[#C7A667] text-gray-700'
+                                : isDarkMode
+                                  ? 'border-white/10 text-white/50 cursor-not-allowed'
+                                  : 'border-gray-200 text-gray-400 cursor-not-allowed'
+                            }`}
+                          >
+                            {isUploadingLogo ? 'Uploading...' : user?.logoUrl ? 'Change Logo' : 'Upload Logo'}
+                          </button>
+                          <input
+                            ref={logoInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleLogoChange}
+                            disabled={!isEditing}
+                          />
+                          <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </>

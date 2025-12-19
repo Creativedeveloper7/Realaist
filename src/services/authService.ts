@@ -10,6 +10,11 @@ export interface AuthUser {
   userType: 'buyer' | 'developer' | 'admin'
   companyName?: string
   licenseNumber?: string
+  website?: string
+  instagram?: string
+  x?: string
+  facebook?: string
+  logoUrl?: string
 }
 
 export interface SignUpData {
@@ -162,7 +167,12 @@ class AuthService {
           avatarUrl: profile.avatar_url,
           userType: profile.user_type,
           companyName: profile.company_name,
-          licenseNumber: profile.license_number
+          licenseNumber: profile.license_number,
+          website: profile.website,
+          instagram: profile.instagram,
+          x: profile.x,
+          facebook: profile.facebook,
+          logoUrl: profile.logo_url
         }
 
       } catch (timeoutError) {
@@ -319,7 +329,12 @@ class AuthService {
         avatarUrl: profile.avatar_url,
         userType: profile.user_type,
         companyName: profile.company_name,
-        licenseNumber: profile.license_number
+        licenseNumber: profile.license_number,
+        website: profile.website,
+        instagram: profile.instagram,
+        x: profile.x,
+        facebook: profile.facebook,
+        logoUrl: profile.logo_url
       }
 
       return { user: authUser, error: null }
@@ -417,7 +432,12 @@ class AuthService {
             avatarUrl: newProfile.avatar_url,
             userType: newProfile.user_type,
             companyName: newProfile.company_name,
-            licenseNumber: newProfile.license_number
+            licenseNumber: newProfile.license_number,
+            website: newProfile.website,
+            instagram: newProfile.instagram,
+            x: newProfile.x,
+            facebook: newProfile.facebook,
+            logoUrl: newProfile.logo_url
           },
           error: null
         }
@@ -433,7 +453,12 @@ class AuthService {
           avatarUrl: profile.avatar_url,
           userType: profile.user_type,
           companyName: profile.company_name,
-          licenseNumber: profile.license_number
+          licenseNumber: profile.license_number,
+          website: profile.website,
+          instagram: profile.instagram,
+          x: profile.x,
+          facebook: profile.facebook,
+          logoUrl: profile.logo_url
         },
         error: null
       }
@@ -521,6 +546,11 @@ class AuthService {
           avatar_url: updates.avatarUrl,
           company_name: updates.companyName,
           license_number: updates.licenseNumber,
+          website: updates.website,
+          instagram: updates.instagram,
+          x: updates.x,
+          facebook: updates.facebook,
+          logo_url: updates.logoUrl,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id)
@@ -540,7 +570,12 @@ class AuthService {
         avatarUrl: profile.avatar_url,
         userType: profile.user_type,
         companyName: profile.company_name,
-        licenseNumber: profile.license_number
+        licenseNumber: profile.license_number,
+        website: profile.website,
+        instagram: profile.instagram,
+        x: profile.x,
+        facebook: profile.facebook,
+        logoUrl: profile.logo_url
       }
 
       return { user: authUser, error: null }

@@ -867,18 +867,18 @@ export default function DashboardCampaignAds() {
 														<div className="space-y-4">
 															{/* Core Metrics */}
 															<div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-																<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
-																	<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Impressions</p>
-																	<p className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white break-words">
-																		{campaignAnalytics[campaign.id].metrics.impressions.toLocaleString()}
-																	</p>
-																</div>
-																<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
-																	<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Clicks</p>
-																	<p className="text-sm sm:text-lg font-bold text-blue-600 dark:text-blue-400 break-words">
-																		{campaignAnalytics[campaign.id].metrics.clicks.toLocaleString()}
-																	</p>
-																</div>
+															<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
+																<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Impressions</p>
+																<p className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white break-words">
+																	{campaignAnalytics[campaign.id].metrics.impressions.toLocaleString()}
+																</p>
+															</div>
+															<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
+																<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Clicks</p>
+																<p className="text-sm sm:text-lg font-bold text-blue-600 dark:text-blue-400 break-words">
+																	{campaignAnalytics[campaign.id].metrics.clicks.toLocaleString()}
+																</p>
+															</div>
 																<div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2 sm:p-3">
 																	<p className="text-xs text-gray-500 dark:text-gray-400 mb-1">CTR</p>
 																	<p className="text-sm sm:text-lg font-bold text-green-600 dark:text-green-400 break-words">
@@ -1579,7 +1579,7 @@ export default function DashboardCampaignAds() {
 											budget={form.budget}
 											platforms={form.platforms}
 											onBudgetChange={handleBudgetChange}
-										/>
+												/>
 
 										{/* Action Buttons */}
 										<div className="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
