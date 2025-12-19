@@ -15,3 +15,4 @@ COMMENT ON COLUMN profiles.x IS 'X (Twitter) profile URL';
 COMMENT ON COLUMN profiles.facebook IS 'Facebook profile URL';
 COMMENT ON COLUMN profiles.logo_url IS 'Company/Developer logo image URL';
 
+

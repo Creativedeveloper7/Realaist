@@ -99,6 +99,19 @@ export default function PropertyDetails() {
       developerPhone: dbProperty.developer?.phone
     });
     
+    // Log developer logo and social links
+    const developer = dbProperty.developer as any;
+    console.log('PropertyDetails: Developer logo and social links:', {
+      logoUrl: developer?.logoUrl,
+      website: developer?.website,
+      instagram: developer?.instagram,
+      x: developer?.x,
+      facebook: developer?.facebook,
+      developerId: developer?.id,
+      companyName: developer?.companyName,
+      fullDeveloperObject: developer
+    });
+    
     return {
       id: dbProperty.id,
       name: dbProperty.title,
@@ -229,10 +242,27 @@ export default function PropertyDetails() {
           setError('Property not found');
         } else if (dbProperty) {
           console.log('PropertyDetails: Successfully loaded property from individual fetch');
+          const devData = dbProperty.developer as any;
+          console.log('PropertyDetails: Raw developer data from API:', {
+            developer: dbProperty.developer,
+            logoUrl: devData?.logoUrl,
+            website: devData?.website,
+            instagram: devData?.instagram,
+            x: devData?.x,
+            facebook: devData?.facebook
+          });
           const displayProperty = convertPropertyToDisplay(dbProperty);
+          const displayDev = displayProperty.developer as any;
           console.log('PropertyDetails: Setting property with developer data:', {
             developer: displayProperty.developer,
-            phone: displayProperty.developer?.phone
+            phone: displayProperty.developer?.phone,
+            logoUrl: displayDev?.logoUrl,
+            socialLinks: {
+              website: displayDev?.website,
+              instagram: displayDev?.instagram,
+              x: displayDev?.x,
+              facebook: displayDev?.facebook
+            }
           });
           setProperty(displayProperty);
         } else {
@@ -249,6 +279,30 @@ export default function PropertyDetails() {
 
     loadProperty();
   }, [propertyId, navigate]);
+
+  // Log property state changes, especially developer logo and social links
+  useEffect(() => {
+    if (property) {
+      const dev = property.developer as any;
+      console.log('PropertyDetails: Property state updated:', {
+        propertyId: property.id,
+        title: property.title,
+        developer: {
+          id: dev?.id,
+          name: dev ? `${dev.firstName} ${dev.lastName}` : null,
+          companyName: dev?.companyName,
+          phone: dev?.phone,
+          logoUrl: dev?.logoUrl,
+          website: dev?.website,
+          instagram: dev?.instagram,
+          x: dev?.x,
+          facebook: dev?.facebook
+        },
+        hasLogo: !!dev?.logoUrl,
+        hasSocialLinks: !!(dev?.website || dev?.instagram || dev?.x || dev?.facebook)
+      });
+    }
+  }, [property]);
 
   if (isLoading) {
     return <div className={`min-h-screen flex items-center justify-center transition-colors duration-300 ${
@@ -642,15 +696,59 @@ export default function PropertyDetails() {
                       )}
                     </div>
                     {/* Developer Logo */}
-                    {property.developer?.logoUrl && (
-                      <div className="flex-shrink-0">
-                        <img
-                          src={property.developer.logoUrl}
-                          alt={property.developer.companyName || 'Developer Logo'}
-                          className="h-12 w-auto max-w-[120px] object-contain"
-                        />
-                      </div>
-                    )}
+                    {(() => {
+                      const hasLogo = property.developer?.logoUrl;
+                      const hasWebsite = property.developer?.website;
+                      console.log('PropertyDetails: Rendering developer logo section:', {
+                        hasLogo,
+                        logoUrl: property.developer?.logoUrl,
+                        hasWebsite,
+                        website: property.developer?.website,
+                        developer: property.developer,
+                        companyName: property.developer?.companyName
+                      });
+                      return hasLogo ? (
+                        <div className="flex-shrink-0">
+                          {hasWebsite ? (
+                            <motion.a
+                              href={property.developer.website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block cursor-pointer"
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              title={`Visit ${property.developer.companyName || 'Developer'} website`}
+                            >
+                              <img
+                                src={property.developer.logoUrl}
+                                alt={property.developer.companyName || 'Developer Logo'}
+                                className="h-12 w-auto max-w-[120px] object-contain"
+                                onLoad={() => console.log('PropertyDetails: Developer logo loaded successfully:', property.developer?.logoUrl)}
+                                onError={(e) => {
+                                  console.error('PropertyDetails: Failed to load developer logo:', {
+                                    logoUrl: property.developer?.logoUrl,
+                                    error: e
+                                  });
+                                }}
+                              />
+                            </motion.a>
+                          ) : (
+                            <img
+                              src={property.developer.logoUrl}
+                              alt={property.developer.companyName || 'Developer Logo'}
+                              className="h-12 w-auto max-w-[120px] object-contain"
+                              onLoad={() => console.log('PropertyDetails: Developer logo loaded successfully:', property.developer?.logoUrl)}
+                              onError={(e) => {
+                                console.error('PropertyDetails: Failed to load developer logo:', {
+                                  logoUrl: property.developer?.logoUrl,
+                                  error: e
+                                });
+                              }}
+                            />
+                          )}
+                        </div>
+                      ) : null;
+                    })()}
                   </div>
                 </div>
 
@@ -785,16 +883,41 @@ export default function PropertyDetails() {
                   >
                     📅 Schedule Physical Visit
                   </motion.button>
+
+                  {/* Share Button - Includes native share and WhatsApp fallback */}
+                  <motion.button 
+                    onClick={handleShare}
+                    className={`w-full px-6 py-3 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 border ${
+                      isDarkMode 
+                        ? 'border-white/30 text-white hover:border-[#C7A667] hover:text-[#C7A667]'
+                        : 'border-gray-300 text-gray-700 hover:border-[#C7A667] hover:text-[#C7A667]'
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Share2 className="w-4 h-4" />
+                    Share
+                  </motion.button>
                   
                   {/* Social Media Links */}
-                  {(property.developer?.website || property.developer?.instagram || property.developer?.x || property.developer?.facebook) && (
-                    <div className="flex items-center justify-center gap-3 py-3">
+                  {(() => {
+                    const hasSocialLinks = property.developer?.website || property.developer?.instagram || property.developer?.x || property.developer?.facebook;
+                    console.log('PropertyDetails: Rendering social media links section:', {
+                      hasSocialLinks,
+                      website: property.developer?.website,
+                      instagram: property.developer?.instagram,
+                      x: property.developer?.x,
+                      facebook: property.developer?.facebook,
+                      developer: property.developer
+                    });
+                    return hasSocialLinks ? (
+                    <div className="flex items-center justify-between gap-2 py-3 w-full">
                       {property.developer.website && (
                         <motion.a
                           href={property.developer.website}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className={`p-3 rounded-lg transition-colors ${
+                          className={`flex-1 flex items-center justify-center p-3 rounded-lg transition-colors ${
                             isDarkMode 
                               ? 'bg-white/5 hover:bg-white/10 text-white/70 hover:text-[#C7A667]' 
                               : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-[#C7A667]'
@@ -813,7 +936,7 @@ export default function PropertyDetails() {
                           href={property.developer.instagram}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className={`p-3 rounded-lg transition-colors ${
+                          className={`flex-1 flex items-center justify-center p-3 rounded-lg transition-colors ${
                             isDarkMode 
                               ? 'bg-white/5 hover:bg-white/10 text-white/70 hover:text-[#C7A667]' 
                               : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-[#C7A667]'
@@ -832,7 +955,7 @@ export default function PropertyDetails() {
                           href={property.developer.x}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className={`p-3 rounded-lg transition-colors ${
+                          className={`flex-1 flex items-center justify-center p-3 rounded-lg transition-colors ${
                             isDarkMode 
                               ? 'bg-white/5 hover:bg-white/10 text-white/70 hover:text-[#C7A667]' 
                               : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-[#C7A667]'
@@ -851,7 +974,7 @@ export default function PropertyDetails() {
                           href={property.developer.facebook}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className={`p-3 rounded-lg transition-colors ${
+                          className={`flex-1 flex items-center justify-center p-3 rounded-lg transition-colors ${
                             isDarkMode 
                               ? 'bg-white/5 hover:bg-white/10 text-white/70 hover:text-[#C7A667]' 
                               : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-[#C7A667]'
@@ -866,38 +989,8 @@ export default function PropertyDetails() {
                         </motion.a>
                       )}
                     </div>
-                  )}
-
-                  {/* Share Button - Includes native share and WhatsApp fallback */}
-                  <motion.button 
-                    onClick={handleShare}
-                    className={`w-full px-6 py-3 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 border ${
-                      isDarkMode 
-                        ? 'border-white/30 text-white hover:border-[#C7A667] hover:text-[#C7A667]'
-                        : 'border-gray-300 text-gray-700 hover:border-[#C7A667] hover:text-[#C7A667]'
-                    }`}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <Share2 className="w-4 h-4" />
-                    Share
-                  </motion.button>
-
-                  <motion.button 
-                    onClick={handleWhatsAppShare}
-                    className="w-full px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 relative group"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    title="Share property on WhatsApp"
-                  >
-                    <Share2 className="w-4 h-4" />
-                    Share on WhatsApp
-                    {/* Tooltip */}
-                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                      Share property on WhatsApp
-                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
-                    </div>
-                  </motion.button>
+                    ) : null;
+                  })()}
                 </div>
 
                 {/* Desktop Map Section */}
@@ -1323,13 +1416,55 @@ export default function PropertyDetails() {
             {/* Developer Info */}
             <div className="text-center">
               {/* Developer Logo or Avatar */}
-              {property.developer?.logoUrl ? (
+              {(() => {
+                const hasLogo = property.developer?.logoUrl;
+                const hasWebsite = property.developer?.website;
+                console.log('PropertyDetails: Rendering developer info modal logo:', {
+                  hasLogo,
+                  logoUrl: property.developer?.logoUrl,
+                  hasWebsite,
+                  website: property.developer?.website,
+                  companyName: property.developer?.companyName
+                });
+                return hasLogo ? (
                 <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-                  <img
-                    src={property.developer.logoUrl}
-                    alt={property.developer.companyName || 'Developer Logo'}
-                    className="w-full h-full object-contain rounded-lg"
-                  />
+                  {hasWebsite ? (
+                    <motion.a
+                      href={property.developer.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block w-full h-full cursor-pointer"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      title={`Visit ${property.developer.companyName || 'Developer'} website`}
+                    >
+                      <img
+                        src={property.developer.logoUrl}
+                        alt={property.developer.companyName || 'Developer Logo'}
+                        className="w-full h-full object-contain rounded-lg"
+                        onLoad={() => console.log('PropertyDetails: Developer logo loaded in modal:', property.developer?.logoUrl)}
+                        onError={(e) => {
+                          console.error('PropertyDetails: Failed to load developer logo in modal:', {
+                            logoUrl: property.developer?.logoUrl,
+                            error: e
+                          });
+                        }}
+                      />
+                    </motion.a>
+                  ) : (
+                    <img
+                      src={property.developer.logoUrl}
+                      alt={property.developer.companyName || 'Developer Logo'}
+                      className="w-full h-full object-contain rounded-lg"
+                      onLoad={() => console.log('PropertyDetails: Developer logo loaded in modal:', property.developer?.logoUrl)}
+                      onError={(e) => {
+                        console.error('PropertyDetails: Failed to load developer logo in modal:', {
+                          logoUrl: property.developer?.logoUrl,
+                          error: e
+                        });
+                      }}
+                    />
+                  )}
                 </div>
               ) : (
                 <div className={`w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl ${
@@ -1337,7 +1472,8 @@ export default function PropertyDetails() {
                 }`}>
                   👨‍💼
                 </div>
-              )}
+              );
+              })()}
               
               <h3 className={`text-xl font-heading mb-2 transition-colors duration-300 ${
                 isDarkMode ? 'text-white' : 'text-gray-900'
@@ -1358,14 +1494,23 @@ export default function PropertyDetails() {
               )}
 
               {/* Social Links */}
-              {(property.developer?.website || property.developer?.instagram || property.developer?.x || property.developer?.facebook) && (
-                <div className="flex items-center justify-center gap-3 mb-4">
+              {(() => {
+                const hasSocialLinks = property.developer?.website || property.developer?.instagram || property.developer?.x || property.developer?.facebook;
+                console.log('PropertyDetails: Rendering social links in developer info modal:', {
+                  hasSocialLinks,
+                  website: property.developer?.website,
+                  instagram: property.developer?.instagram,
+                  x: property.developer?.x,
+                  facebook: property.developer?.facebook
+                });
+                return hasSocialLinks ? (
+                <div className="flex items-center justify-between gap-2 mb-4 w-full">
                   {property.developer.website && (
                     <a
                       href={property.developer.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`p-2 rounded-lg transition-colors ${
+                      className={`flex-1 flex items-center justify-center p-2 rounded-lg transition-colors ${
                         isDarkMode 
                           ? 'bg-white/5 hover:bg-white/10 text-white/70 hover:text-[#C7A667]' 
                           : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-[#C7A667]'
@@ -1382,7 +1527,7 @@ export default function PropertyDetails() {
                       href={property.developer.instagram}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`p-2 rounded-lg transition-colors ${
+                      className={`flex-1 flex items-center justify-center p-2 rounded-lg transition-colors ${
                         isDarkMode 
                           ? 'bg-white/5 hover:bg-white/10 text-white/70 hover:text-[#C7A667]' 
                           : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-[#C7A667]'
@@ -1399,7 +1544,7 @@ export default function PropertyDetails() {
                       href={property.developer.x}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`p-2 rounded-lg transition-colors ${
+                      className={`flex-1 flex items-center justify-center p-2 rounded-lg transition-colors ${
                         isDarkMode 
                           ? 'bg-white/5 hover:bg-white/10 text-white/70 hover:text-[#C7A667]' 
                           : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-[#C7A667]'
@@ -1416,7 +1561,7 @@ export default function PropertyDetails() {
                       href={property.developer.facebook}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`p-2 rounded-lg transition-colors ${
+                      className={`flex-1 flex items-center justify-center p-2 rounded-lg transition-colors ${
                         isDarkMode 
                           ? 'bg-white/5 hover:bg-white/10 text-white/70 hover:text-[#C7A667]' 
                           : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-[#C7A667]'
@@ -1429,7 +1574,8 @@ export default function PropertyDetails() {
                     </a>
                   )}
                 </div>
-              )}
+              ) : null;
+              })()}
               
               {property.developer?.phone && (
                 <div className="space-y-3">

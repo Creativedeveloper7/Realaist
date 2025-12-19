@@ -228,6 +228,11 @@ export interface Property {
     lastName: string
     companyName?: string
     phone?: string
+    logoUrl?: string
+    website?: string
+    instagram?: string
+    x?: string
+    facebook?: string
   }
   createdAt: string
   updatedAt: string
@@ -402,13 +407,30 @@ class PropertiesService {
             images: item.images || [],
             status: item.status,
             developerId: item.developer_id,
-            developer: item.developer && Array.isArray(item.developer) && item.developer.length > 0 ? {
-              id: item.developer[0].id,
-              firstName: item.developer[0].first_name,
-              lastName: item.developer[0].last_name,
-              companyName: item.developer[0].company_name,
-              phone: item.developer[0].phone
-            } : undefined,
+            developer: item.developer && Array.isArray(item.developer) && item.developer.length > 0 ? (() => {
+              // Helper to normalize social links (empty strings to undefined, add https:// to website)
+              const normalizeSocialLink = (value: string | null | undefined, isWebsite = false): string | undefined => {
+                if (!value || value.trim() === '') return undefined;
+                const trimmed = value.trim();
+                if (isWebsite && trimmed && !trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+                  return `https://${trimmed}`;
+                }
+                return trimmed;
+              };
+              const dev = item.developer[0];
+              return {
+                id: dev.id,
+                firstName: dev.first_name,
+                lastName: dev.last_name,
+                companyName: dev.company_name,
+                phone: dev.phone,
+                logoUrl: normalizeSocialLink(dev.logo_url),
+                website: normalizeSocialLink(dev.website, true),
+                instagram: normalizeSocialLink(dev.instagram),
+                x: normalizeSocialLink(dev.x),
+                facebook: normalizeSocialLink(dev.facebook)
+              };
+            })() : undefined,
             createdAt: item.created_at,
             updatedAt: item.updated_at,
             amenities: item.amenities || [],
@@ -455,7 +477,12 @@ class PropertiesService {
             first_name,
             last_name,
             company_name,
-            phone
+            phone,
+            website,
+            instagram,
+            x,
+            facebook,
+            logo_url
           )
         `)
         .order('created_at', { ascending: false })
@@ -498,27 +525,49 @@ class PropertiesService {
         return { properties: local, error: error.message }
       }
 
+      // Helper to normalize social links (empty strings to undefined, add https:// to website)
+      const normalizeSocialLink = (value: string | null | undefined, isWebsite = false): string | undefined => {
+        if (!value || value.trim() === '') return undefined;
+        const trimmed = value.trim();
+        if (isWebsite && trimmed && !trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+          return `https://${trimmed}`;
+        }
+        return trimmed;
+      };
+
       const properties: Property[] = data.map(item => {
         // Handle developer data - it might be an array or object
         let developerData = undefined;
         if (item.developer) {
           if (Array.isArray(item.developer) && item.developer.length > 0) {
             // Array format (from join query)
+            const dev = item.developer[0];
             developerData = {
-              id: item.developer[0].id,
-              firstName: item.developer[0].first_name,
-              lastName: item.developer[0].last_name,
-              companyName: item.developer[0].company_name,
-              phone: item.developer[0].phone
+              id: dev.id,
+              firstName: dev.first_name,
+              lastName: dev.last_name,
+              companyName: dev.company_name,
+              phone: dev.phone,
+              logoUrl: normalizeSocialLink(dev.logo_url),
+              website: normalizeSocialLink(dev.website, true),
+              instagram: normalizeSocialLink(dev.instagram),
+              x: normalizeSocialLink(dev.x),
+              facebook: normalizeSocialLink(dev.facebook)
             };
           } else if (typeof item.developer === 'object' && item.developer.id) {
             // Object format (direct object)
+            const dev = item.developer;
             developerData = {
-              id: item.developer.id,
-              firstName: item.developer.first_name,
-              lastName: item.developer.last_name,
-              companyName: item.developer.company_name,
-              phone: item.developer.phone
+              id: dev.id,
+              firstName: dev.first_name,
+              lastName: dev.last_name,
+              companyName: dev.company_name,
+              phone: dev.phone,
+              logoUrl: normalizeSocialLink(dev.logo_url),
+              website: normalizeSocialLink(dev.website, true),
+              instagram: normalizeSocialLink(dev.instagram),
+              x: normalizeSocialLink(dev.x),
+              facebook: normalizeSocialLink(dev.facebook)
             };
           }
         }
@@ -611,36 +660,48 @@ class PropertiesService {
             developerValues: data.developer ? Object.values(data.developer) : null
           });
 
+          // Helper to normalize social links (empty strings to undefined, add https:// to website)
+          const normalizeSocialLink = (value: string | null | undefined, isWebsite = false): string | undefined => {
+            if (!value || value.trim() === '') return undefined;
+            const trimmed = value.trim();
+            if (isWebsite && trimmed && !trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+              return `https://${trimmed}`;
+            }
+            return trimmed;
+          };
+
           // Handle both array and object formats for developer data
           let developerData = null;
           if (data.developer) {
             if (Array.isArray(data.developer) && data.developer.length > 0) {
               // Array format (from properties list)
+              const dev = data.developer[0];
               developerData = {
-                id: data.developer[0].id,
-                firstName: data.developer[0].first_name,
-                lastName: data.developer[0].last_name,
-                companyName: data.developer[0].company_name,
-                phone: data.developer[0].phone,
-                website: data.developer[0].website,
-                instagram: data.developer[0].instagram,
-                x: data.developer[0].x,
-                facebook: data.developer[0].facebook,
-                logoUrl: data.developer[0].logo_url
+                id: dev.id,
+                firstName: dev.first_name,
+                lastName: dev.last_name,
+                companyName: dev.company_name,
+                phone: dev.phone,
+                website: normalizeSocialLink(dev.website, true),
+                instagram: normalizeSocialLink(dev.instagram),
+                x: normalizeSocialLink(dev.x),
+                facebook: normalizeSocialLink(dev.facebook),
+                logoUrl: normalizeSocialLink(dev.logo_url)
               };
             } else if (typeof data.developer === 'object' && data.developer.id) {
               // Object format (from individual property fetch)
+              const dev = data.developer;
               developerData = {
-                id: data.developer.id,
-                firstName: data.developer.first_name,
-                lastName: data.developer.last_name,
-                companyName: data.developer.company_name,
-                phone: data.developer.phone,
-                website: data.developer.website,
-                instagram: data.developer.instagram,
-                x: data.developer.x,
-                facebook: data.developer.facebook,
-                logoUrl: data.developer.logo_url
+                id: dev.id,
+                firstName: dev.first_name,
+                lastName: dev.last_name,
+                companyName: dev.company_name,
+                phone: dev.phone,
+                website: normalizeSocialLink(dev.website, true),
+                instagram: normalizeSocialLink(dev.instagram),
+                x: normalizeSocialLink(dev.x),
+                facebook: normalizeSocialLink(dev.facebook),
+                logoUrl: normalizeSocialLink(dev.logo_url)
               };
             }
           }
