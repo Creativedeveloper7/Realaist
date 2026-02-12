@@ -5,6 +5,7 @@ import { useTheme } from './ThemeContext';
 import { useAuth } from './contexts/AuthContext';
 import { propertiesService, Property } from './services/propertiesService';
 import { scheduledVisitsService } from './services/scheduledVisitsService';
+import { openPaystackInlineForBooking } from './services/paymentService';
 import { Header } from './components/Header';
 import { shareToWhatsApp, PropertyShareData } from './utils/whatsappShare';
 import { Share2 } from 'lucide-react';
@@ -90,6 +91,14 @@ export default function PropertyDetails() {
   const [isSubmittingVisit, setIsSubmittingVisit] = useState(false);
   const [visitSubmissionMessage, setVisitSubmissionMessage] = useState('');
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
+  const [bookingModalOpen, setBookingModalOpen] = useState(false);
+  const [checkInDate, setCheckInDate] = useState('');
+  const [checkOutDate, setCheckOutDate] = useState('');
+  const [bookingGuests, setBookingGuests] = useState(1);
+  const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
+  const [bookingMessage, setBookingMessage] = useState('');
+  const [bookingName, setBookingName] = useState('');
+  const [bookingEmail, setBookingEmail] = useState('');
   
   // Helper function to convert database property to display format
   const convertPropertyToDisplay = (dbProperty: Property) => {
@@ -118,6 +127,7 @@ export default function PropertyDetails() {
       location: dbProperty.location,
       description: dbProperty.description,
       price: `KSh ${dbProperty.price.toLocaleString()}`,
+      rawPrice: dbProperty.price,
       estimatedIncome: "KES 350,000/mo",
       beds: dbProperty.bedrooms || 0,
       baths: dbProperty.bathrooms || 0,
@@ -337,6 +347,19 @@ export default function PropertyDetails() {
   }
 
   const isLand = (property.type || '').toLowerCase() === 'land';
+  const isShortStay = (property.type || '').toLowerCase() === 'short stay';
+
+  const bookingNights = (() => {
+    if (!checkInDate || !checkOutDate) return 0;
+    const start = new Date(checkInDate);
+    const end = new Date(checkOutDate);
+    const diff = end.getTime() - start.getTime();
+    if (Number.isNaN(diff) || diff <= 0) return 0;
+    return Math.round(diff / (1000 * 60 * 60 * 24));
+  })();
+
+  const nightlyRate = typeof property.rawPrice === 'number' ? property.rawPrice : 0;
+  const totalBookingPrice = bookingNights > 0 ? nightlyRate * bookingNights : 0;
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % property.images.length);
@@ -694,6 +717,19 @@ export default function PropertyDetails() {
                           {property.landArea}
                         </div>
                       )}
+                      {property.type && (
+                        <div className={`text-xs font-semibold px-3 py-1 rounded-full border transition-colors duration-300 ${
+                          isShortStay
+                            ? isDarkMode
+                              ? 'border-amber-400/70 bg-amber-900/40 text-amber-200'
+                              : 'border-amber-300 bg-amber-50 text-amber-800'
+                            : isDarkMode
+                              ? 'border-white/20 bg-white/5 text-white/80'
+                              : 'border-gray-300 bg-gray-100 text-gray-800'
+                        }`}>
+                          {isShortStay ? 'Short Stay' : property.type}
+                        </div>
+                      )}
                     </div>
                     {/* Developer Logo */}
                     {(() => {
@@ -875,14 +911,25 @@ export default function PropertyDetails() {
                     📞 Call Developer
                   </motion.button>
                   
-                  <motion.button 
-                    onClick={() => setScheduleModalOpen(true)}
-                    className="w-full px-6 py-3 border border-[#C7A667] text-[#C7A667] font-medium rounded-lg hover:bg-[#C7A667] hover:text-black transition-colors flex items-center justify-center gap-2"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    📅 Schedule Physical Visit
-                  </motion.button>
+                  {isShortStay ? (
+                    <motion.button 
+                      onClick={() => setBookingModalOpen(true)}
+                      className="w-full px-6 py-3 border border-[#C7A667] text-[#C7A667] font-medium rounded-lg hover:bg-[#C7A667] hover:text-black transition-colors flex items-center justify-center gap-2"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      🛏️ Book Stay
+                    </motion.button>
+                  ) : (
+                    <motion.button 
+                      onClick={() => setScheduleModalOpen(true)}
+                      className="w-full px-6 py-3 border border-[#C7A667] text-[#C7A667] font-medium rounded-lg hover:bg-[#C7A667] hover:text-black transition-colors flex items-center justify-center gap-2"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      📅 Schedule Physical Visit
+                    </motion.button>
+                  )}
 
                   {/* Share Button - Includes native share and WhatsApp fallback */}
                   <motion.button 
@@ -1131,8 +1178,8 @@ export default function PropertyDetails() {
         </motion.div>
       )}
 
-      {/* Schedule Visit Modal */}
-      {scheduleModalOpen && (
+      {/* Schedule Visit Modal (non-short-stay properties) */}
+      {scheduleModalOpen && !isShortStay && (
         <motion.div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           initial={{ opacity: 0 }}
@@ -1365,6 +1412,315 @@ export default function PropertyDetails() {
                 isDarkMode ? 'text-white/50' : 'text-gray-500'
               }`}>
                 We'll confirm your appointment within 24 hours
+              </p>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Short Stay Booking Modal */}
+      {bookingModalOpen && isShortStay && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          {/* Backdrop */}
+          <motion.div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            onClick={() => setBookingModalOpen(false)}
+          />
+          
+          {/* Modal Content */}
+          <motion.div
+            className={`relative w-full max-w-md rounded-2xl border p-8 ${
+              isDarkMode 
+                ? 'border-white/10 bg-[#111217]' 
+                : 'border-gray-200 bg-white'
+            }`}
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setBookingModalOpen(false)}
+              className={`absolute top-4 right-4 p-2 rounded-full hover:bg-opacity-10 transition-colors ${
+                isDarkMode 
+                  ? 'hover:bg-white text-white/60 hover:text-white' 
+                  : 'hover:bg-gray-900 text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Header */}
+            <div className="text-center mb-8">
+              <div className={`border border-dashed rounded-md px-4 py-3 mb-4 inline-block ${
+                isDarkMode ? 'border-white/20' : 'border-gray-300'
+              }`}>
+                <img 
+                  src="/logos/realaistlogo.png" 
+                  alt="Realaist Logo" 
+                  className="h-12 w-auto"
+                />
+              </div>
+              <h2 className={`font-heading text-2xl font-medium transition-colors duration-300 ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
+                Book Your Stay
+              </h2>
+              <p className={`mt-2 text-sm transition-colors duration-300 ${
+                isDarkMode ? 'text-white/70' : 'text-gray-600'
+              }`}>
+                Select your dates for {property.title}
+              </p>
+            </div>
+
+            {/* Booking Form */}
+            <form
+              className="space-y-6"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setBookingMessage('');
+
+                if (!bookingName.trim() || !bookingEmail.trim()) {
+                  setBookingMessage('Please provide your name and email address.');
+                  return;
+                }
+
+                if (bookingNights <= 0 || !nightlyRate) {
+                  setBookingMessage('Please select valid dates for your stay.');
+                  return;
+                }
+
+                setIsSubmittingBooking(true);
+                try {
+                  const total = totalBookingPrice;
+
+                  // Start Paystack payment
+                  const paymentResult = await openPaystackInlineForBooking({
+                    amountKES: total,
+                    email: bookingEmail,
+                    metadata: {
+                      type: 'short_stay_booking',
+                      propertyId: property.id,
+                      propertyTitle: property.title,
+                      checkInDate,
+                      checkOutDate,
+                      nights: bookingNights,
+                      guests: bookingGuests,
+                    },
+                  });
+
+                  if (!paymentResult) {
+                    setBookingMessage('Payment was cancelled. Your booking was not created.');
+                    setIsSubmittingBooking(false);
+                    return;
+                  }
+
+                  const reference = paymentResult.reference;
+
+                  // Record booking as a scheduled visit for developer dashboard
+                  const scheduledDate = checkInDate;
+                  const scheduledTime = '12:00';
+                  const { error } = await scheduledVisitsService.createScheduledVisit({
+                    propertyId: property.id,
+                    scheduledDate,
+                    scheduledTime,
+                    visitorName: bookingName,
+                    visitorEmail: bookingEmail,
+                    message: `Short stay booking.\nCheck-in: ${checkInDate}\nCheck-out: ${checkOutDate}\nNights: ${bookingNights}\nGuests: ${bookingGuests}\nTotal: KSh ${total.toLocaleString()}\nPayment reference: ${reference}`,
+                  });
+
+                  if (error) {
+                    console.error('Error recording booking as scheduled visit:', error);
+                    setBookingMessage('Payment succeeded but we could not record your booking. Please contact support with your payment reference.');
+                  } else {
+                    setBookingMessage(`Booking confirmed for ${bookingNights} night${bookingNights > 1 ? 's' : ''}. Payment reference: ${reference}`);
+                    // Reset minimal fields but keep modal open so user can read confirmation
+                    setCheckInDate('');
+                    setCheckOutDate('');
+                    setBookingGuests(1);
+                  }
+                } catch (err: any) {
+                  console.error('Error processing booking:', err);
+                  setBookingMessage(err?.message || 'An unexpected error occurred while processing your booking.');
+                } finally {
+                  setIsSubmittingBooking(false);
+                }
+              }}
+            >
+              {/* Guest Details */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-sm font-medium mb-2 transition-colors duration-300 ${
+                    isDarkMode ? 'text-white/80' : 'text-gray-700'
+                  }`}>
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={bookingName}
+                    onChange={(e) => setBookingName(e.target.value)}
+                    className={`w-full px-4 py-3 rounded-lg border transition-colors duration-300 ${
+                      isDarkMode 
+                        ? 'bg-white/5 border-white/15 text-white placeholder-white/40 focus:border-[#C7A667]' 
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#C7A667]'
+                    } outline-none focus:ring-2 focus:ring-[#C7A667]/20`}
+                    placeholder="Enter your full name"
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-2 transition-colors duration-300 ${
+                    isDarkMode ? 'text-white/80' : 'text-gray-700'
+                  }`}>
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={bookingEmail}
+                    onChange={(e) => setBookingEmail(e.target.value)}
+                    className={`w-full px-4 py-3 rounded-lg border transition-colors duration-300 ${
+                      isDarkMode 
+                        ? 'bg-white/5 border-white/15 text-white placeholder-white/40 focus:border-[#C7A667]' 
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#C7A667]'
+                    } outline-none focus:ring-2 focus:ring-[#C7A667]/20`}
+                    placeholder="Enter your email"
+                  />
+                </div>
+              </div>
+              {/* Dates Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-sm font-medium mb-2 transition-colors duration-300 ${
+                    isDarkMode ? 'text-white/80' : 'text-gray-700'
+                  }`}>
+                    Check-in
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={checkInDate}
+                    onChange={(e) => setCheckInDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className={`w-full px-4 py-3 rounded-lg border transition-colors duration-300 ${
+                      isDarkMode 
+                        ? 'bg-white/5 border-white/15 text-white placeholder-white/40 focus:border-[#C7A667]' 
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#C7A667]'
+                    } outline-none focus:ring-2 focus:ring-[#C7A667]/20`}
+                  />
+                </div>
+
+                <div>
+                  <label className={`block text-sm font-medium mb-2 transition-colors duration-300 ${
+                    isDarkMode ? 'text-white/80' : 'text-gray-700'
+                  }`}>
+                    Check-out
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={checkOutDate}
+                    onChange={(e) => setCheckOutDate(e.target.value)}
+                    min={checkInDate || new Date().toISOString().split('T')[0]}
+                    className={`w-full px-4 py-3 rounded-lg border transition-colors duration-300 ${
+                      isDarkMode 
+                        ? 'bg-white/5 border-white/15 text-white placeholder-white/40 focus:border-[#C7A667]' 
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#C7A667]'
+                    } outline-none focus:ring-2 focus:ring-[#C7A667]/20`}
+                  />
+                </div>
+              </div>
+
+              {/* Guests */}
+              <div>
+                <label className={`block text-sm font-medium mb-2 transition-colors duration-300 ${
+                  isDarkMode ? 'text-white/80' : 'text-gray-700'
+                }`}>
+                  Guests
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  value={bookingGuests}
+                  onChange={(e) => setBookingGuests(Math.max(1, parseInt(e.target.value) || 1))}
+                  className={`w-full px-4 py-3 rounded-lg border transition-colors duration-300 ${
+                    isDarkMode 
+                      ? 'bg-white/5 border-white/15 text-white placeholder-white/40 focus:border-[#C7A667]' 
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#C7A667]'
+                  } outline-none focus:ring-2 focus:ring-[#C7A667]/20`}
+                  placeholder="Number of guests"
+                />
+              </div>
+
+              {/* Pricing Summary */}
+              <div className={`p-4 rounded-lg border transition-colors duration-300 ${
+                isDarkMode ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-gray-50'
+              }`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`text-sm ${
+                    isDarkMode ? 'text-white/70' : 'text-gray-600'
+                  }`}>
+                    Price per night
+                  </span>
+                  <span className="font-medium text-[#C7A667]">
+                    {nightlyRate ? `KSh ${nightlyRate.toLocaleString()}` : '—'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className={`text-sm ${
+                    isDarkMode ? 'text-white/70' : 'text-gray-600'
+                  }`}>
+                    Total ({bookingNights || 0} night{(bookingNights || 0) === 1 ? '' : 's'})
+                  </span>
+                  <span className="font-semibold">
+                    {totalBookingPrice ? `KSh ${totalBookingPrice.toLocaleString()}` : 'KSh 0'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Booking Message */}
+              {bookingMessage && (
+                <div className={`p-3 rounded-lg text-sm ${
+                  bookingMessage.toLowerCase().includes('error')
+                    ? 'bg-red-100 text-red-700 border border-red-200'
+                    : 'bg-green-100 text-green-700 border border-green-200'
+                }`}>
+                  {bookingMessage}
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <motion.button
+                type="submit"
+                disabled={isSubmittingBooking}
+                className={`w-full py-3 rounded-lg font-medium transition-colors ${
+                  isSubmittingBooking
+                    ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                    : 'bg-[#C7A667] text-black hover:bg-[#B89657]'
+                }`}
+                whileHover={!isSubmittingBooking ? { scale: 1.02 } : {}}
+                whileTap={!isSubmittingBooking ? { scale: 0.98 } : {}}
+              >
+                {isSubmittingBooking ? 'Processing...' : 'Confirm Booking Request'}
+              </motion.button>
+            </form>
+
+            {/* Additional Info */}
+            <div className="mt-6 text-center">
+              <p className={`text-xs transition-colors duration-300 ${
+                isDarkMode ? 'text-white/50' : 'text-gray-500'
+              }`}>
+                This will send your preferred dates to the developer. They will confirm availability and finalize your stay.
               </p>
             </div>
           </motion.div>

@@ -242,3 +242,59 @@ export function formatAmountToCents(amount: number): number {
   return Math.round(amount * 100);
 }
 
+/**
+ * Open a generic Paystack inline payment for short-stay bookings
+ * Uses the public key directly in the browser and resolves when
+ * the user either completes or cancels the payment.
+ */
+export async function openPaystackInlineForBooking(params: {
+  amountKES: number;
+  email: string;
+  metadata?: Record<string, any>;
+}): Promise<{ reference: string } | null> {
+  const { amountKES, email, metadata } = params;
+
+  if (!campaignsConfig.payment.publicKey) {
+    throw new Error('Paystack public key is not configured');
+  }
+
+  if (!amountKES || amountKES <= 0) {
+    throw new Error('Invalid booking amount');
+  }
+
+  const PaystackPopClass = await getPaystackPop();
+  if (!PaystackPopClass) {
+    throw new Error('Failed to load Paystack payment library');
+  }
+
+  const handler = new PaystackPopClass();
+  if (!handler || typeof handler.newTransaction !== 'function') {
+    throw new Error('Paystack handler not properly initialized for bookings');
+  }
+
+  const amountInKobo = formatAmountToCents(amountKES);
+
+  return new Promise((resolve, reject) => {
+    try {
+      handler.newTransaction({
+        key: campaignsConfig.payment.publicKey,
+        email,
+        amount: amountInKobo,
+        currency: campaignsConfig.payment.currency || 'KES',
+        metadata: metadata || {},
+        callback: (response: any) => {
+          console.log('Short-stay booking payment success:', response);
+          resolve({ reference: response.reference });
+        },
+        onClose: () => {
+          console.log('Short-stay booking payment popup closed by user');
+          resolve(null);
+        }
+      });
+    } catch (error) {
+      console.error('Error starting Paystack booking transaction:', error);
+      reject(error);
+    }
+  });
+}
+

@@ -168,6 +168,7 @@ export const PropertyUploadModal: React.FC<PropertyUploadModalProps> = ({
     'Studio',
     'Commercial Building',
     'Mixed Use Development',
+    'Short Stay',
     'Land'
   ];
 
