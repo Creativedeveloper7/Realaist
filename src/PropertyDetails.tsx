@@ -8,7 +8,55 @@ import { scheduledVisitsService } from './services/scheduledVisitsService';
 import { openPaystackInlineForBooking } from './services/paymentService';
 import { Header } from './components/Header';
 import { shareToWhatsApp, PropertyShareData } from './utils/whatsappShare';
-import { Share2 } from 'lucide-react';
+import {
+  Share2,
+  Wifi,
+  CarFront,
+  Monitor,
+  Utensils,
+  Briefcase,
+  Refrigerator,
+  WashingMachine,
+  Microwave,
+  Waves,
+  Snowflake,
+  Flame,
+  Dumbbell,
+  Wind,
+  Shield,
+  PanelsTopLeft
+} from 'lucide-react';
+
+type AmenityMeta = {
+  label: string;
+  Icon: React.ComponentType<{ size?: number; className?: string }>;
+};
+
+const AMENITY_META: Record<string, AmenityMeta> = {
+  kitchen: { label: 'Kitchen', Icon: Utensils },
+  workspace: { label: 'Dedicated workspace', Icon: Briefcase },
+  tv: { label: 'TV', Icon: Monitor },
+  refrigerator: { label: 'Refrigerator', Icon: Refrigerator },
+  wifi: { label: 'Wifi', Icon: Wifi },
+  parking: { label: 'Free parking on premises', Icon: CarFront },
+  washer: { label: 'Washer', Icon: WashingMachine },
+  microwave: { label: 'Microwave', Icon: Microwave },
+  pool: { label: 'Pool', Icon: Waves },
+  ac: { label: 'Air conditioning', Icon: Snowflake },
+  heating: { label: 'Heating', Icon: Flame },
+  gym: { label: 'Gym', Icon: Dumbbell },
+  dryer: { label: 'Dryer', Icon: Wind },
+  balcony: { label: 'Balcony', Icon: PanelsTopLeft },
+  security: { label: 'Security', Icon: Shield },
+};
+
+const getAmenityMeta = (id: string): AmenityMeta => {
+  if (AMENITY_META[id]) return AMENITY_META[id];
+  return {
+    label: id,
+    Icon: Monitor, // simple fallback icon
+  };
+};
 
 // Helper function to get icon for fact type
 const getFactIcon = (factIndex: number, isDarkMode: boolean = true) => {
@@ -121,13 +169,49 @@ export default function PropertyDetails() {
       fullDeveloperObject: developer
     });
     
+    const shortStay = (dbProperty.propertyType || '').toLowerCase() === 'short stay';
+    const today = new Date();
+    const isWeekendToday = today.getDay() === 0 || today.getDay() === 6;
+    const weekdayPrice = (dbProperty as any).weekdayPrice as number | undefined;
+    const weekendPrice = (dbProperty as any).weekendPrice as number | undefined;
+    const effectivePrice = (() => {
+      if (!shortStay) return dbProperty.price;
+      if (isWeekendToday) {
+        return weekendPrice || weekdayPrice || dbProperty.price;
+      }
+      return weekdayPrice || dbProperty.price;
+    })();
+
+    // Clean up description for legacy short stay properties that included
+    // technical pricing/highlights details - remove only those specific lines
+    const rawDescription = dbProperty.description || '';
+    const cleanedDescription = (() => {
+      if (!shortStay || !rawDescription) return rawDescription;
+
+      // Remove specific lines: Highlights and pricing info
+      const lines = rawDescription.split('\n');
+      const cleanedLines = lines.filter(line => {
+        const trimmed = line.trim();
+        // Remove lines containing these patterns
+        return !trimmed.includes('Highlights:') &&
+               !trimmed.includes('Weekday base price (developer)') &&
+               !trimmed.includes('Weekend base price (developer)') &&
+               !trimmed.includes('Guest weekday price (incl. tax)') &&
+               !trimmed.includes('Guest weekend price (incl. tax)');
+      });
+      
+      return cleanedLines.join('\n').trim();
+    })();
+
     return {
       id: dbProperty.id,
+      // Keep both title and name so all existing UI references work
+      title: dbProperty.title,
       name: dbProperty.title,
       location: dbProperty.location,
-      description: dbProperty.description,
-      price: `KSh ${dbProperty.price.toLocaleString()}`,
-      rawPrice: dbProperty.price,
+      description: cleanedDescription,
+      price: `KSh ${effectivePrice.toLocaleString()}`,
+      rawPrice: effectivePrice,
       estimatedIncome: "KES 350,000/mo",
       beds: dbProperty.bedrooms || 0,
       baths: dbProperty.bathrooms || 0,
@@ -417,6 +501,29 @@ export default function PropertyDetails() {
     };
 
     shareToWhatsApp(propertyData);
+  };
+
+  const openDeveloperWhatsAppChat = () => {
+    const phone = property?.developer?.phone;
+    if (!phone) return;
+
+    let digits = phone.replace(/\D/g, '');
+    if (!digits) return;
+
+    // Normalize common Kenyan formats
+    if (digits.startsWith('0') && digits.length >= 10) {
+      digits = '254' + digits.slice(1);
+    } else if (digits.startsWith('7') && digits.length === 9) {
+      digits = '254' + digits;
+    }
+
+    const title = property?.name || property?.title || 'your property';
+    const location = property?.location || '';
+    const type = property?.type || 'property';
+
+    const message = `Hi, I'm interested in the ${type} "${title}"${location ? ` located in ${location}` : ''} on Realaist. Is it still available?`;
+    const url = `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
   };
 
   return (
@@ -834,11 +941,11 @@ export default function PropertyDetails() {
                   }}>
                     Description
                   </h3>
-                  <p className={`leading-relaxed transition-colors duration-300 ${
+                  <div className={`leading-relaxed transition-colors duration-300 whitespace-pre-line ${
                     isDarkMode ? 'text-white/80' : 'text-gray-700'
                   }`}>
                     {property.description}
-                  </p>
+                  </div>
                 </div>
 
                 {/* Amenities and Features */}
@@ -846,19 +953,53 @@ export default function PropertyDetails() {
                   <div className="grid md:grid-cols-2 gap-8">
                     {property.amenities?.length > 0 && (
                       <div>
-                        <h3 className={`text-xl font-heading mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Amenities</h3>
-                        <div className="flex flex-wrap gap-2">
-                          {property.amenities.map((a: string) => (
-                            <span key={a} className={`text-xs px-3 py-1 rounded-full border ${
-                              isDarkMode ? 'border-white/20 bg-white/5 text-white' : 'border-gray-300 bg-gray-100 text-gray-700'
-                            }`}>{a}</span>
-                          ))}
+                        <h3 className={`text-xl font-heading mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`} style={{ 
+                          fontFamily: "'Cinzel', 'Playfair Display', serif",
+                          fontWeight: 500,
+                          letterSpacing: '0.05em'
+                        }}>
+                          Amenities
+                        </h3>
+                        <div className="grid grid-cols-2 gap-3">
+                          {property.amenities.map((amenityId: string) => {
+                            const { label, Icon } = getAmenityMeta(amenityId);
+                            return (
+                              <div
+                                key={amenityId}
+                                className={`flex items-center gap-3 p-3 rounded-lg border ${
+                                  isDarkMode
+                                    ? 'border-white/20 bg-white/5'
+                                    : 'border-gray-200 bg-gray-50'
+                                }`}
+                              >
+                                <Icon
+                                  size={20}
+                                  className={
+                                    isDarkMode ? 'text-white/80' : 'text-gray-700'
+                                  }
+                                />
+                                <span
+                                  className={`text-sm font-medium ${
+                                    isDarkMode ? 'text-white/90' : 'text-gray-700'
+                                  }`}
+                                >
+                                  {label}
+                                </span>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
                     {property.features?.length > 0 && (
                       <div>
-                        <h3 className={`text-xl font-heading mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Features</h3>
+                        <h3 className={`text-xl font-heading mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`} style={{ 
+                          fontFamily: "'Cinzel', 'Playfair Display', serif",
+                          fontWeight: 500,
+                          letterSpacing: '0.05em'
+                        }}>
+                          Features
+                        </h3>
                         <div className="flex flex-wrap gap-2">
                           {property.features.map((f: string) => (
                             <span key={f} className={`text-xs px-3 py-1 rounded-full border ${
@@ -902,24 +1043,61 @@ export default function PropertyDetails() {
               <div className="space-y-6">
                 {/* Action Buttons */}
                 <div className="space-y-3">
-                  <motion.button 
-                    onClick={() => setDeveloperInfoModalOpen(true)}
-                    className="w-full px-6 py-3 bg-[#C7A667] text-black font-medium rounded-lg hover:bg-[#B89657] transition-colors flex items-center justify-center gap-2"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    📞 Call Developer
-                  </motion.button>
-                  
                   {isShortStay ? (
                     <motion.button 
-                      onClick={() => setBookingModalOpen(true)}
-                      className="w-full px-6 py-3 border border-[#C7A667] text-[#C7A667] font-medium rounded-lg hover:bg-[#C7A667] hover:text-black transition-colors flex items-center justify-center gap-2"
+                      onClick={() => navigate(`/property/${propertyId}/message-host`)}
+                      className="w-full px-6 py-3 bg-[#C7A667] text-black font-medium rounded-lg hover:bg-[#B89657] transition-colors flex items-center justify-center gap-2"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      🛏️ Book Stay
+                      💬 Message Host
                     </motion.button>
+                  ) : (
+                    <>
+                      <motion.button 
+                        onClick={() => setDeveloperInfoModalOpen(true)}
+                        className="w-full px-6 py-3 bg-[#C7A667] text-black font-medium rounded-lg hover:bg-[#B89657] transition-colors flex items-center justify-center gap-2"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        📞 Call Developer
+                      </motion.button>
+
+                      {property.developer?.phone && (
+                        <motion.button
+                          onClick={openDeveloperWhatsAppChat}
+                          className="w-full px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          💬 Chat on WhatsApp
+                        </motion.button>
+                      )}
+                    </>
+                  )}
+                  
+                  {isShortStay ? (
+                    <>
+                      <motion.button 
+                        onClick={() => setBookingModalOpen(true)}
+                        className="w-full px-6 py-3 border border-[#C7A667] text-[#C7A667] font-medium rounded-lg hover:bg-[#C7A667] hover:text-black transition-colors flex items-center justify-center gap-2"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        🛏️ Book Stay
+                      </motion.button>
+                      {/* Disclaimer */}
+                      <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
+                        <img
+                          src="/logos/realaistlogo.png"
+                          alt="Realaist"
+                          className="h-3 w-auto opacity-60"
+                        />
+                        <p className={`text-[10px] leading-tight ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                          To help protect your payment, always use Realaist to send money and communicate with hosts.
+                        </p>
+                      </div>
+                    </>
                   ) : (
                     <motion.button 
                       onClick={() => setScheduleModalOpen(true)}

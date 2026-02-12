@@ -16,7 +16,8 @@ import {
   BarChart3,
   BookOpen,
   ArrowLeft,
-  Megaphone
+  Megaphone,
+  Bed
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
@@ -52,6 +53,7 @@ const buyerNavItems: NavItem[] = [
 const developerNavItems: NavItem[] = [
   { id: 'overview', label: 'Overview', icon: Home, href: '/dashboard' },
   { id: 'properties', label: 'My Properties', icon: Search, href: '/dashboard/properties' },
+  { id: 'short-stays', label: 'Short Stays', icon: Bed, href: '/dashboard/short-stays' },
   { id: 'scheduled-visits', label: 'Client Data', icon: MessageSquare, href: '/dashboard/scheduled-visits', badge: 3 },
   { id: 'blogs', label: 'Blogs', icon: BookOpen, href: '/dashboard/blogs' },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/dashboard/analytics' },
@@ -85,6 +87,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     const path = location.pathname;
     if (path === '/dashboard') return 'overview';
     if (path === '/dashboard/properties') return 'properties';
+    if (path === '/dashboard/short-stays') return 'short-stays';
     if (path === '/dashboard/scheduled-visits') return 'scheduled-visits';
     if (path === '/dashboard/analytics') return 'analytics';
     if (path === '/dashboard/campaign-ads') return 'campaign-ads';

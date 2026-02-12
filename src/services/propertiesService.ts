@@ -214,6 +214,8 @@ export interface Property {
   title: string
   description: string
   price: number
+  weekdayPrice?: number
+  weekendPrice?: number
   location: string
   propertyType: string
   bedrooms?: number
@@ -247,6 +249,8 @@ export interface CreatePropertyData {
   price: number
   location: string
   propertyType: string
+  weekdayPrice?: number
+  weekendPrice?: number
   bedrooms?: number
   bathrooms?: number
   squareFeet?: number
@@ -317,6 +321,8 @@ class PropertiesService {
               title,
               description,
               price,
+              weekday_price,
+              weekend_price,
               location,
               property_type,
               bedrooms,
@@ -399,6 +405,8 @@ class PropertiesService {
             title: item.title,
             description: item.description,
             price: item.price,
+            weekdayPrice: item.weekday_price || undefined,
+            weekendPrice: item.weekend_price || undefined,
             location: item.location,
             propertyType: item.property_type,
             bedrooms: item.bedrooms,
@@ -577,6 +585,8 @@ class PropertiesService {
           title: item.title,
           description: item.description,
           price: item.price,
+          weekdayPrice: item.weekday_price || undefined,
+          weekendPrice: item.weekend_price || undefined,
           location: item.location,
           propertyType: item.property_type,
           bedrooms: item.bedrooms,
@@ -618,6 +628,8 @@ class PropertiesService {
               title,
               description,
               price,
+              weekday_price,
+              weekend_price,
               location,
               property_type,
               bedrooms,
@@ -711,6 +723,8 @@ class PropertiesService {
             title: data.title,
             description: data.description,
             price: data.price,
+            weekdayPrice: data.weekday_price || undefined,
+            weekendPrice: data.weekend_price || undefined,
             location: data.location,
             propertyType: data.property_type,
             bedrooms: data.bedrooms,
@@ -762,6 +776,8 @@ class PropertiesService {
           title: data.title,
           description: data.description,
           price: data.price,
+          weekday_price: data.weekdayPrice,
+          weekend_price: data.weekendPrice,
           location: data.location,
           property_type: data.propertyType,
           bedrooms: data.bedrooms,
@@ -839,6 +855,8 @@ class PropertiesService {
       if (data.title) updateData.title = data.title
       if (data.description) updateData.description = data.description
       if (data.price) updateData.price = data.price
+      if (data.weekdayPrice !== undefined) updateData.weekday_price = data.weekdayPrice
+      if (data.weekendPrice !== undefined) updateData.weekend_price = data.weekendPrice
       if (data.location) updateData.location = data.location
       if (data.propertyType) updateData.property_type = data.propertyType
       if (data.bedrooms !== undefined) updateData.bedrooms = data.bedrooms

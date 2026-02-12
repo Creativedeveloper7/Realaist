@@ -85,11 +85,23 @@ const convertPropertyToHouse = (property: Property) => {
   const isLand = (property.propertyType || '').toLowerCase() === 'land';
   const landArea = isLand ? inferLandAreaDisplay(property.squareFeet) : '';
 
+  const today = new Date();
+  const isWeekend = today.getDay() === 0 || today.getDay() === 6; // Sunday or Saturday
+  const shortStay = (property.propertyType || '').toLowerCase() === 'short stay';
+
+  const effectivePrice = (() => {
+    if (!shortStay) return property.price;
+    if (isWeekend) {
+      return property.weekendPrice || property.weekdayPrice || property.price;
+    }
+    return property.weekdayPrice || property.price;
+  })();
+
   return {
     id: property.id,
     name: property.title,
     location: property.location,
-    price: formatPrice(property.price),
+    price: formatPrice(effectivePrice),
     facts: isLand
       ? []
       : [
@@ -382,7 +394,13 @@ export default function HousesPage() {
             const uniqueHouses = convertedHouses.filter((house, index, self) => 
               index === self.findIndex(h => h.id === house.id)
             );
-            setFilteredHouses(uniqueHouses);
+            // Exclude short stay properties
+            const nonShortStayHouses = uniqueHouses.filter(house => {
+              const originalProperty = properties.find(p => p.id === house.id);
+              const isShortStay = (originalProperty?.propertyType || '').toLowerCase() === 'short stay';
+              return !isShortStay;
+            });
+            setFilteredHouses(nonShortStayHouses);
             setIsLoading(false);
             return true; // Data loaded from storage
           } else {
@@ -439,7 +457,13 @@ export default function HousesPage() {
             const uniqueHouses = convertedHouses.filter((house, index, self) => 
               index === self.findIndex(h => h.id === house.id)
             );
-            setFilteredHouses(uniqueHouses);
+            // Exclude short stay properties
+            const nonShortStayHouses = uniqueHouses.filter(house => {
+              const originalProperty = properties.find(p => p.id === house.id);
+              const isShortStay = (originalProperty?.propertyType || '').toLowerCase() === 'short stay';
+              return !isShortStay;
+            });
+            setFilteredHouses(nonShortStayHouses);
             setIsLoading(false);
             
             // Fetch fresh data in background without blocking UI
@@ -456,7 +480,13 @@ export default function HousesPage() {
                   const uniqueHouses = convertedHouses.filter((house, index, self) => 
                     index === self.findIndex(h => h.id === house.id)
                   );
-                  setFilteredHouses(uniqueHouses);
+                  // Exclude short stay properties
+                  const nonShortStayHouses = uniqueHouses.filter(house => {
+                    const originalProperty = freshProperties.find(p => p.id === house.id);
+                    const isShortStay = (originalProperty?.propertyType || '').toLowerCase() === 'short stay';
+                    return !isShortStay;
+                  });
+                  setFilteredHouses(nonShortStayHouses);
                 }
               } catch (err) {
                 console.log('HousesPage: Background fetch failed, keeping stored data');
@@ -501,7 +531,13 @@ export default function HousesPage() {
           const uniqueHouses = convertedHouses.filter((house: any, index: number, self: any[]) => 
             index === self.findIndex((h: any) => h.id === house.id)
           );
-          setFilteredHouses(uniqueHouses);
+          // Exclude short stay properties
+          const nonShortStayHouses = uniqueHouses.filter((house: any) => {
+            const originalProperty = fetchedProperties.find((p: Property) => p.id === house.id);
+            const isShortStay = (originalProperty?.propertyType || '').toLowerCase() === 'short stay';
+            return !isShortStay;
+          });
+          setFilteredHouses(nonShortStayHouses);
           setIsOfflineMode(false);
           // Clear offline mode flag since we successfully fetched data
           localStorage.removeItem('offline_mode');
@@ -516,7 +552,13 @@ export default function HousesPage() {
             const uniqueHouses = convertedHouses.filter((house, index, self) => 
               index === self.findIndex(h => h.id === house.id)
             );
-            setFilteredHouses(uniqueHouses);
+            // Exclude short stay properties
+            const nonShortStayHouses = uniqueHouses.filter(house => {
+              const originalProperty = properties.find(p => p.id === house.id);
+              const isShortStay = (originalProperty?.propertyType || '').toLowerCase() === 'short stay';
+              return !isShortStay;
+            });
+            setFilteredHouses(nonShortStayHouses);
           } else {
             // Try to load from localStorage as fallback
             console.log('HousesPage: No properties from database, trying localStorage fallback');
@@ -540,7 +582,13 @@ export default function HousesPage() {
           const uniqueHouses = convertedHouses.filter((house: any, index: number, self: any[]) => 
             index === self.findIndex((h: any) => h.id === house.id)
           );
-          setFilteredHouses(uniqueHouses);
+          // Exclude short stay properties
+          const nonShortStayHouses = uniqueHouses.filter((house: any) => {
+            const originalProperty = properties.find((p: Property) => p.id === house.id);
+            const isShortStay = (originalProperty?.propertyType || '').toLowerCase() === 'short stay';
+            return !isShortStay;
+          });
+          setFilteredHouses(nonShortStayHouses);
         } else {
           // Try to load from localStorage as fallback
           console.log('HousesPage: Database error, trying localStorage fallback');
@@ -660,6 +708,13 @@ export default function HousesPage() {
     filtered = filtered.filter((house, index, self) => 
       index === self.findIndex(h => h.id === house.id)
     );
+
+    // Exclude short stay properties (they have their own dedicated page)
+    filtered = filtered.filter(house => {
+      const originalProperty = properties.find(p => p.id === house.id);
+      const isShortStay = (originalProperty?.propertyType || '').toLowerCase() === 'short stay';
+      return !isShortStay;
+    });
 
     // Filter by search term
     if (searchTerm) {

@@ -54,6 +54,7 @@ export function Header({ isDarkMode, toggleTheme, onLoginClick, showLogo = true 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-8 text-sm">
           <a href="/properties" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Properties</a>
+          <a href="/short-stays" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Short Stays</a>
           <a href="/blogs" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Blogs</a>
           <a href="#contact" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
           {isAuthenticated ? (
@@ -137,6 +138,7 @@ export function Header({ isDarkMode, toggleTheme, onLoginClick, showLogo = true 
       >
         <div className="px-4 py-6 space-y-4">
           <a href="/properties" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Properties</a>
+          <a href="/short-stays" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Short Stays</a>
           <a href="/blogs" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Blogs</a>
           <a href="#contact" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
           {isAuthenticated ? (

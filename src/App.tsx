@@ -15,6 +15,7 @@ import ScheduledVisits from './pages/ScheduledVisits';
 import { Analytics } from './pages/Analytics';
 import { Blogs } from './pages/Blogs';
 import DashboardCampaignAds from './pages/DashboardCampaignAds';
+import ShortStays from './pages/ShortStays';
 import { AdminDashboard } from './pages/AdminDashboard';
 import OverviewPage from './pages/admin/OverviewPage';
 import AnalyticsPage from './pages/admin/AnalyticsPage';
@@ -30,6 +31,8 @@ import { default as PublicBlogsPage } from './BlogsPage';
 import BlogDetailsPage from './BlogDetailsPage';
 import PropertyDetails from './PropertyDetails';
 import HousesPage from './HousesPage';
+import ShortStaysPage from './pages/ShortStaysPage';
+import MessageHost from './pages/MessageHost';
 import { CampaignPreview } from './pages/CampaignPreview';
 
 // Import styles
@@ -72,8 +75,10 @@ function AppContent() {
 
         <Route path="/property/:propertyId" element={<PropertyDetails />} />
         <Route path="/p/:propertyId" element={<PropertyDetails />} />
+        <Route path="/property/:propertyId/message-host" element={<MessageHost />} />
 
         <Route path="/properties" element={<HousesPage />} />
+        <Route path="/short-stays" element={<ShortStaysPage />} />
 
         <Route path="/campaign-preview" element={<CampaignPreview />} />
 
@@ -145,6 +150,17 @@ function AppContent() {
             <ProtectedRoute>
               <DashboardLayout isDarkMode={isDarkMode}>
                 <Analytics isDarkMode={isDarkMode} />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/short-stays"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout isDarkMode={isDarkMode}>
+                <ShortStays isDarkMode={isDarkMode} />
               </DashboardLayout>
             </ProtectedRoute>
           }
