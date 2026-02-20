@@ -14,10 +14,11 @@ export function Header({ isDarkMode, toggleTheme, onLoginClick, showLogo = true 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
+  const isHost = isAuthenticated && user?.userType === 'host';
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    navigate(isHost ? '/short-stays' : '/');
   };
 
   return (
@@ -35,7 +36,7 @@ export function Header({ isDarkMode, toggleTheme, onLoginClick, showLogo = true 
         <div className="flex items-center gap-3">
           {showLogo && (
             <motion.a 
-              href="/"
+              href={isHost ? "/short-stays" : "/"}
               className={`border border-dashed rounded px-2 py-1 transition-colors duration-300 ${
                 isDarkMode ? 'border-white/60' : 'border-gray-400'
               }`}
@@ -53,14 +54,24 @@ export function Header({ isDarkMode, toggleTheme, onLoginClick, showLogo = true 
         
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-8 text-sm">
-          <a href="/properties" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Properties</a>
-          <a href="/short-stays" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Short Stays</a>
-          <a href="/blogs" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Blogs</a>
-          <a href="#contact" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
+          {!isHost && (
+            <>
+              <a href="/properties" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Properties</a>
+              <a href="/short-stays" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Short Stays</a>
+              <a href="/blogs" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Blogs</a>
+              <a href="/contact" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
+            </>
+          )}
+          {isHost && (
+            <>
+              <a href="/short-stays" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Short Stays</a>
+              <a href="/contact" className={`transition-colors ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
+            </>
+          )}
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
               <motion.button
-                onClick={() => navigate('/developer-dashboard')}
+                onClick={() => navigate(isHost ? '/dashboard' : '/developer-dashboard')}
                 className="px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -137,14 +148,24 @@ export function Header({ isDarkMode, toggleTheme, onLoginClick, showLogo = true 
         transition={{ duration: 0.3, ease: "easeInOut" }}
       >
         <div className="px-4 py-6 space-y-4">
-          <a href="/properties" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Properties</a>
-          <a href="/short-stays" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Short Stays</a>
-          <a href="/blogs" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Blogs</a>
-          <a href="#contact" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
+          {!isHost && (
+            <>
+              <a href="/properties" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Properties</a>
+              <a href="/short-stays" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Short Stays</a>
+              <a href="/blogs" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Blogs</a>
+              <a href="/contact" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
+            </>
+          )}
+          {isHost && (
+            <>
+              <a href="/short-stays" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Short Stays</a>
+              <a href="/contact" className={`block transition-colors py-2 ${isDarkMode ? 'text-white hover:text-white/80' : 'text-gray-900 hover:text-gray-600'}`}>Contact</a>
+            </>
+          )}
           {isAuthenticated ? (
             <div className="space-y-3">
               <motion.button
-                onClick={() => navigate('/developer-dashboard')}
+                onClick={() => navigate(isHost ? '/dashboard' : '/developer-dashboard')}
                 className="w-full px-4 py-2 rounded-full bg-[#C7A667] text-black font-medium hover:bg-[#B89657] transition-colors"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}

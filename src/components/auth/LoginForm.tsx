@@ -53,12 +53,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     
     if (result.success) {
       onSuccess?.();
-      // Prefer role from AuthContext to avoid email edge cases
-      if (user?.userType === 'admin') {
+      const loggedInUser = result.user ?? user;
+      if (loggedInUser?.userType === 'admin') {
         navigate('/admin');
         return;
       }
-      // Fallback to email allowlist in case user hasn't propagated yet
+      if (loggedInUser?.userType === 'host') {
+        navigate('/short-stays');
+        return;
+      }
       const adminEmails = [
         'admin@realaist.com',
         'admin@realaist.tech',
@@ -87,16 +90,18 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     
     if (result.success) {
       onSuccess?.();
-      // Prefer role from AuthContext if already available
-      if (user?.userType === 'admin') {
-        navigate('/admin');
-        return;
-      }
-      // After OAuth, we may not have user immediately; try stored user
       try {
         const stored = localStorage.getItem('current_user');
         if (stored) {
           const parsed = JSON.parse(stored);
+          if (parsed?.userType === 'admin') {
+            navigate('/admin');
+            return;
+          }
+          if (parsed?.userType === 'host') {
+            navigate('/short-stays');
+            return;
+          }
           const adminEmails = [
             'admin@realaist.com',
             'admin@realaist.tech',
@@ -108,7 +113,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           return;
         }
       } catch {}
-      // Fallback
       navigate('/dashboard');
     } else {
       setErrors({ general: result.error || 'Google sign-in failed' });

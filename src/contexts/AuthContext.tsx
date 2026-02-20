@@ -42,7 +42,7 @@ export interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: User }>;
   signup: (userData: SignupData) => Promise<{ success: boolean; error?: string }>;
   signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
@@ -204,7 +204,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           new CustomEvent('realaist:user-logged-in', { detail: { user: newUser } })
         );
 
-        return { success: true };
+        return { success: true, user: newUser };
       }
       return { success: false, error: result.error || 'Login failed' };
     } catch (error) {

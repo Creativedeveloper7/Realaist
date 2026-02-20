@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useTheme } from './ThemeContext';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AuthModal } from './components/auth/AuthModal';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { DashboardLayout } from './components/dashboard/DashboardLayout';
@@ -35,10 +35,26 @@ import PropertyDetails from './PropertyDetails';
 import HousesPage from './HousesPage';
 import ShortStaysPage from './pages/ShortStaysPage';
 import MessageHost from './pages/MessageHost';
+import ContactPage from './pages/ContactPage';
 import { CampaignPreview } from './pages/CampaignPreview';
 
 // Import styles
 import './styles/global.css';
+
+/** When a host is logged in, redirect to /short-stays instead of showing the wrapped route. */
+function HostRestrictedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, user } = useAuth();
+  if (isAuthenticated && user?.userType === 'host') {
+    return <Navigate to="/short-stays" replace />;
+  }
+  return <>{children}</>;
+}
+
+/** Redirect unknown routes: host → /short-stays, others → /. */
+function NavigateToDefault() {
+  const { isAuthenticated, user } = useAuth();
+  return <Navigate to={isAuthenticated && user?.userType === 'host' ? '/short-stays' : '/'} replace />;
+}
 
 // Main App Component with Authentication
 function AppContent() {
@@ -69,23 +85,49 @@ function AppContent() {
   return (
     <>
       <Routes>
-        {/* Public Routes */}
+        {/* Public Routes — hosts are redirected to /short-stays for these */}
         <Route
           path="/"
-          element={<HomePage onLoginClick={handleLoginClick} />}
+          element={
+            <HostRestrictedRoute>
+              <HomePage onLoginClick={handleLoginClick} />
+            </HostRestrictedRoute>
+          }
         />
 
         <Route path="/property/:propertyId" element={<PropertyDetails />} />
         <Route path="/p/:propertyId" element={<PropertyDetails />} />
         <Route path="/property/:propertyId/message-host" element={<MessageHost />} />
 
-        <Route path="/properties" element={<HousesPage />} />
+        <Route
+          path="/properties"
+          element={
+            <HostRestrictedRoute>
+              <HousesPage />
+            </HostRestrictedRoute>
+          }
+        />
         <Route path="/short-stays" element={<ShortStaysPage />} />
+        <Route path="/contact" element={<ContactPage />} />
 
         <Route path="/campaign-preview" element={<CampaignPreview />} />
 
-        <Route path="/blogs" element={<PublicBlogsPage />} />
-        <Route path="/blog/:blogId" element={<BlogDetailsPage />} />
+        <Route
+          path="/blogs"
+          element={
+            <HostRestrictedRoute>
+              <PublicBlogsPage />
+            </HostRestrictedRoute>
+          }
+        />
+        <Route
+          path="/blog/:blogId"
+          element={
+            <HostRestrictedRoute>
+              <BlogDetailsPage />
+            </HostRestrictedRoute>
+          }
+        />
 
         {/* Admin Login Route */}
         <Route path="/admin/login" element={<AdminLogin isDarkMode={isDarkMode} />} />
@@ -314,7 +356,7 @@ function AppContent() {
         />
 
         {/* Redirect any unknown routes to home */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NavigateToDefault />} />
       </Routes>
 
       {/* Global Auth Modal */}
