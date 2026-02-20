@@ -256,7 +256,7 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
       <div className="max-w-3xl mx-auto py-10">
         <h1 className={`text-2xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Short Stays</h1>
         <p className={isDarkMode ? 'text-white/70' : 'text-gray-700'}>
-          Short stay listings can only be created by developers. Please switch to a developer account to use this feature.
+          Short stay listings can only be created by developers or hosts. Sign up as a developer or host to list your properties.
         </p>
       </div>
     );

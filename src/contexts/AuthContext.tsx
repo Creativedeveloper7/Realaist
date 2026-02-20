@@ -10,9 +10,10 @@ export interface User {
   lastName: string;
   phone?: string;
   avatarUrl?: string;
-  userType: 'buyer' | 'developer' | 'admin';
+  userType: 'buyer' | 'developer' | 'host' | 'admin';
   companyName?: string;
   licenseNumber?: string;
+  address?: string;
   website?: string;
   instagram?: string;
   x?: string;
@@ -30,10 +31,11 @@ export interface SignupData {
   password: string;
   firstName: string;
   lastName: string;
-  userType: 'buyer' | 'developer' | 'admin';
+  userType: 'buyer' | 'developer' | 'host' | 'admin';
   phone?: string;
   companyName?: string;
   licenseNumber?: string;
+  address?: string;
 }
 
 export interface AuthContextType {
@@ -86,9 +88,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       lastName: authUser.lastName,
       phone: authUser.phone,
       avatarUrl: authUser.avatarUrl,
-      userType: userType as 'buyer' | 'developer' | 'admin',
+      userType: userType as 'buyer' | 'developer' | 'host' | 'admin',
       companyName: authUser.companyName,
       licenseNumber: authUser.licenseNumber,
+      address: authUser.address,
       website: authUser.website,
       instagram: authUser.instagram,
       x: authUser.x,

@@ -18,7 +18,8 @@ import {
   DollarSign,
   MessageSquare,
   FileText,
-  Megaphone
+  Megaphone,
+  Bed
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -38,6 +39,7 @@ const adminNavItems: NavItem[] = [
   { id: 'overview', label: 'Overview', icon: Home, href: '/admin' },
   { id: 'developers', label: 'Developers', icon: Users, href: '/admin/developers' },
   { id: 'properties', label: 'All Properties', icon: Building2, href: '/admin/properties' },
+  { id: 'hosts', label: 'Hosts', icon: Bed, href: '/admin/hosts' },
   { id: 'campaigns', label: 'Campaigns', icon: Megaphone, href: '/admin/campaigns' },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/admin/analytics' },
   { id: 'revenue', label: 'Revenue', icon: DollarSign, href: '/admin/revenue' },
@@ -72,6 +74,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     if (path === '/admin') return 'overview';
     if (path === '/admin/developers') return 'developers';
     if (path === '/admin/properties') return 'properties';
+    if (path === '/admin/hosts') return 'hosts';
     if (path === '/admin/campaigns') return 'campaigns';
     if (path === '/admin/analytics') return 'analytics';
     if (path === '/admin/revenue') return 'revenue';

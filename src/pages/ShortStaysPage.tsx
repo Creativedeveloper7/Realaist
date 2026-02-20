@@ -148,10 +148,19 @@ export default function ShortStaysPage() {
             transition={{ duration: 0.6 }}
             className="text-center"
           >
-            <h1 className={`text-4xl md:text-5xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              Short Stay Properties
-            </h1>
-            <p className={`text-lg ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>
+            <motion.h1
+              className={`font-heading text-5xl md:text-7xl lg:text-8xl leading-none tracking-tight mb-6 transition-colors duration-300 ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}
+              style={{
+                fontFamily: "'Cinzel', 'Playfair Display', serif",
+                fontWeight: 500,
+                letterSpacing: '0.05em',
+              }}
+            >
+              Short Stays
+            </motion.h1>
+            <p className={`text-xl max-w-2xl mx-auto transition-colors duration-300 ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>
               Discover beautiful short-term rentals for your next getaway
             </p>
           </motion.div>

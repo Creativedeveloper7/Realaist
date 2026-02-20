@@ -53,11 +53,18 @@ const buyerNavItems: NavItem[] = [
 const developerNavItems: NavItem[] = [
   { id: 'overview', label: 'Overview', icon: Home, href: '/dashboard' },
   { id: 'properties', label: 'My Properties', icon: Search, href: '/dashboard/properties' },
-  { id: 'short-stays', label: 'Short Stays', icon: Bed, href: '/dashboard/short-stays' },
   { id: 'scheduled-visits', label: 'Client Data', icon: MessageSquare, href: '/dashboard/scheduled-visits', badge: 3 },
   { id: 'blogs', label: 'Blogs', icon: BookOpen, href: '/dashboard/blogs' },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/dashboard/analytics' },
   { id: 'campaign-ads', label: 'Campaign Ads', icon: Megaphone, href: '/dashboard/campaign-ads' },
+  { id: 'profile', label: 'Profile', icon: User, href: '/dashboard/profile' },
+];
+
+// Navigation items for short-stay hosts
+const hostNavItems: NavItem[] = [
+  { id: 'overview', label: 'Overview', icon: Home, href: '/dashboard' },
+  { id: 'short-stays', label: 'My Short Stays', icon: Bed, href: '/dashboard/short-stays' },
+  { id: 'messages', label: 'Guest Messages', icon: MessageSquare, href: '/dashboard/messages' },
   { id: 'profile', label: 'Profile', icon: User, href: '/dashboard/profile' },
 ];
 
@@ -74,8 +81,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const getNavItems = () => {
     if (user?.userType === 'buyer') {
       return buyerNavItems;
-    } else if (user?.userType === 'developer') {
+    }
+    if (user?.userType === 'developer') {
       return developerNavItems;
+    }
+    if (user?.userType === 'host') {
+      return hostNavItems;
     }
     return allNavItems; // fallback
   };
@@ -88,6 +99,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     if (path === '/dashboard') return 'overview';
     if (path === '/dashboard/properties') return 'properties';
     if (path === '/dashboard/short-stays') return 'short-stays';
+    if (path === '/dashboard/messages') return 'messages';
     if (path === '/dashboard/scheduled-visits') return 'scheduled-visits';
     if (path === '/dashboard/analytics') return 'analytics';
     if (path === '/dashboard/campaign-ads') return 'campaign-ads';

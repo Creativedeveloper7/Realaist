@@ -8,6 +8,7 @@ import { scheduledVisitsService } from './services/scheduledVisitsService';
 import { openPaystackInlineForBooking } from './services/paymentService';
 import { Header } from './components/Header';
 import { shareToWhatsApp, PropertyShareData } from './utils/whatsappShare';
+import type { LucideIcon } from 'lucide-react';
 import {
   Share2,
   Wifi,
@@ -24,15 +25,23 @@ import {
   Dumbbell,
   Wind,
   Shield,
-  PanelsTopLeft
+  PanelsTopLeft,
+  TreePine,
+  Building2,
+  School,
+  ShoppingCart,
+  Mountain,
+  Droplets,
+  Zap
 } from 'lucide-react';
 
 type AmenityMeta = {
   label: string;
-  Icon: React.ComponentType<{ size?: number; className?: string }>;
+  Icon: LucideIcon;
 };
 
-const AMENITY_META: Record<string, AmenityMeta> = {
+// Short-stay amenity IDs (from ShortStays form)
+const SHORT_STAY_AMENITY_META: Record<string, AmenityMeta> = {
   kitchen: { label: 'Kitchen', Icon: Utensils },
   workspace: { label: 'Dedicated workspace', Icon: Briefcase },
   tv: { label: 'TV', Icon: Monitor },
@@ -50,11 +59,46 @@ const AMENITY_META: Record<string, AmenityMeta> = {
   security: { label: 'Security', Icon: Shield },
 };
 
+// Regular property amenities (full labels from PropertyUploadModal)
+const REGULAR_AMENITY_META: Record<string, AmenityMeta> = {
+  'Swimming Pool': { label: 'Swimming Pool', Icon: Waves },
+  'Gym/Fitness Center': { label: 'Gym/Fitness Center', Icon: Dumbbell },
+  'Parking': { label: 'Parking', Icon: CarFront },
+  'Security': { label: 'Security', Icon: Shield },
+  'Garden/Landscaping': { label: 'Garden/Landscaping', Icon: TreePine },
+  'Playground': { label: 'Playground', Icon: Building2 },
+  'Clubhouse': { label: 'Clubhouse', Icon: Building2 },
+  'Elevator': { label: 'Elevator', Icon: PanelsTopLeft },
+  'Balcony': { label: 'Balcony', Icon: PanelsTopLeft },
+  'Air Conditioning': { label: 'Air Conditioning', Icon: Snowflake },
+  // Land amenities
+  'Near School': { label: 'Near School', Icon: School },
+  'Near Hospital': { label: 'Near Hospital', Icon: Building2 },
+  'Near Shopping Center': { label: 'Near Shopping Center', Icon: ShoppingCart },
+  'Near Tarmac Road': { label: 'Near Tarmac Road', Icon: CarFront },
+  'Public Transport Access': { label: 'Public Transport Access', Icon: CarFront },
+  'Proximity to CBD': { label: 'Proximity to CBD', Icon: Building2 },
+  'Scenic Views': { label: 'Scenic Views', Icon: Mountain },
+  'Near Water Source': { label: 'Near Water Source', Icon: Droplets },
+  'Near Electricity Grid': { label: 'Near Electricity Grid', Icon: Zap },
+  'Gentle Terrain': { label: 'Gentle Terrain', Icon: Mountain },
+  'Ready Title Deed': { label: 'Ready Title Deed', Icon: Briefcase },
+  'Beacons Placed': { label: 'Beacons Placed', Icon: Shield },
+};
+
+const AMENITY_META = { ...SHORT_STAY_AMENITY_META, ...REGULAR_AMENITY_META };
+
 const getAmenityMeta = (id: string): AmenityMeta => {
+  // Try exact match (short-stay IDs or full labels)
   if (AMENITY_META[id]) return AMENITY_META[id];
+  // Try case-insensitive match for regular property labels
+  const key = Object.keys(REGULAR_AMENITY_META).find(
+    (k) => k.toLowerCase() === id.toLowerCase()
+  );
+  if (key) return REGULAR_AMENITY_META[key];
   return {
     label: id,
-    Icon: Monitor, // simple fallback icon
+    Icon: Briefcase, // neutral fallback instead of TV
   };
 };
 
@@ -147,7 +191,10 @@ export default function PropertyDetails() {
   const [bookingMessage, setBookingMessage] = useState('');
   const [bookingName, setBookingName] = useState('');
   const [bookingEmail, setBookingEmail] = useState('');
-  
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+
+  const DESCRIPTION_PREVIEW_LENGTH = 400;
+
   // Helper function to convert database property to display format
   const convertPropertyToDisplay = (dbProperty: Property) => {
     console.log('PropertyDetails: Converting property to display format:', {
@@ -794,7 +841,9 @@ export default function PropertyDetails() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="grid md:grid-cols-3 gap-8">
               {/* Left Column - Property Details */}
-              <div className="md:col-span-2 space-y-6">
+              <div className={`md:col-span-2 space-y-6 rounded-2xl border p-6 md:p-8 transition-colors duration-300 ${
+                isDarkMode ? 'bg-[#0E0E10]/80 border-white/10' : 'bg-white border-gray-200 shadow-sm'
+              }`}>
                 {/* Property Name and Location */}
                 <div>
                   <h1 className={`text-4xl md:text-5xl font-heading mb-2 transition-colors duration-300 ${
@@ -814,7 +863,9 @@ export default function PropertyDetails() {
                   </div>
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
-                      <div className="text-2xl font-medium text-[#C7A667]">{property.price}</div>
+                      <div className={`text-2xl md:text-3xl font-heading font-semibold text-[#C7A667]`} style={{ fontFamily: "'Cinzel', 'Playfair Display', serif", letterSpacing: '0.02em' }}>
+                        {property.price}
+                      </div>
                       {isLand && property.landArea && (
                         <div className={`text-sm font-medium px-3 py-1 rounded-full border transition-colors duration-300 ${
                           isDarkMode 
@@ -944,7 +995,30 @@ export default function PropertyDetails() {
                   <div className={`leading-relaxed transition-colors duration-300 whitespace-pre-line ${
                     isDarkMode ? 'text-white/80' : 'text-gray-700'
                   }`}>
-                    {property.description}
+                    {(() => {
+                      const desc = property.description || '';
+                      const isLong = desc.length > DESCRIPTION_PREVIEW_LENGTH;
+                      const showTruncated = isLong && !descriptionExpanded;
+                      const text = showTruncated
+                        ? desc.slice(0, DESCRIPTION_PREVIEW_LENGTH).trim() + (desc.length > DESCRIPTION_PREVIEW_LENGTH ? '...' : '')
+                        : desc;
+                      return (
+                        <>
+                          {text}
+                          {isLong && (
+                            <motion.button
+                              type="button"
+                              onClick={() => setDescriptionExpanded((v) => !v)}
+                              className={`mt-3 text-sm font-medium transition-colors ${
+                                isDarkMode ? 'text-[#C7A667] hover:text-[#B8965A]' : 'text-[#C7A667] hover:text-[#B8965A]'
+                              }`}
+                            >
+                              {descriptionExpanded ? 'Show less' : 'Show more'}
+                            </motion.button>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
 
@@ -1040,7 +1114,9 @@ export default function PropertyDetails() {
               </div>
 
               {/* Right Column - Actions and Desktop Map */}
-              <div className="space-y-6">
+              <div className={`space-y-6 rounded-2xl border p-6 transition-colors duration-300 ${
+                isDarkMode ? 'bg-[#0E0E10]/80 border-white/10 h-fit' : 'bg-white border-gray-200 shadow-sm h-fit'
+              }`}>
                 {/* Action Buttons */}
                 <div className="space-y-3">
                   {isShortStay ? (

@@ -16,12 +16,14 @@ import { Analytics } from './pages/Analytics';
 import { Blogs } from './pages/Blogs';
 import DashboardCampaignAds from './pages/DashboardCampaignAds';
 import ShortStays from './pages/ShortStays';
+import { HostMessages } from './pages/HostMessages';
 import { AdminDashboard } from './pages/AdminDashboard';
 import OverviewPage from './pages/admin/OverviewPage';
 import AnalyticsPage from './pages/admin/AnalyticsPage';
 import { AdminLogin } from './pages/AdminLogin';
 import { AdminLayout } from './components/dashboard/AdminLayout';
 import PropertiesPage from './pages/admin/PropertiesPage';
+import HostsPage from './pages/admin/HostsPage';
 import CampaignManagement from './pages/admin/CampaignManagement';
 import RevenuePage from './pages/admin/RevenuePage';
 import MessagesPage from './pages/admin/MessagesPage';
@@ -167,6 +169,17 @@ function AppContent() {
         />
 
         <Route
+          path="/dashboard/messages"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout isDarkMode={isDarkMode}>
+                <HostMessages isDarkMode={isDarkMode} />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/dashboard/campaign-ads"
           element={
             <ProtectedRoute>
@@ -218,6 +231,17 @@ function AppContent() {
             <ProtectedRoute requireAdmin={true}>
               <AdminLayout isDarkMode={isDarkMode}>
                 <PropertiesPage isDarkMode={isDarkMode} />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/hosts"
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <AdminLayout isDarkMode={isDarkMode}>
+                <HostsPage isDarkMode={isDarkMode} />
               </AdminLayout>
             </ProtectedRoute>
           }

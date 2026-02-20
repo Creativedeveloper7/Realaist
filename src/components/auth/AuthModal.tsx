@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LoginForm } from './LoginForm';
 import { DeveloperSignupForm } from './DeveloperSignupForm';
+import { HostSignupForm } from './HostSignupForm';
 import { GoogleSignupHandler } from './GoogleSignupHandler';
+import { Building2, Home } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -11,7 +13,7 @@ interface AuthModalProps {
   initialMode?: 'login' | 'signup';
 }
 
-type AuthStep = 'login' | 'signup' | 'developerSignup' | 'googleSignup';
+type AuthStep = 'login' | 'signupChoice' | 'developerSignup' | 'hostSignup' | 'googleSignup';
 
 export const AuthModal: React.FC<AuthModalProps> = ({ 
   isOpen, 
@@ -19,7 +21,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   isDarkMode, 
   initialMode = 'login' 
 }) => {
-  const [currentStep, setCurrentStep] = useState<AuthStep>(initialMode);
+  const [currentStep, setCurrentStep] = useState<AuthStep>(
+    initialMode === 'signup' ? 'signupChoice' : initialMode
+  );
 
   if (!isOpen) return null;
 
@@ -30,14 +34,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const handleBack = () => {
     switch (currentStep) {
       case 'developerSignup':
+      case 'hostSignup':
+        setCurrentStep('signupChoice');
+        break;
+      case 'signupChoice':
         setCurrentStep('login');
         break;
       default:
         setCurrentStep('login');
     }
   };
-
-  // No user type selection; always developer signup
 
   return (
     <AnimatePresence>
@@ -78,7 +84,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 transition={{ duration: 0.2 }}
               >
                 {currentStep === 'login' ? 'Welcome Back' :
+                 currentStep === 'signupChoice' ? 'Create Account' :
                  currentStep === 'developerSignup' ? 'Create Realtor Account' :
+                 currentStep === 'hostSignup' ? 'Create Host Account' :
                  'Create Account'}
               </motion.h3>
               <motion.button
@@ -108,24 +116,96 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             >
               {currentStep === 'login'
                 ? 'Sign in to your account to access your dashboard and manage your properties.'
-                : 'Create your realtor account to list and manage properties.'}
+                : currentStep === 'signupChoice'
+                  ? 'Choose how you want to sign up.'
+                  : currentStep === 'hostSignup'
+                    ? 'Create your host account to list short stays.'
+                    : 'Create your realtor account to list and manage properties.'}
             </motion.p>
           )}
 
-          {/* No user type selector in this simplified flow */}
-        
-        <AnimatePresence mode="wait">
+          <AnimatePresence mode="wait">
           {currentStep === 'login' && (
             <LoginForm
               key="login"
               isDarkMode={isDarkMode}
               onSuccess={handleSuccess}
-              onSwitchToSignup={() => setCurrentStep('developerSignup')}
+              onSwitchToSignup={() => setCurrentStep('signupChoice')}
             />
+          )}
+          {currentStep === 'signupChoice' && (
+            <div key="signupChoice" className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <motion.button
+                  type="button"
+                  onClick={() => setCurrentStep('developerSignup')}
+                  className={`flex items-center gap-4 p-6 rounded-xl border-2 text-left transition-all ${
+                    isDarkMode
+                      ? 'border-white/20 hover:border-[#C7A667] bg-white/5 hover:bg-white/10'
+                      : 'border-gray-200 hover:border-[#C7A667] bg-gray-50 hover:bg-gray-100'
+                  }`}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div className="p-3 rounded-lg bg-green-500 text-white">
+                    <Building2 size={28} />
+                  </div>
+                  <div>
+                    <h4 className={`font-semibold text-lg ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      Sign up as Developer
+                    </h4>
+                    <p className={`text-sm mt-1 ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>
+                      List and manage properties as a realtor
+                    </p>
+                  </div>
+                </motion.button>
+                <motion.button
+                  type="button"
+                  onClick={() => setCurrentStep('hostSignup')}
+                  className={`flex items-center gap-4 p-6 rounded-xl border-2 text-left transition-all ${
+                    isDarkMode
+                      ? 'border-white/20 hover:border-[#C7A667] bg-white/5 hover:bg-white/10'
+                      : 'border-gray-200 hover:border-[#C7A667] bg-gray-50 hover:bg-gray-100'
+                  }`}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div className="p-3 rounded-lg bg-amber-500 text-white">
+                    <Home size={28} />
+                  </div>
+                  <div>
+                    <h4 className={`font-semibold text-lg ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      Sign up as Host
+                    </h4>
+                    <p className={`text-sm mt-1 ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>
+                      List short stays and manage bookings
+                    </p>
+                  </div>
+                </motion.button>
+              </div>
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep('login')}
+                  className={`text-sm ${isDarkMode ? 'text-white/70 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+                >
+                  Already have an account? Sign in
+                </button>
+              </div>
+            </div>
           )}
           {currentStep === 'developerSignup' && (
             <DeveloperSignupForm
               key="developerSignup"
+              isDarkMode={isDarkMode}
+              onBack={handleBack}
+              onSwitchToLogin={() => setCurrentStep('login')}
+              onSuccess={handleSuccess}
+            />
+          )}
+          {currentStep === 'hostSignup' && (
+            <HostSignupForm
+              key="hostSignup"
               isDarkMode={isDarkMode}
               onBack={handleBack}
               onSwitchToLogin={() => setCurrentStep('login')}

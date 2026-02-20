@@ -8,6 +8,19 @@ EXCEPTION
   WHEN duplicate_object THEN null;
 END $$;
 
+-- Add 'host' to user_type enum (for short-stay hosts)
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_enum e
+    JOIN pg_type t ON e.enumtypid = t.oid
+    WHERE t.typname = 'user_type' AND e.enumlabel = 'host'
+  ) THEN
+    ALTER TYPE user_type ADD VALUE 'host';
+  END IF;
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+
 DO $$ BEGIN
   CREATE TYPE property_status AS ENUM ('active', 'sold', 'pending', 'draft');
 EXCEPTION
@@ -35,6 +48,7 @@ CREATE TABLE profiles (
   user_type user_type NOT NULL,
   company_name TEXT,
   license_number TEXT,
+  address TEXT,
   phone TEXT,
   avatar_url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

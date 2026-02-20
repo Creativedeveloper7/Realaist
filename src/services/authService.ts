@@ -7,9 +7,10 @@ export interface AuthUser {
   lastName: string
   phone?: string
   avatarUrl?: string
-  userType: 'buyer' | 'developer' | 'admin'
+  userType: 'buyer' | 'developer' | 'host' | 'admin'
   companyName?: string
   licenseNumber?: string
+  address?: string
   website?: string
   instagram?: string
   x?: string
@@ -22,10 +23,11 @@ export interface SignUpData {
   password: string
   firstName: string
   lastName: string
-  userType: 'buyer' | 'developer' | 'admin'
+  userType: 'buyer' | 'developer' | 'host' | 'admin'
   phone?: string
   companyName?: string
   licenseNumber?: string
+  address?: string
 }
 
 export interface SignInData {
@@ -154,7 +156,8 @@ class AuthService {
           avatarUrl: newProfile.avatar_url,
           userType: newProfile.user_type,
           companyName: newProfile.company_name,
-          licenseNumber: newProfile.license_number
+          licenseNumber: newProfile.license_number,
+          address: newProfile.address ?? undefined
         }
       }
 
@@ -168,6 +171,7 @@ class AuthService {
           userType: profile.user_type,
           companyName: profile.company_name,
           licenseNumber: profile.license_number,
+          address: profile.address ?? undefined,
           website: profile.website,
           instagram: profile.instagram,
           x: profile.x,
@@ -207,7 +211,8 @@ class AuthService {
           userType: data.userType,
           phone: data.phone,
           companyName: data.companyName,
-          licenseNumber: data.licenseNumber
+          licenseNumber: data.licenseNumber,
+          address: data.address
         }
         localStorage.setItem('current_user', JSON.stringify(mockUser))
         return { user: mockUser, error: null }
@@ -223,7 +228,8 @@ class AuthService {
             user_type: data.userType,
             phone: data.phone,
             company_name: data.companyName,
-            license_number: data.licenseNumber
+            license_number: data.licenseNumber,
+            address: data.address
           }
         }
       })
@@ -257,7 +263,8 @@ class AuthService {
             userType: data.userType,
             phone: data.phone,
             companyName: data.companyName,
-            licenseNumber: data.licenseNumber
+            licenseNumber: data.licenseNumber,
+            address: data.address
           }
           localStorage.setItem('current_user', JSON.stringify(mockUser))
           return { user: mockUser, error: null }
@@ -296,6 +303,7 @@ class AuthService {
             phone: data.phone,
             company_name: data.companyName,
             license_number: data.licenseNumber,
+            address: data.address ?? null,
             avatar_url: authData.user.user_metadata?.avatar_url || null
           })
           .select()
@@ -330,6 +338,7 @@ class AuthService {
         userType: profile.user_type,
         companyName: profile.company_name,
         licenseNumber: profile.license_number,
+        address: profile.address ?? undefined,
         website: profile.website,
         instagram: profile.instagram,
         x: profile.x,
@@ -546,6 +555,7 @@ class AuthService {
           avatar_url: updates.avatarUrl,
           company_name: updates.companyName,
           license_number: updates.licenseNumber,
+          address: updates.address ?? undefined,
           website: updates.website,
           instagram: updates.instagram,
           x: updates.x,
@@ -571,6 +581,7 @@ class AuthService {
         userType: profile.user_type,
         companyName: profile.company_name,
         licenseNumber: profile.license_number,
+        address: profile.address ?? undefined,
         website: profile.website,
         instagram: profile.instagram,
         x: profile.x,
