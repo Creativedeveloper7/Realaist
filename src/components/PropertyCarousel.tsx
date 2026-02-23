@@ -43,7 +43,7 @@ export function PropertyCarousel({ title, projects, isDarkMode, showSummary = tr
             style={{ transform: `translateX(-${carouselIndex * 100}%)` }}
           >
             {projects.map((p, index) => (
-              <div key={p.name} className="w-full flex-shrink-0">
+              <div key={p.id ?? `${p.name}-${index}`} className="w-full flex-shrink-0">
                 <motion.article 
                   className="relative grid md:grid-cols-12 gap-6 items-stretch parallax-section p-6"
                   initial={{ opacity: 0, y: 100 }}

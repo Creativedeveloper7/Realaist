@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bed,
   Home,
@@ -22,10 +22,15 @@ import {
   Dumbbell,
   Wind,
   Shield,
-  PanelsTopLeft
+  PanelsTopLeft,
+  Pencil,
+  Trash2,
+  MapPin,
+  ExternalLink,
+  Plus
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { propertiesService, CreatePropertyData } from '../services/propertiesService';
+import { propertiesService, CreatePropertyData, Property } from '../services/propertiesService';
 import { storageService } from '../services/storageService';
 
 interface ShortStaysProps {
@@ -70,37 +75,122 @@ const amenityOptions = [
   { id: 'security', label: 'Security', Icon: Shield },
 ];
 
+const defaultForm: ShortStayForm = {
+  placeType: 'entire_place',
+  category: 'Apartment',
+  guests: 2,
+  bedrooms: 1,
+  beds: 1,
+  bathrooms: 1,
+  location: '',
+  title: '',
+  description: '',
+  features: [],
+  amenities: [],
+  weekdayBasePrice: '',
+  weekendBasePrice: '',
+  registerForAds: false,
+  images: [],
+};
+
+function parseDescriptionForEdit(description: string): { mainDescription: string; placeType: ShortStayForm['placeType']; category: ShortStayForm['category']; guests: number; bedrooms: number; beds: number; bathrooms: number } {
+  const detailsMatch = description.match(/\n\nProperty Details:\n([\s\S]*)/);
+  const mainDescription = detailsMatch ? description.slice(0, description.indexOf('\n\nProperty Details:')).trim() : description;
+  const detailsBlock = detailsMatch ? detailsMatch[1] : '';
+  let placeType: ShortStayForm['placeType'] = 'entire_place';
+  let category: ShortStayForm['category'] = 'Apartment';
+  let guests = 2, bedrooms = 1, beds = 1, bathrooms = 1;
+  detailsBlock.split('\n').forEach(line => {
+    const m = line.replace(/^•\s*/, '').trim();
+    if (m.startsWith('Place type:')) {
+      const v = m.replace('Place type:', '').trim().replace(/\s+/g, '_');
+      if (v === 'entire_place' || v === 'private_room' || v === 'shared_room') placeType = v;
+    } else if (m.startsWith('Category:')) {
+      const v = m.replace('Category:', '').trim() as ShortStayForm['category'];
+      if (['Apartment', 'House', 'Townhouse', 'Villa', 'Studio'].includes(v)) category = v;
+    } else if (m.startsWith('Accommodates:')) {
+      const n = parseInt(m.replace(/\D/g, ''), 10);
+      if (!isNaN(n)) guests = n;
+    } else if (m.startsWith('Bedrooms:')) {
+      const n = parseInt(m.replace(/\D/g, ''), 10);
+      if (!isNaN(n)) bedrooms = n;
+    } else if (m.startsWith('Beds:')) {
+      const n = parseInt(m.replace(/\D/g, ''), 10);
+      if (!isNaN(n)) beds = n;
+    } else if (m.startsWith('Bathrooms:')) {
+      const n = parseInt(m.replace(/\D/g, ''), 10);
+      if (!isNaN(n)) bathrooms = n;
+    }
+  });
+  return { mainDescription, placeType, category, guests, bedrooms, beds, bathrooms };
+}
+
+type ViewMode = 'list' | 'create' | 'edit';
+
 export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
   const { user } = useAuth();
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [step, setStep] = useState(1);
   const totalSteps = 7;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [myShortStays, setMyShortStays] = useState<Property[]>([]);
+  const [loadingList, setLoadingList] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const [form, setForm] = useState<ShortStayForm>({
-    placeType: 'entire_place',
-    category: 'Apartment',
-    guests: 2,
-    bedrooms: 1,
-    beds: 1,
-    bathrooms: 1,
-    location: '',
-    title: '',
-    description: '',
-    features: [],
-    amenities: [],
-    weekdayBasePrice: '',
-    weekendBasePrice: '',
-    registerForAds: false,
-    images: [],
-  });
+  const [form, setForm] = useState<ShortStayForm>({ ...defaultForm });
 
   const weekdayBaseNumber = parseFloat(form.weekdayBasePrice.replace(/[,]/g, '')) || 0;
   const weekendBaseNumberRaw = parseFloat(form.weekendBasePrice.replace(/[,]/g, ''));
   const weekendBaseNumber = !isNaN(weekendBaseNumberRaw) && weekendBaseNumberRaw > 0 ? weekendBaseNumberRaw : weekdayBaseNumber;
   const guestVisibleWeekdayPrice = weekdayBaseNumber > 0 ? Math.round(weekdayBaseNumber * 1.07) : 0;
   const guestVisibleWeekendPrice = weekendBaseNumber > 0 ? Math.round(weekendBaseNumber * 1.07) : 0;
+
+  // Load host's short stays for list view
+  useEffect(() => {
+    if (!user?.id || viewMode !== 'list') return;
+    const load = async () => {
+      setLoadingList(true);
+      try {
+        const { properties, error: err } = await propertiesService.getDeveloperProperties(user.id);
+        if (!err) {
+          const short = (properties || []).filter((p) => p.propertyType === 'Short Stay');
+          setMyShortStays(short);
+        }
+      } catch (e) {
+        console.error('Error loading short stays:', e);
+      } finally {
+        setLoadingList(false);
+      }
+    };
+    load();
+  }, [user?.id, viewMode]);
+
+  useEffect(() => {
+    const onCreated = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { property?: Property };
+      if (detail?.property && user?.id && detail.property.developerId === user.id) {
+        setMyShortStays((prev) => {
+          if (prev.some((p) => p.id === detail.property!.id)) return prev;
+          return [{ ...detail.property!, propertyType: 'Short Stay' }, ...prev];
+        });
+      }
+    };
+    const onDeleted = (e: Event) => {
+      const id = (e as CustomEvent).detail?.id;
+      if (id) setMyShortStays((prev) => prev.filter((p) => p.id !== id));
+    };
+    window.addEventListener('realaist:property-created', onCreated as EventListener);
+    window.addEventListener('realaist:property-deleted', onDeleted as EventListener);
+    return () => {
+      window.removeEventListener('realaist:property-created', onCreated as EventListener);
+      window.removeEventListener('realaist:property-deleted', onDeleted as EventListener);
+    };
+  }, [user?.id]);
 
   const toggleFeature = (f: string) => {
     setForm(prev => ({
@@ -152,12 +242,71 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
     }));
   };
 
+  const removeExistingImage = (index: number) => {
+    setExistingImageUrls((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const loadPropertyIntoForm = (property: Property) => {
+    const parsed = parseDescriptionForEdit(property.description || '');
+    const weekday = property.weekdayPrice ?? property.price;
+    const weekend = property.weekendPrice ?? property.weekdayPrice ?? property.price;
+    setForm({
+      placeType: parsed.placeType,
+      category: parsed.category,
+      guests: parsed.guests,
+      bedrooms: property.bedrooms ?? parsed.bedrooms,
+      beds: parsed.beds,
+      bathrooms: property.bathrooms ?? parsed.bathrooms,
+      location: property.location || '',
+      title: property.title || '',
+      description: parsed.mainDescription,
+      features: Array.isArray(property.features) ? property.features : [],
+      amenities: Array.isArray(property.amenities) ? property.amenities : [],
+      weekdayBasePrice: weekday ? String(Math.round(weekday / 1.07)) : '',
+      weekendBasePrice: weekend ? String(Math.round(weekend / 1.07)) : '',
+      registerForAds: false,
+      images: [],
+    });
+    setExistingImageUrls(property.images || []);
+  };
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    setError(null);
+    try {
+      const { error: err } = await propertiesService.deleteProperty(id);
+      if (err) setError(err);
+      else setDeleteConfirmId(null);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const startCreate = () => {
+    setViewMode('create');
+    setForm({ ...defaultForm });
+    setStep(1);
+    setEditingId(null);
+    setExistingImageUrls([]);
+    setError(null);
+    setSuccessMessage(null);
+  };
+
+  const startEdit = (property: Property) => {
+    setEditingId(property.id);
+    loadPropertyIntoForm(property);
+    setViewMode('edit');
+    setStep(1);
+    setError(null);
+    setSuccessMessage(null);
+  };
+
   const canGoNext = () => {
     if (step === 1) {
       return form.location.trim().length > 0;
     }
     if (step === 4) {
-      return form.images.length > 0;
+      return editingId ? (existingImageUrls.length + form.images.length) > 0 : form.images.length > 0;
     }
     if (step === 5) {
       return form.title.trim().length > 0 && form.description.trim().length > 0;
@@ -170,7 +319,7 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
 
   const handleSubmit = async () => {
     if (!user?.id) {
-      setError('You must be logged in as a developer to create a short stay.');
+      setError('You must be logged in as a developer or host to create a short stay.');
       return;
     }
 
@@ -183,69 +332,104 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
     setError(null);
     setSuccessMessage(null);
 
+    const nightlyWeekdayWithTax = guestVisibleWeekdayPrice || Math.round(weekdayBaseNumber * 1.07);
+    const nightlyWeekendWithTax = guestVisibleWeekendPrice || Math.round(weekendBaseNumber * 1.07);
+    const descriptionText = `${form.description}\n\nProperty Details:\n• Place type: ${form.placeType.replace('_', ' ')}\n• Category: ${form.category}\n• Accommodates: ${form.guests} guest${form.guests !== 1 ? 's' : ''}\n• Bedrooms: ${form.bedrooms}\n• Beds: ${form.beds}\n• Bathrooms: ${form.bathrooms}`;
+
     try {
-      const nightlyWeekdayWithTax = guestVisibleWeekdayPrice || Math.round(weekdayBaseNumber * 1.07);
-      const nightlyWeekendWithTax = guestVisibleWeekendPrice || Math.round(weekendBaseNumber * 1.07);
-
-      const propertyData: CreatePropertyData = {
-        title: form.title,
-        description: `${form.description}\n\nProperty Details:\n• Place type: ${form.placeType.replace('_', ' ')}\n• Category: ${form.category}\n• Accommodates: ${form.guests} guest${form.guests !== 1 ? 's' : ''}\n• Bedrooms: ${form.bedrooms}\n• Beds: ${form.beds}\n• Bathrooms: ${form.bathrooms}`,
-        price: nightlyWeekdayWithTax,
-        weekdayPrice: nightlyWeekdayWithTax,
-        weekendPrice: nightlyWeekendWithTax,
-        location: form.location,
-        propertyType: 'Short Stay',
-        bedrooms: form.bedrooms,
-        bathrooms: form.bathrooms,
-        squareFeet: undefined,
-        status: 'active',
-        images: [],
-        amenities: form.amenities,
-        features: form.features,
-      };
-
-      const result = await propertiesService.createProperty(propertyData);
-      const property = result.property;
-
-      if (!property || result.error) {
-        throw new Error(result.error || 'Failed to create short stay property');
-      }
-
-      const imageUrls: string[] = [];
-      if (form.images.length > 0) {
+      if (editingId) {
+        // Update existing property
+        const newImageUrls: string[] = [];
         for (const imageFile of form.images) {
           try {
             const compressedImage = await storageService.compressImage(imageFile, 1920, 0.8);
-            const { url, error: uploadError } = await storageService.uploadPropertyImage(compressedImage, property.id);
-            if (!uploadError && url) {
-              imageUrls.push(url);
-            }
+            const { url, error: uploadError } = await storageService.uploadPropertyImage(compressedImage, editingId);
+            if (!uploadError && url) newImageUrls.push(url);
           } catch (err) {
-            console.warn('Error uploading short stay image:', err);
+            console.warn('Error uploading image:', err);
           }
         }
-        if (imageUrls.length > 0) {
-          await propertiesService.updateProperty({
-            id: property.id,
-            images: imageUrls,
-          });
+        const allImages = [...existingImageUrls, ...newImageUrls];
+
+        const { property: updated, error: updateErr } = await propertiesService.updateProperty({
+          id: editingId,
+          title: form.title,
+          description: descriptionText,
+          price: nightlyWeekdayWithTax,
+          weekdayPrice: nightlyWeekdayWithTax,
+          weekendPrice: nightlyWeekendWithTax,
+          location: form.location,
+          propertyType: 'Short Stay',
+          bedrooms: form.bedrooms,
+          bathrooms: form.bathrooms,
+          images: allImages,
+          amenities: form.amenities,
+          features: form.features,
+        });
+
+        if (updateErr || !updated) {
+          throw new Error(updateErr || 'Failed to update short stay');
+        }
+        setSuccessMessage('Short stay updated successfully.');
+        setViewMode('list');
+        setEditingId(null);
+        setMyShortStays((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)));
+      } else {
+        // Create new property
+        const propertyData: CreatePropertyData = {
+          title: form.title,
+          description: descriptionText,
+          price: nightlyWeekdayWithTax,
+          weekdayPrice: nightlyWeekdayWithTax,
+          weekendPrice: nightlyWeekendWithTax,
+          location: form.location,
+          propertyType: 'Short Stay',
+          bedrooms: form.bedrooms,
+          bathrooms: form.bathrooms,
+          squareFeet: undefined,
+          status: 'active',
+          images: [],
+          amenities: form.amenities,
+          features: form.features,
+        };
+
+        const result = await propertiesService.createProperty(propertyData);
+        const property = result.property;
+
+        if (!property || result.error) {
+          throw new Error(result.error || 'Failed to create short stay property');
+        }
+
+        const imageUrls: string[] = [];
+        if (form.images.length > 0) {
+          for (const imageFile of form.images) {
+            try {
+              const compressedImage = await storageService.compressImage(imageFile, 1920, 0.8);
+              const { url, error: uploadError } = await storageService.uploadPropertyImage(compressedImage, property.id);
+              if (!uploadError && url) imageUrls.push(url);
+            } catch (err) {
+              console.warn('Error uploading short stay image:', err);
+            }
+          }
+          if (imageUrls.length > 0) {
+            await propertiesService.updateProperty({ id: property.id, images: imageUrls });
+          }
+        }
+
+        try {
+          window.dispatchEvent(new CustomEvent('realaist:property-created', { detail: { property: { ...property, images: imageUrls.length ? imageUrls : property.images } } }));
+        } catch {}
+
+        setSuccessMessage('Short stay created successfully!');
+        if (form.registerForAds) {
+          window.location.href = `/dashboard/campaign-ads?propertyId=${property.id}`;
+        } else {
+          setStep(totalSteps);
         }
       }
-
-      try {
-        window.dispatchEvent(new CustomEvent('realaist:property-created', { detail: { property: { ...property, images: imageUrls.length ? imageUrls : property.images } } }));
-      } catch {}
-
-      setSuccessMessage('Short stay created successfully!');
-
-      if (form.registerForAds) {
-        window.location.href = `/dashboard/campaign-ads?propertyId=${property.id}`;
-      }
-
-      setStep(totalSteps);
     } catch (err: any) {
-      console.error('Error creating short stay:', err);
-      setError(err?.message || 'An unexpected error occurred while creating the short stay.');
+      console.error('Error saving short stay:', err);
+      setError(err?.message || (editingId ? 'An unexpected error occurred while updating.' : 'An unexpected error occurred while creating the short stay.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -262,13 +446,201 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
     );
   }
 
+  // List view for host / developer
+  if (viewMode === 'list' && (user?.userType === 'host' || user?.userType === 'developer')) {
+    return (
+      <div className="max-w-5xl mx-auto py-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className={`text-2xl md:text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>My Short Stays</h1>
+            <p className={isDarkMode ? 'text-white/70' : 'text-gray-600'}>
+              Manage your short stay listings. Edit or delete any listing below.
+            </p>
+          </div>
+          <motion.button
+            type="button"
+            onClick={startCreate}
+            className="px-5 py-2.5 rounded-lg bg-[#C7A667] text-black font-medium flex items-center gap-2"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Plus size={20} />
+            Add Short Stay
+          </motion.button>
+        </div>
+
+        {error && (
+          <div className="mb-4 p-3 rounded-lg border border-red-300 bg-red-50 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        {loadingList ? (
+          <div className={`rounded-2xl border ${isDarkMode ? 'bg-[#0E0E10] border-white/10' : 'bg-white border-gray-200'} p-12 text-center`}>
+            <Loader2 className={`animate-spin mx-auto mb-3 ${isDarkMode ? 'text-[#C7A667]' : 'text-[#C7A667]'}`} size={40} />
+            <p className={isDarkMode ? 'text-white/70' : 'text-gray-600'}>Loading your short stays...</p>
+          </div>
+        ) : myShortStays.length === 0 ? (
+          <motion.div
+            className={`rounded-2xl border ${isDarkMode ? 'bg-[#0E0E10] border-white/10' : 'bg-white border-gray-200'} p-12 text-center`}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <Building2 className={`mx-auto mb-4 ${isDarkMode ? 'text-white/40' : 'text-gray-400'}`} size={48} />
+            <h3 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>No short stays yet</h3>
+            <p className={isDarkMode ? 'text-white/70 mb-6' : 'text-gray-600 mb-6'}>
+              Create your first short stay listing to start receiving bookings.
+            </p>
+            <button
+              type="button"
+              onClick={startCreate}
+              className="px-5 py-2.5 rounded-lg bg-[#C7A667] text-black font-medium inline-flex items-center gap-2"
+            >
+              <Plus size={18} />
+              Add your first short stay
+            </button>
+          </motion.div>
+        ) : (
+          <div className="space-y-4">
+            {myShortStays.map((property) => (
+              <motion.div
+                key={property.id}
+                className={`rounded-2xl border overflow-hidden ${isDarkMode ? 'bg-[#0E0E10] border-white/10' : 'bg-white border-gray-200'}`}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <div className="flex flex-col sm:flex-row">
+                  <div className="sm:w-48 h-40 sm:h-auto shrink-0 bg-gray-200">
+                    {property.images?.[0] ? (
+                      <img src={property.images[0]} alt={property.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Bed className="w-10 h-10 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="min-w-0 flex-1">
+                      <h3 className={`font-semibold text-lg truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{property.title}</h3>
+                      <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
+                        <MapPin size={14} className="shrink-0" />
+                        <span className="truncate">{property.location}</span>
+                      </div>
+                      <p className={`mt-1 text-sm ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>
+                        KSh {(property.price ?? 0).toLocaleString()} / night
+                        <span className={`ml-2 text-xs px-2 py-0.5 rounded ${property.status === 'active' ? 'bg-green-500/20 text-green-600' : 'bg-gray-500/20 text-gray-600'}`}>
+                          {property.status}
+                        </span>
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <a
+                        href={`/property/${property.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`flex items-center gap-1 text-sm font-medium ${isDarkMode ? 'text-[#C7A667] hover:text-[#B89657]' : 'text-[#C7A667] hover:text-[#B89657]'}`}
+                      >
+                        View
+                        <ExternalLink size={14} />
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => startEdit(property)}
+                        className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-700'}`}
+                        title="Edit"
+                      >
+                        <Pencil size={18} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteConfirmId(property.id)}
+                        className="p-2 rounded-lg hover:bg-red-500/10 text-red-500"
+                        title="Delete"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+
+        {/* Delete confirmation modal */}
+        <AnimatePresence>
+          {deleteConfirmId && (
+            <motion.div
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !deletingId && setDeleteConfirmId(null)}
+            >
+              <motion.div
+                className={`rounded-2xl shadow-xl max-w-md w-full p-6 ${isDarkMode ? 'bg-[#0E0E10] border border-white/10' : 'bg-white border border-gray-200'}`}
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Delete short stay?</h3>
+                <p className={isDarkMode ? 'text-white/70 mb-6' : 'text-gray-600 mb-6'}>
+                  This listing will be removed permanently. This action cannot be undone.
+                </p>
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setDeleteConfirmId(null)}
+                    disabled={!!deletingId}
+                    className={`px-4 py-2 rounded-lg border ${isDarkMode ? 'border-white/20 text-white hover:bg-white/10' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(deleteConfirmId)}
+                    disabled={!!deletingId}
+                    className="px-4 py-2 rounded-lg bg-red-500 text-white font-medium hover:bg-red-600 disabled:opacity-70 flex items-center gap-2"
+                  >
+                    {deletingId === deleteConfirmId ? (
+                      <>
+                        <Loader2 className="animate-spin" size={18} />
+                        Deleting...
+                      </>
+                    ) : (
+                      'Delete'
+                    )}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-5xl mx-auto py-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className={`text-2xl md:text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Short Stays</h1>
+          <div className="flex items-center gap-3 mb-1">
+            {(viewMode === 'create' || viewMode === 'edit') && (
+              <button
+                type="button"
+                onClick={() => { setViewMode('list'); setEditingId(null); setError(null); setSuccessMessage(null); }}
+                className={`text-sm font-medium ${isDarkMode ? 'text-white/70 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+              >
+                ← Back to list
+              </button>
+            )}
+          </div>
+          <h1 className={`text-2xl md:text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            {editingId ? 'Edit short stay' : 'Short Stays'}
+          </h1>
           <p className={isDarkMode ? 'text-white/70' : 'text-gray-600'}>
-            Create Airbnb-style short stay listings with beautiful, guided steps.
+            {editingId ? 'Update your listing details below.' : 'Create Airbnb-style short stay listings with beautiful, guided steps.'}
           </p>
         </div>
       </div>
@@ -516,9 +888,31 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
             <div>
               <h2 className={`text-2xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Make your place stand out</h2>
               <p className={isDarkMode ? 'text-white/70' : 'text-gray-600'}>
-                Add at least one photo. Great photos help guests picture themselves staying there.
+                {editingId ? 'Keep or add photos. At least one photo is required.' : 'Add at least one photo. Great photos help guests picture themselves staying there.'}
               </p>
             </div>
+
+            {editingId && existingImageUrls.length > 0 && (
+              <div>
+                <p className={`text-sm font-medium mb-2 ${isDarkMode ? 'text-white/80' : 'text-gray-700'}`}>Current photos</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {existingImageUrls.map((url, index) => (
+                    <div key={`existing-${index}`} className="relative group">
+                      <div className="aspect-square rounded-xl overflow-hidden bg-gray-200">
+                        <img src={url} alt={`Current ${index + 1}`} className="w-full h-full object-cover" />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeExistingImage(index)}
+                        className="absolute top-2 right-2 px-2 py-1 rounded-full text-xs bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="border-2 border-dashed rounded-xl p-8 text-center border-gray-300 dark:border-white/20">
               <ImageIcon className="mx-auto mb-4 text-gray-400" size={40} />
@@ -660,38 +1054,41 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
         {step === 7 && (
           <div className="space-y-6">
             <div>
-              <h2 className={`text-2xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Finish up and publish</h2>
+              <h2 className={`text-2xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                {editingId ? 'Save changes' : 'Finish up and publish'}
+              </h2>
               <p className={isDarkMode ? 'text-white/70' : 'text-gray-600'}>
-                Choose whether you want to promote this short stay with campaign ads before publishing.
+                {editingId ? 'Review and save your updates.' : 'Choose whether you want to promote this short stay with campaign ads before publishing.'}
               </p>
             </div>
 
-            <div className="border rounded-xl p-4 flex items-start gap-3">
-              <div className="mt-1">
-                <input
-                  id="register-ads"
-                  type="checkbox"
-                  checked={form.registerForAds}
-                  onChange={e => setForm(prev => ({ ...prev, registerForAds: e.target.checked }))}
-                  className="w-4 h-4 accent-[#C7A667]"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="register-ads"
+            {!editingId && (
+              <div className="border rounded-xl p-4 flex items-start gap-3">
+                <div className="mt-1">
+                  <input
+                    id="register-ads"
+                    type="checkbox"
+                    checked={form.registerForAds}
+                    onChange={e => setForm(prev => ({ ...prev, registerForAds: e.target.checked }))}
+                    className="w-4 h-4 accent-[#C7A667]"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="register-ads"
                   className={`block font-medium mb-1 cursor-pointer ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
-                >
-                  Register this property for Campaign Ads
-                </label>
-                <p className={isDarkMode ? 'text-white/70' : 'text-gray-600'}>
+                  >
+                    Register this property for Campaign Ads
+                  </label>
+                  <p className={isDarkMode ? 'text-white/70' : 'text-gray-600'}>
                   We’ll take you to the Campaign Ads setup after publishing so you can run targeted ads for this short stay.
-                </p>
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
 
             <p className={isDarkMode ? 'text-white/60 text-sm' : 'text-gray-500 text-sm'}>
-              By publishing, you confirm that the information about this short stay is accurate and that you have the
-              right to host guests at this property.
+              {editingId ? 'By saving, you confirm that the information is accurate.' : 'By publishing, you confirm that the information about this short stay is accurate and that you have the right to host guests at this property.'}
             </p>
           </div>
         )}
@@ -746,10 +1143,12 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
           {isSubmitting ? (
             <>
               <Loader2 className="animate-spin" size={18} />
-              Publishing...
+              {editingId ? 'Saving...' : 'Publishing...'}
             </>
           ) : step < totalSteps ? (
             'Next'
+          ) : editingId ? (
+            'Save changes'
           ) : (
             'Finish & Publish'
           )}

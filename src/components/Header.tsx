@@ -18,7 +18,7 @@ export function Header({ isDarkMode, toggleTheme, onLoginClick, showLogo = true 
 
   const handleLogout = () => {
     logout();
-    navigate(isHost ? '/short-stays' : '/');
+    navigate('/');
   };
 
   return (
@@ -36,7 +36,7 @@ export function Header({ isDarkMode, toggleTheme, onLoginClick, showLogo = true 
         <div className="flex items-center gap-3">
           {showLogo && (
             <motion.a 
-              href={isHost ? "/short-stays" : "/"}
+              href="/"
               className={`border border-dashed rounded px-2 py-1 transition-colors duration-300 ${
                 isDarkMode ? 'border-white/60' : 'border-gray-400'
               }`}

@@ -41,6 +41,7 @@ export interface SignupData {
 export interface AuthContextType {
   user: User | null;
   isLoading: boolean;
+  isAuthReady: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: User }>;
   signup: (userData: SignupData) => Promise<{ success: boolean; error?: string }>;
@@ -50,6 +51,44 @@ export interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const ADMIN_EMAILS_LIST = [
+  'admin@realaist.com',
+  'admin@realaist.tech',
+  'superadmin@realaist.com',
+  'support@realaist.com',
+];
+
+function parseCachedUser(): User | null {
+  try {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem('current_user') : null;
+    if (!raw) return null;
+    const authUser = JSON.parse(raw) as AuthUser;
+    const userType = ADMIN_EMAILS_LIST.includes((authUser.email || '').toLowerCase())
+      ? 'admin'
+      : (authUser.userType || 'buyer');
+    return {
+      id: authUser.id,
+      email: authUser.email,
+      firstName: authUser.firstName,
+      lastName: authUser.lastName,
+      phone: authUser.phone,
+      avatarUrl: authUser.avatarUrl,
+      userType: userType as User['userType'],
+      companyName: authUser.companyName,
+      licenseNumber: authUser.licenseNumber,
+      address: authUser.address,
+      website: authUser.website,
+      instagram: authUser.instagram,
+      x: authUser.x,
+      facebook: authUser.facebook,
+      logoUrl: authUser.logoUrl,
+      preferences: { notifications: true, darkMode: false, language: 'en' },
+    };
+  } catch {
+    return null;
+  }
+}
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
@@ -64,8 +103,9 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(parseCachedUser);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isAuthReady, setIsAuthReady] = useState(false);
 
   // ✅ Cleaned admin email list
   const ADMIN_EMAILS = [
@@ -105,56 +145,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   };
 
-  // Check for existing session on mount
+  // Revalidate session in background (UI already shows cached user if any)
   useEffect(() => {
+    let cancelled = false;
     const checkAuth = async () => {
       try {
-        console.log('AuthContext: Checking authentication status');
         const authUser = await authService.getCurrentUser();
-
+        if (cancelled) return;
         if (authUser) {
-          console.log('AuthContext: User session found');
           setUser(convertAuthUserToUser(authUser));
         } else {
           const storedUser = localStorage.getItem('current_user');
           if (storedUser) {
             try {
-              const parsedUser = JSON.parse(storedUser);
-              console.log('AuthContext: Found stored user data, restoring session');
-              setUser(convertAuthUserToUser(parsedUser));
+              setUser(convertAuthUserToUser(JSON.parse(storedUser)));
             } catch {
-              console.warn('AuthContext: Invalid stored user data, clearing');
               localStorage.removeItem('current_user');
               setUser(null);
             }
           } else {
-            console.log('AuthContext: No active session or stored user');
             setUser(null);
           }
         }
-      } catch (error) {
-        console.error('Auth check failed:', error);
+      } catch {
+        if (cancelled) return;
         const storedUser = localStorage.getItem('current_user');
         if (storedUser) {
           try {
-            const parsedUser = JSON.parse(storedUser);
-            console.log('AuthContext: Auth failed but found stored user');
-            setUser(convertAuthUserToUser(parsedUser));
-            return;
+            setUser(convertAuthUserToUser(JSON.parse(storedUser)));
           } catch {
-            console.warn('AuthContext: Invalid stored user data, clearing');
             localStorage.removeItem('current_user');
+            setUser(null);
           }
+        } else {
+          setUser(null);
         }
-
         localStorage.setItem('offline_mode', 'true');
         localStorage.setItem('offline_mode_timestamp', Date.now().toString());
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsAuthReady(true);
       }
     };
-
     checkAuth();
+    return () => { cancelled = true; };
 
     const handleAdminLogin = (event: Event) => {
       const customEvent = event as CustomEvent<{ user: AuthUser }>;
@@ -294,6 +327,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const contextValue: AuthContextType = {
     user,
     isLoading,
+    isAuthReady,
     isAuthenticated: !!user,
     login,
     signup,

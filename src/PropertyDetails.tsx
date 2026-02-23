@@ -7,8 +7,10 @@ import { propertiesService, Property } from './services/propertiesService';
 import { scheduledVisitsService } from './services/scheduledVisitsService';
 import { openPaystackInlineForBooking } from './services/paymentService';
 import { Header } from './components/Header';
+import { HostNavbar } from './components/HostNavbar';
 import { shareToWhatsApp, PropertyShareData } from './utils/whatsappShare';
 import type { LucideIcon } from 'lucide-react';
+import { AvailabilityCalendar } from './components/AvailabilityCalendar';
 import {
   Share2,
   Wifi,
@@ -168,6 +170,7 @@ export default function PropertyDetails() {
   const navigate = useNavigate();
   const { isDarkMode, toggleTheme } = useTheme();
   const { user, isAuthenticated, logout } = useAuth();
+  const isHost = user?.userType === 'host';
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [property, setProperty] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -192,6 +195,7 @@ export default function PropertyDetails() {
   const [bookingName, setBookingName] = useState('');
   const [bookingEmail, setBookingEmail] = useState('');
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  const [bookedDatesForCalendar, setBookedDatesForCalendar] = useState<string[]>([]);
 
   const DESCRIPTION_PREVIEW_LENGTH = 400;
 
@@ -445,6 +449,20 @@ export default function PropertyDetails() {
     }
   }, [property]);
 
+  // Fetch booked dates for short-stay availability calendar
+  useEffect(() => {
+    const isShort = (property?.type || '').toLowerCase() === 'short stay';
+    if (!property?.id || !isShort) {
+      setBookedDatesForCalendar([]);
+      return;
+    }
+    let cancelled = false;
+    scheduledVisitsService.getBookedDatesForProperty(property.id).then(({ bookedDates, error }) => {
+      if (!cancelled && !error) setBookedDatesForCalendar(bookedDates);
+    });
+    return () => { cancelled = true; };
+  }, [property?.id, property?.type]);
+
   if (isLoading) {
     return <div className={`min-h-screen flex items-center justify-center transition-colors duration-300 ${
       isDarkMode ? 'bg-[#111217] text-white' : 'bg-white text-gray-900'
@@ -592,19 +610,23 @@ export default function PropertyDetails() {
       <div className={`min-h-screen transition-colors duration-300 ${
         isDarkMode ? 'bg-[#111217] text-white' : 'bg-white text-gray-900'
       }`}>
-        <Header 
-          isDarkMode={isDarkMode}
-          toggleTheme={toggleTheme}
-          onLoginClick={() => {
-            window.dispatchEvent(new Event('realaist:open-auth'));
-            const current = new URL(window.location.href);
-            current.searchParams.set('auth', 'open');
-            navigate(`${current.pathname}${current.search}`, { replace: true });
-          }}
-        />
+        {isHost ? (
+          <HostNavbar isDarkMode={isDarkMode} />
+        ) : (
+          <Header 
+            isDarkMode={isDarkMode}
+            toggleTheme={toggleTheme}
+            onLoginClick={() => {
+              window.dispatchEvent(new Event('realaist:open-auth'));
+              const current = new URL(window.location.href);
+              current.searchParams.set('auth', 'open');
+              navigate(`${current.pathname}${current.search}`, { replace: true });
+            }}
+          />
+        )}
         
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
+        {/* Mobile Menu (default navbar only; host uses HostNavbar's own menu) */}
+        {!isHost && mobileMenuOpen && (
           <motion.div
             className="fixed inset-0 z-40 md:hidden"
             initial={{ opacity: 0 }}
@@ -1292,6 +1314,51 @@ export default function PropertyDetails() {
                     </div>
                     ) : null;
                   })()}
+
+                  {/* Availability calendar for short stays */}
+                  {isShortStay && (
+                    <div className="pt-4 border-t border-gray-200 dark:border-white/10">
+                      <h3 className={`text-sm font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                        Availability
+                      </h3>
+                      <AvailabilityCalendar
+                        bookedDates={bookedDatesForCalendar}
+                        isDarkMode={isDarkMode}
+                        monthsCount={2}
+                      />
+                    </div>
+                  )}
+
+                  {/* Host section for short stays */}
+                  {isShortStay && property.developer && (
+                    <div className="pt-4 border-t border-gray-200 dark:border-white/10">
+                      <h3 className={`text-sm font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                        Host
+                      </h3>
+                      <div className={`flex items-center gap-3 p-3 rounded-xl ${isDarkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
+                        <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 bg-gray-300 dark:bg-white/10 flex items-center justify-center">
+                          {property.developer.logoUrl ? (
+                            <img
+                              src={property.developer.logoUrl}
+                              alt={[property.developer.firstName, property.developer.lastName].filter(Boolean).join(' ') || 'Host'}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className={`text-lg font-semibold ${isDarkMode ? 'text-white/80' : 'text-gray-600'}`}>
+                              {[property.developer.firstName, property.developer.lastName]
+                                .filter(Boolean)
+                                .map((n) => (n || '').charAt(0))
+                                .join('')
+                                .toUpperCase() || '?'}
+                            </span>
+                          )}
+                        </div>
+                        <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                          {[property.developer.firstName, property.developer.lastName].filter(Boolean).join(' ') || property.developer.companyName || 'Host'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Desktop Map Section */}
@@ -1690,7 +1757,7 @@ export default function PropertyDetails() {
           
           {/* Modal Content */}
           <motion.div
-            className={`relative w-full max-w-md rounded-2xl border p-8 ${
+            className={`relative w-full max-w-xl rounded-2xl border p-8 max-h-[90vh] overflow-y-auto ${
               isDarkMode 
                 ? 'border-white/10 bg-[#111217]' 
                 : 'border-gray-200 bg-white'
@@ -1737,6 +1804,21 @@ export default function PropertyDetails() {
               </p>
             </div>
 
+            {/* Availability calendar - pick check-in / check-out; booked days are disabled */}
+            <div className="mb-6">
+              <AvailabilityCalendar
+                bookedDates={bookedDatesForCalendar}
+                isDarkMode={isDarkMode}
+                onSelectRange={(checkIn, checkOut) => {
+                  setCheckInDate(checkIn);
+                  setCheckOutDate(checkOut);
+                }}
+                selectedCheckIn={checkInDate}
+                selectedCheckOut={checkOutDate}
+                monthsCount={2}
+              />
+            </div>
+
             {/* Booking Form */}
             <form
               className="space-y-6"
@@ -1752,6 +1834,18 @@ export default function PropertyDetails() {
                 if (bookingNights <= 0 || !nightlyRate) {
                   setBookingMessage('Please select valid dates for your stay.');
                   return;
+                }
+
+                // Block overbooking: ensure no night in the range is already booked
+                const bookedSet = new Set(bookedDatesForCalendar);
+                const start = new Date(checkInDate + 'T12:00:00');
+                const end = new Date(checkOutDate + 'T12:00:00');
+                for (let d = new Date(start); d.getTime() <= end.getTime(); d.setDate(d.getDate() + 1)) {
+                  const ymd = d.toISOString().slice(0, 10);
+                  if (bookedSet.has(ymd)) {
+                    setBookingMessage('Some of the selected dates are no longer available. Please choose different dates.');
+                    return;
+                  }
                 }
 
                 setIsSubmittingBooking(true);
@@ -1781,13 +1875,13 @@ export default function PropertyDetails() {
 
                   const reference = paymentResult.reference;
 
-                  // Record booking as a scheduled visit for developer dashboard
-                  const scheduledDate = checkInDate;
+                  // Record booking as a scheduled visit for developer dashboard (and availability calendar)
                   const scheduledTime = '12:00';
                   const { error } = await scheduledVisitsService.createScheduledVisit({
                     propertyId: property.id,
-                    scheduledDate,
+                    scheduledDate: checkInDate,
                     scheduledTime,
+                    checkOutDate: checkOutDate,
                     visitorName: bookingName,
                     visitorEmail: bookingEmail,
                     message: `Short stay booking.\nCheck-in: ${checkInDate}\nCheck-out: ${checkOutDate}\nNights: ${bookingNights}\nGuests: ${bookingGuests}\nTotal: KSh ${total.toLocaleString()}\nPayment reference: ${reference}`,
@@ -1798,6 +1892,10 @@ export default function PropertyDetails() {
                     setBookingMessage('Payment succeeded but we could not record your booking. Please contact support with your payment reference.');
                   } else {
                     setBookingMessage(`Booking confirmed for ${bookingNights} night${bookingNights > 1 ? 's' : ''}. Payment reference: ${reference}`);
+                    // Refresh availability calendar so new booking shows as unavailable
+                    scheduledVisitsService.getBookedDatesForProperty(property.id).then(({ bookedDates }) => {
+                      setBookedDatesForCalendar(bookedDates);
+                    });
                     // Reset minimal fields but keep modal open so user can read confirmation
                     setCheckInDate('');
                     setCheckOutDate('');

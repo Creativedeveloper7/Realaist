@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Large media (GitHub limit 100MB; host hosthero.mp4 on CDN/Supabase and set URL in app if needed)
+public/logos/hosthero.mp4

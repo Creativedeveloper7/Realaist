@@ -1,13 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { useTheme } from '../ThemeContext';
 import { propertiesService, Property } from '../services/propertiesService';
-import { Header } from '../components/Header';
-import { AboutSection } from '../components/AboutSection';
-import { useAuth } from '../contexts/AuthContext';
-import { shareToWhatsApp, PropertyShareData } from '../utils/whatsappShare';
-import { Share2, Bed, Star, Search, Filter, X } from 'lucide-react';
+import { HostNavbar } from '../components/HostNavbar';
+import { Star, Search, MapPin, Users, BedDouble, Bath, MessageCircle, X, Send, SlidersHorizontal } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 // Helper function to generate dummy rating (4.0 to 5.0)
 const generateDummyRating = (propertyId: string): number => {
@@ -46,14 +44,16 @@ const convertPropertyToShortStay = (property: Property) => {
   const categoryMatch = property.description?.match(/Category:\s*(\w+)/i);
   const category = categoryMatch ? categoryMatch[1] : null;
 
+  const bedrooms = property.bedrooms || 0;
   return {
     id: property.id,
     name: property.title,
     location: property.location,
     price: formatPrice(effectivePrice),
-    beds: property.bedrooms || 0,
+    beds: bedrooms,
     baths: property.bathrooms || 0,
-    category,
+    guests: Math.max(bedrooms * 2, 2),
+    category: category || 'Short Stay',
     image: property.images && property.images.length > 0 ? property.images[0] : "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600",
     developer: property.developer,
     amenities: (property as any).amenities || [],
@@ -63,26 +63,49 @@ const convertPropertyToShortStay = (property: Property) => {
   };
 };
 
-const CATEGORY_OPTIONS = ['All', 'Apartment', 'House', 'Townhouse', 'Villa', 'Studio'];
-const BEDROOM_OPTIONS = ['All', '1', '2', '3', '4', '5+'];
-const BATHROOM_OPTIONS = ['All', '1', '2', '3', '4', '5+'];
+const PLACEHOLDER_EXAMPLES = [
+  "Beachfront villa in Kilifi for a weekend",
+  "Apartment in Nairobi for a family of 4",
+  "Cozy cabin with a pool",
+  "Short stay with great reviews",
+];
+
+type ChatMessage = { role: 'user' | 'assistant'; content: string };
+
+function getBotReply(msg: string): string {
+  const lower = msg.toLowerCase();
+  if (lower.includes('beach') || lower.includes('ocean') || lower.includes('sea')) return "We have beach and coastal short stays. Use the search bar or property type filters above to narrow down your choices.";
+  if (lower.includes('cheap') || lower.includes('budget') || lower.includes('affordable')) return "You can filter by property type and use the search to find options. Prices are shown on each listing.";
+  if (lower.includes('family') || lower.includes('kids') || lower.includes('children')) return "Many of our short stays are family-friendly. Look for listings with more bedrooms and check the details page for amenities.";
+  if (lower.includes('help') || lower.includes('how')) return "You can search by property name or location in the search bar, and filter by property type using the pills. Click 'View Details' on any listing for full info.";
+  return "I can help you find a short stay! Try searching by location or property name above, or use the type filters. Ask me about budgets, locations, or family-friendly stays.";
+}
 
 export default function ShortStaysPage() {
-  const { isDarkMode, toggleTheme } = useTheme();
-  const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
-  const isHost = isAuthenticated && user?.userType === 'host';
+  const { isDarkMode } = useTheme();
   const [shortStays, setShortStays] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedLocation, setSelectedLocation] = useState<string>('All');
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [selectedBedrooms, setSelectedBedrooms] = useState<string>('All');
-  const [selectedBathrooms, setSelectedBathrooms] = useState<string>('All');
-  const [showFilters, setShowFilters] = useState(false);
-  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeType, setActiveType] = useState('All');
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [advancedLocation, setAdvancedLocation] = useState('');
+  const [checkIn, setCheckIn] = useState('');
+  const [checkOut, setCheckOut] = useState('');
+  const [adults, setAdults] = useState(2);
+  const [children, setChildren] = useState(0);
+  const [rooms, setRooms] = useState(1);
+  const [bookedPropertyIds, setBookedPropertyIds] = useState<Set<string>>(new Set());
+  const [placeholder, setPlaceholder] = useState('');
+  const [exampleIndex, setExampleIndex] = useState(0);
+  const [charIndex, setCharIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    { role: 'assistant', content: "Hi! 👋 I'm your travel assistant. Search above or tell me what kind of stay you're looking for." },
+  ]);
+  const [chatInput, setChatInput] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const loadShortStays = async () => {
@@ -136,484 +159,491 @@ export default function ShortStaysPage() {
     loadShortStays();
   }, []);
 
-  // Unique locations from current short stays (sorted)
-  const locationOptions = useMemo(() => {
+  // Type options from data: All + unique categories
+  const typeOptions = useMemo(() => {
     const set = new Set<string>();
     shortStays.forEach((p: any) => {
-      if (p.location && String(p.location).trim()) set.add(String(p.location).trim());
+      if (p.category && String(p.category).trim()) set.add(String(p.category).trim());
     });
     return ['All', ...Array.from(set).sort((a, b) => a.localeCompare(b))];
   }, [shortStays]);
 
-  // Filter by search, location, category, bedrooms, bathrooms
+  // Animated placeholder
+  useEffect(() => {
+    const current = PLACEHOLDER_EXAMPLES[exampleIndex];
+    if (!current) return;
+    const timeout = setTimeout(() => {
+      if (!isDeleting) {
+        if (charIndex < current.length) {
+          setPlaceholder(current.slice(0, charIndex + 1));
+          setCharIndex((c) => c + 1);
+        } else {
+          setTimeout(() => setIsDeleting(true), 2000);
+        }
+      } else {
+        if (charIndex > 0) {
+          setPlaceholder(current.slice(0, charIndex - 1));
+          setCharIndex((c) => c - 1);
+        } else {
+          setIsDeleting(false);
+          setExampleIndex((exampleIndex + 1) % PLACEHOLDER_EXAMPLES.length);
+        }
+      }
+    }, isDeleting ? 30 : 60);
+    return () => clearTimeout(timeout);
+  }, [charIndex, isDeleting, exampleIndex]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
+
+  // Fetch property IDs that are booked in the selected date range (so we show only "free" properties)
+  useEffect(() => {
+    if (!checkIn || !checkOut || checkIn > checkOut) {
+      setBookedPropertyIds(new Set());
+      return;
+    }
+    const fetchBooked = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('scheduled_visits')
+          .select('property_id')
+          .gte('scheduled_date', checkIn)
+          .lte('scheduled_date', checkOut)
+          .in('status', ['scheduled', 'confirmed']);
+        if (error) {
+          setBookedPropertyIds(new Set());
+          return;
+        }
+        const ids = new Set((data || []).map((r: { property_id: string }) => r.property_id));
+        setBookedPropertyIds(ids);
+      } catch {
+        setBookedPropertyIds(new Set());
+      }
+    };
+    fetchBooked();
+  }, [checkIn, checkOut]);
+
+  // Format date for display e.g. "Sat, Feb 21, 2026"
+  const formatDisplayDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr + 'T12:00:00');
+    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  // Filter by search, type, and advanced (location, dates/availability, guests, rooms)
   const filteredShortStays = useMemo(() => {
     let list = shortStays;
-    if (searchTerm.trim()) {
-      const q = searchTerm.toLowerCase().trim();
+    const locationQ = (advancedLocation.trim() || searchTerm.trim()).toLowerCase();
+    if (locationQ) {
       list = list.filter(
         (p: any) =>
-          (p.name && p.name.toLowerCase().includes(q)) ||
-          (p.location && p.location.toLowerCase().includes(q)) ||
+          (p.name && p.name.toLowerCase().includes(locationQ)) ||
+          (p.location && p.location.toLowerCase().includes(locationQ)) ||
           (p.developer && (
-            (p.developer.firstName && p.developer.firstName.toLowerCase().includes(q)) ||
-            (p.developer.lastName && p.developer.lastName.toLowerCase().includes(q)) ||
-            (p.developer.companyName && p.developer.companyName.toLowerCase().includes(q))
+            (p.developer.firstName && p.developer.firstName.toLowerCase().includes(locationQ)) ||
+            (p.developer.lastName && p.developer.lastName.toLowerCase().includes(locationQ)) ||
+            (p.developer.companyName && p.developer.companyName.toLowerCase().includes(locationQ))
           ))
       );
     }
-    if (selectedLocation !== 'All') {
-      list = list.filter((p: any) => p.location === selectedLocation);
+    if (activeType !== 'All') {
+      list = list.filter((p: any) => (p.category || '').toLowerCase() === activeType.toLowerCase());
     }
-    if (selectedCategory !== 'All') {
-      list = list.filter((p: any) => (p.category || '').toLowerCase() === selectedCategory.toLowerCase());
+    const totalGuests = adults + children;
+    if (totalGuests > 0) {
+      list = list.filter((p: any) => (p.guests ?? 0) >= totalGuests);
     }
-    if (selectedBedrooms !== 'All') {
-      list = list.filter((p: any) => {
-        const b = p.beds ?? 0;
-        if (selectedBedrooms === '5+') return b >= 5;
-        return b === parseInt(selectedBedrooms, 10);
-      });
+    if (rooms > 0) {
+      list = list.filter((p: any) => (p.beds ?? 0) >= rooms);
     }
-    if (selectedBathrooms !== 'All') {
-      list = list.filter((p: any) => {
-        const b = p.baths ?? 0;
-        if (selectedBathrooms === '5+') return b >= 5;
-        return b === parseInt(selectedBathrooms, 10);
-      });
+    if (checkIn && checkOut && bookedPropertyIds.size > 0) {
+      list = list.filter((p: any) => !bookedPropertyIds.has(p.id));
     }
     return list;
-  }, [shortStays, searchTerm, selectedLocation, selectedCategory, selectedBedrooms, selectedBathrooms]);
+  }, [shortStays, searchTerm, activeType, advancedLocation, adults, children, rooms, checkIn, checkOut, bookedPropertyIds]);
 
-  const generateSearchSuggestions = (query: string) => {
-    if (!query.trim()) return [];
-    const suggestions = new Set<string>();
-    const q = query.toLowerCase().trim();
-    shortStays.forEach((p: any) => {
-      if (p.name && p.name.toLowerCase().includes(q)) suggestions.add(p.name);
-      if (p.location && p.location.toLowerCase().includes(q)) suggestions.add(p.location);
-    });
-    return Array.from(suggestions).slice(0, 5);
+  const sendMessage = () => {
+    if (!chatInput.trim()) return;
+    const userMsg: ChatMessage = { role: 'user', content: chatInput };
+    setChatMessages((prev) => [...prev, userMsg]);
+    setChatInput('');
+    setTimeout(() => {
+      setChatMessages((prev) => [...prev, { role: 'assistant', content: getBotReply(userMsg.content) }]);
+    }, 600);
   };
 
-  const handleSearchChange = (value: string) => {
-    setSearchTerm(value);
-    const suggestions = generateSearchSuggestions(value);
-    setSearchSuggestions(suggestions);
-    setShowSuggestions(suggestions.length > 0 && value.trim().length > 0);
-  };
-
-  const handleSuggestionClick = (suggestion: string) => {
-    setSearchTerm(suggestion);
-    setShowSuggestions(false);
-  };
-
-  const clearFilters = () => {
-    setSearchTerm('');
-    setSelectedLocation('All');
-    setSelectedCategory('All');
-    setSelectedBedrooms('All');
-    setSelectedBathrooms('All');
-    setShowSuggestions(false);
-    setShowFilters(false);
-  };
-
-  const activeFilterCount = [
-    selectedLocation !== 'All' ? 1 : 0,
-    selectedCategory !== 'All' ? 1 : 0,
-    selectedBedrooms !== 'All' ? 1 : 0,
-    selectedBathrooms !== 'All' ? 1 : 0,
-  ].reduce((a, b) => a + b, 0);
-  const hasActiveFilters = searchTerm !== '' || activeFilterCount > 0;
-
-  const handlePropertyClick = (property: any) => {
-    navigate(`/property/${property.id}`);
-  };
-
-  const handleShareClick = (e: React.MouseEvent, property: any) => {
-    e.stopPropagation();
-    const shareData: PropertyShareData = {
-      title: property.name,
-      location: property.location,
-      price: property.price.replace('KSh ', '').replace(/,/g, ''),
-      imageUrl: property.image,
-      description: '',
-      propertyUrl: `${window.location.origin}/property/${property.id}`,
-    };
-    shareToWhatsApp(shareData);
-  };
-
+  const dark = isDarkMode;
+  const text = dark ? 'text-white' : 'text-gray-900';
+  const muted = dark ? 'text-white/70' : 'text-gray-600';
+  const cardBg = dark ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-gray-200';
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-[#111217] text-white' : 'bg-white text-gray-900'}`}>
-      <Header isDarkMode={isDarkMode} toggleTheme={toggleTheme} onLoginClick={() => {}} />
+    <div className={`min-h-screen transition-colors duration-300 ${dark ? 'bg-[#111217]' : 'bg-background'}`}>
+      <HostNavbar isDarkMode={isDarkMode} />
 
-      <div className="pt-16 pb-12">
-        {/* Hero Section */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center"
-          >
-            <motion.h1
-              className={`font-heading text-5xl md:text-7xl lg:text-8xl leading-none tracking-tight mb-6 transition-colors duration-300 ${
-                isDarkMode ? 'text-white' : 'text-gray-900'
-              }`}
-              style={{
-                fontFamily: "'Cinzel', 'Playfair Display', serif",
-                fontWeight: 500,
-                letterSpacing: '0.05em',
-              }}
+      {/* Hero */}
+      <section className={`pt-28 pb-12 ${dark ? 'bg-[#0E0E10]' : 'bg-gray-50'}`}>
+        <div className="container mx-auto px-4">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
+            <h1
+              className={`font-heading text-3xl sm:text-4xl font-bold mb-3 ${dark ? 'text-white' : 'text-gray-900'}`}
+              style={{ fontFamily: "'Cinzel', 'Playfair Display', serif", letterSpacing: '0.05em' }}
             >
-              Short Stays
-            </motion.h1>
-            <p className={`text-xl max-w-2xl mx-auto transition-colors duration-300 ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>
-              Discover beautiful short-term rentals for your next getaway
+              Find Your Perfect <span className="text-[#C7A667]">Vacation Rental</span>
+            </h1>
+            <p className={`max-w-lg mx-auto ${muted}`}>
+              Browse short stay properties or chat with our assistant to discover your dream stay.
             </p>
           </motion.div>
-        </div>
 
-        {/* REALAIST About + Trusted By (hosts only) */}
-        {isHost && <AboutSection isDarkMode={isDarkMode} />}
-
-        {/* Search and Filter Bar */}
-        {!isLoading && !error && shortStays.length > 0 && (
-          <motion.div
-            className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-          >
-            <div className={`rounded-xl border p-4 ${isDarkMode ? 'bg-[#0E0E10] border-white/10' : 'bg-white border-gray-200'}`}>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="relative flex-1">
-                  <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${isDarkMode ? 'text-white/50' : 'text-gray-400'}`} />
-                  <input
-                    type="text"
-                    placeholder="Search by name or location..."
-                    value={searchTerm}
-                    onChange={(e) => handleSearchChange(e.target.value)}
-                    onFocus={() => setShowSuggestions(searchSuggestions.length > 0 && searchTerm.trim().length > 0)}
-                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                    onKeyDown={(e) => e.key === 'Enter' && setShowSuggestions(false)}
-                    className={`w-full pl-10 pr-4 py-2.5 rounded-lg border outline-none transition-colors ${
-                      isDarkMode
-                        ? 'bg-white/5 border-white/10 text-white placeholder-white/40 focus:border-[#C7A667]/50'
-                        : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500 focus:border-[#C7A667]'
-                    }`}
-                  />
-                  {showSuggestions && searchSuggestions.length > 0 && (
-                    <div className={`absolute left-0 right-0 top-full mt-1 rounded-lg border shadow-lg z-20 overflow-hidden ${
-                      isDarkMode ? 'bg-[#0E0E10] border-white/10' : 'bg-white border-gray-200'
-                    }`}>
-                      {searchSuggestions.slice(0, 5).map((suggestion, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => handleSuggestionClick(suggestion)}
-                          className={`block w-full text-left px-4 py-2.5 text-sm transition-colors ${
-                            isDarkMode ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-50 text-gray-900'
-                          }`}
-                        >
-                          {suggestion}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {hasActiveFilters && (
-                    <button
-                      type="button"
-                      onClick={clearFilters}
-                      className={`flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                        isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      <X className="w-4 h-4" />
-                      Clear
-                    </button>
-                  )}
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setShowFilters(!showFilters)}
-                      className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
-                        isDarkMode
-                          ? 'bg-white/10 border-white/10 text-white hover:bg-white/20'
-                          : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      <Filter className="w-4 h-4" />
-                      Filters
-                      {activeFilterCount > 0 && (
-                        <span className="px-1.5 py-0.5 rounded-full bg-[#C7A667] text-black text-xs">
-                          {activeFilterCount}
-                        </span>
-                      )}
-                    </button>
-                    {showFilters && (
-                      <>
-                        <div className="fixed inset-0 z-10" aria-hidden onClick={() => setShowFilters(false)} />
-                        <div className={`absolute right-0 top-full mt-2 w-80 rounded-xl border shadow-xl z-20 max-h-[85vh] overflow-y-auto ${
-                          isDarkMode ? 'bg-[#0E0E10] border-white/10' : 'bg-white border-gray-200'
-                        }`}>
-                          <div className="p-4 space-y-4">
-                            <p className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                              Filter short stays
-                            </p>
-
-                            <div>
-                              <label className={`block text-xs font-medium uppercase tracking-wide mb-2 ${isDarkMode ? 'text-white/50' : 'text-gray-500'}`}>
-                                Location
-                              </label>
-                              <select
-                                value={selectedLocation}
-                                onChange={(e) => setSelectedLocation(e.target.value)}
-                                className={`w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#C7A667]/30 ${
-                                  isDarkMode
-                                    ? 'bg-white/5 border-white/10 text-white'
-                                    : 'bg-gray-50 border-gray-200 text-gray-900'
-                                }`}
-                              >
-                                {locationOptions.map((loc) => (
-                                  <option key={loc} value={loc}>{loc}</option>
-                                ))}
-                              </select>
-                            </div>
-
-                            <div>
-                              <label className={`block text-xs font-medium uppercase tracking-wide mb-2 ${isDarkMode ? 'text-white/50' : 'text-gray-500'}`}>
-                                Property type
-                              </label>
-                              <select
-                                value={selectedCategory}
-                                onChange={(e) => setSelectedCategory(e.target.value)}
-                                className={`w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#C7A667]/30 ${
-                                  isDarkMode
-                                    ? 'bg-white/5 border-white/10 text-white'
-                                    : 'bg-gray-50 border-gray-200 text-gray-900'
-                                }`}
-                              >
-                                {CATEGORY_OPTIONS.map((opt) => (
-                                  <option key={opt} value={opt}>{opt}</option>
-                                ))}
-                              </select>
-                            </div>
-
-                            <div>
-                              <label className={`block text-xs font-medium uppercase tracking-wide mb-2 ${isDarkMode ? 'text-white/50' : 'text-gray-500'}`}>
-                                Bedrooms
-                              </label>
-                              <div className="flex flex-wrap gap-2">
-                                {BEDROOM_OPTIONS.map((opt) => (
-                                  <button
-                                    key={opt}
-                                    type="button"
-                                    onClick={() => setSelectedBedrooms(opt)}
-                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                                      selectedBedrooms === opt
-                                        ? 'bg-[#C7A667] text-black'
-                                        : isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                    }`}
-                                  >
-                                    {opt}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-
-                            <div>
-                              <label className={`block text-xs font-medium uppercase tracking-wide mb-2 ${isDarkMode ? 'text-white/50' : 'text-gray-500'}`}>
-                                Bathrooms
-                              </label>
-                              <div className="flex flex-wrap gap-2">
-                                {BATHROOM_OPTIONS.map((opt) => (
-                                  <button
-                                    key={opt}
-                                    type="button"
-                                    onClick={() => setSelectedBathrooms(opt)}
-                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                                      selectedBathrooms === opt
-                                        ? 'bg-[#C7A667] text-black'
-                                        : isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                    }`}
-                                  >
-                                    {opt}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={clearFilters}
-                              className={`w-full py-2 rounded-lg text-sm font-medium transition-colors ${
-                                isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                              }`}
-                            >
-                              Clear all filters
-                            </button>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
+          {/* Search bar + Advanced search button */}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="max-w-2xl mx-auto">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className={`absolute left-4 top-1/2 -translate-y-1/2 ${muted}`} size={20} />
+                <input
+                  type="text"
+                  placeholder={placeholder ? `Search by name or location — ${placeholder}` : 'Search by name or location...'}
+                  value={advancedOpen ? advancedLocation : searchTerm}
+                  onChange={(e) => {
+                    if (advancedOpen) setAdvancedLocation(e.target.value);
+                    else setSearchTerm(e.target.value);
+                  }}
+                  className={`w-full pl-12 pr-4 h-12 text-base rounded-xl border shadow-sm outline-none focus:ring-2 focus:ring-[#C7A667]/30 ${
+                    dark ? 'border-white/10 bg-white/5 text-white placeholder-white/40' : 'border-gray-200 bg-white text-gray-900 placeholder-gray-500'
+                  }`}
+                />
+                {(advancedOpen ? advancedLocation : searchTerm) && (
+                  <button
+                    type="button"
+                    onClick={() => advancedOpen ? setAdvancedLocation('') : setSearchTerm('')}
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full ${muted} hover:opacity-100`}
+                    aria-label="Clear"
+                  >
+                    <X size={18} />
+                  </button>
+                )}
               </div>
-              <div className={`mt-3 pt-3 border-t ${isDarkMode ? 'border-white/10' : 'border-gray-100'}`}>
-                <span className={`text-sm ${isDarkMode ? 'text-white/60' : 'text-gray-500'}`}>
-                  {filteredShortStays.length} of {shortStays.length} short stay{shortStays.length !== 1 ? 's' : ''}
-                </span>
-              </div>
+              <button
+                type="button"
+                onClick={() => setAdvancedOpen((o) => !o)}
+                className={`flex items-center gap-2 h-12 px-4 rounded-xl border font-medium text-sm transition-colors ${
+                  advancedOpen
+                    ? 'bg-[#C7A667] text-black border-[#C7A667]'
+                    : dark
+                      ? 'border-white/10 bg-white/10 text-white hover:bg-white/20'
+                      : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+                title="Advanced search"
+              >
+                <SlidersHorizontal size={20} />
+                <span className="hidden sm:inline">Advanced</span>
+              </button>
             </div>
           </motion.div>
-        )}
 
-        {/* Properties Grid */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {isLoading ? (
-            <div className="flex justify-center items-center py-20">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C7A667]"></div>
-            </div>
-          ) : error ? (
-            <div className="text-center py-20">
-              <p className={`text-lg ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>{error}</p>
-            </div>
-          ) : shortStays.length === 0 ? (
-            <div className="text-center py-20">
-              <Bed size={64} className={`mx-auto mb-4 ${isDarkMode ? 'text-white/30' : 'text-gray-300'}`} />
-              <p className={`text-lg ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>
-                No short stay properties available at the moment.
-              </p>
-            </div>
-          ) : filteredShortStays.length === 0 ? (
-            <div className="text-center py-20">
-              <Bed size={64} className={`mx-auto mb-4 ${isDarkMode ? 'text-white/30' : 'text-gray-300'}`} />
-              <p className={`text-lg ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>
-                {hasActiveFilters
-                  ? 'No short stays match your search or filters. Try adjusting your criteria.'
-                  : 'No short stay properties available at the moment.'}
-              </p>
-              {hasActiveFilters && (
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className={`mt-4 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isDarkMode ? 'bg-[#C7A667] text-black hover:opacity-90' : 'bg-[#C7A667] text-black hover:opacity-90'
-                  }`}
-                >
-                  Clear filters
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredShortStays.map((property, index) => (
-                <motion.div
-                  key={property.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: index * 0.1 }}
-                  className={`rounded-2xl overflow-hidden border transition-all duration-300 cursor-pointer group ${
-                    isDarkMode
-                      ? 'bg-[#0E0E10] border-white/10 hover:border-[#C7A667]/50'
-                      : 'bg-white border-gray-200 hover:border-[#C7A667] shadow-sm hover:shadow-lg'
-                  }`}
-                  onClick={() => handlePropertyClick(property)}
-                >
-                  {/* Image */}
-                  <div className="relative h-64 overflow-hidden">
-                    <img
-                      src={property.image}
-                      alt={property.name}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                    <div className="absolute top-3 right-3 flex gap-2">
-                      <motion.button
-                        onClick={(e) => handleShareClick(e, property)}
-                        className={`p-2 rounded-full backdrop-blur-sm ${
-                          isDarkMode ? 'bg-black/50 text-white' : 'bg-white/90 text-gray-700'
+          {/* Advanced search panel */}
+          <AnimatePresence>
+            {advancedOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.25 }}
+                className="overflow-hidden"
+              >
+                <div className={`max-w-2xl mx-auto mt-6 rounded-2xl border-2 border-[#C7A667]/60 ${dark ? 'bg-[#0E0E10]' : 'bg-white'} p-6 shadow-lg`}>
+                  <h2 className={`text-xl font-bold mb-1 ${dark ? 'text-white' : 'text-gray-900'}`}>Search</h2>
+                  <p className={`text-sm ${muted} mb-6`}>Search deals on hotels, homes, and much more...</p>
+
+                  <div className="space-y-4">
+                    <div className="relative">
+                      <Search className={`absolute left-3 top-1/2 -translate-y-1/2 ${muted}`} size={18} />
+                      <input
+                        type="text"
+                        placeholder="e.g. Maasai Mara National Reserve"
+                        value={advancedLocation}
+                        onChange={(e) => setAdvancedLocation(e.target.value)}
+                        className={`w-full pl-10 pr-10 py-3 rounded-xl border text-base outline-none focus:ring-2 focus:ring-[#C7A667]/30 ${
+                          dark ? 'border-white/10 bg-white/5 text-white placeholder-white/40' : 'border-gray-200 bg-white text-gray-900 placeholder-gray-500'
                         }`}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        <Share2 size={16} />
-                      </motion.button>
+                      />
+                      {advancedLocation && (
+                        <button type="button" onClick={() => setAdvancedLocation('')} className={`absolute right-3 top-1/2 -translate-y-1/2 ${muted}`}>
+                          <X size={18} />
+                        </button>
+                      )}
                     </div>
-                    <div className="absolute top-3 left-3">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        isDarkMode ? 'bg-[#C7A667] text-black' : 'bg-[#C7A667] text-black'
-                      }`}>
-                        Short Stay
-                      </span>
-                    </div>
-                  </div>
 
-                  {/* Content */}
-                  <div className="p-5">
-                    <h3 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                      {property.name}
-                    </h3>
-                    <p className={`text-sm mb-3 ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>
-                      {property.location}
-                    </p>
-
-                    {/* Features */}
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="flex items-center gap-1">
-                        <Bed size={16} className={isDarkMode ? 'text-white/60' : 'text-gray-500'} />
-                        <span className={`text-sm ${isDarkMode ? 'text-white/80' : 'text-gray-700'}`}>
-                          {property.beds} {property.beds === 1 ? 'bed' : 'beds'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <img
-                          src="/icons/bath.png"
-                          alt="Baths"
-                          className={`w-4 h-4 object-contain filter ${
-                            isDarkMode
-                              ? 'brightness-0 invert-[0.8] sepia-[0.5] saturate-[2.5] hue-rotate-[15deg]'
-                              : 'brightness-0 saturate-100 invert-0'
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className={`block text-xs font-medium uppercase tracking-wide mb-2 ${muted}`}>Check-in date</label>
+                        <input
+                          type="date"
+                          value={checkIn}
+                          min={new Date().toISOString().slice(0, 10)}
+                          onChange={(e) => setCheckIn(e.target.value)}
+                          className={`w-full px-3 py-3 rounded-xl border text-base outline-none focus:ring-2 focus:ring-[#C7A667]/30 ${
+                            dark ? 'border-white/10 bg-white/5 text-white' : 'border-gray-200 bg-white text-gray-900'
                           }`}
                         />
-                        <span className={`text-sm ${isDarkMode ? 'text-white/80' : 'text-gray-700'}`}>
-                          {property.baths} {property.baths === 1 ? 'bath' : 'baths'}
-                        </span>
+                        {checkIn && <p className={`mt-1 text-sm font-medium ${dark ? 'text-white' : 'text-gray-900'}`}>{formatDisplayDate(checkIn)}</p>}
+                      </div>
+                      <div>
+                        <label className={`block text-xs font-medium uppercase tracking-wide mb-2 ${muted}`}>Check-out date</label>
+                        <input
+                          type="date"
+                          value={checkOut}
+                          min={checkIn || new Date().toISOString().slice(0, 10)}
+                          onChange={(e) => setCheckOut(e.target.value)}
+                          className={`w-full px-3 py-3 rounded-xl border text-base outline-none focus:ring-2 focus:ring-[#C7A667]/30 ${
+                            dark ? 'border-white/10 bg-white/5 text-white' : 'border-gray-200 bg-white text-gray-900'
+                          }`}
+                        />
+                        {checkOut && <p className={`mt-1 text-sm font-medium ${dark ? 'text-white' : 'text-gray-900'}`}>{formatDisplayDate(checkOut)}</p>}
                       </div>
                     </div>
 
-                    {/* Rating */}
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="flex items-center gap-1">
-                        <Star size={16} className="fill-[#C7A667] text-[#C7A667]" />
-                        <span className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                          {property.rating || '4.5'}
-                        </span>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className={`block text-xs font-medium uppercase tracking-wide mb-2 ${muted}`}>Adults</label>
+                        <input
+                          type="number"
+                          min={0}
+                          max={20}
+                          value={adults}
+                          onChange={(e) => setAdults(Math.max(0, Math.min(20, parseInt(e.target.value, 10) || 0)))}
+                          className={`w-full px-3 py-3 rounded-xl border text-base outline-none focus:ring-2 focus:ring-[#C7A667]/30 ${
+                            dark ? 'border-white/10 bg-white/5 text-white' : 'border-gray-200 bg-white text-gray-900'
+                          }`}
+                        />
                       </div>
-                      <span className={`text-xs ${isDarkMode ? 'text-white/60' : 'text-gray-500'}`}>
-                        ({property.reviewCount || 25} reviews)
-                      </span>
+                      <div>
+                        <label className={`block text-xs font-medium uppercase tracking-wide mb-2 ${muted}`}>Children</label>
+                        <input
+                          type="number"
+                          min={0}
+                          max={20}
+                          value={children}
+                          onChange={(e) => setChildren(Math.max(0, Math.min(20, parseInt(e.target.value, 10) || 0)))}
+                          className={`w-full px-3 py-3 rounded-xl border text-base outline-none focus:ring-2 focus:ring-[#C7A667]/30 ${
+                            dark ? 'border-white/10 bg-white/5 text-white' : 'border-gray-200 bg-white text-gray-900'
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <label className={`block text-xs font-medium uppercase tracking-wide mb-2 ${muted}`}>Rooms</label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={rooms}
+                          onChange={(e) => setRooms(Math.max(1, Math.min(20, parseInt(e.target.value, 10) || 1)))}
+                          className={`w-full px-3 py-3 rounded-xl border text-base outline-none focus:ring-2 focus:ring-[#C7A667]/30 ${
+                            dark ? 'border-white/10 bg-white/5 text-white' : 'border-gray-200 bg-white text-gray-900'
+                          }`}
+                        />
+                      </div>
                     </div>
 
-                    {/* Price */}
-                    <div>
-                      <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {property.price}
-                      </p>
-                      <p className={`text-xs ${isDarkMode ? 'text-white/60' : 'text-gray-500'}`}>
-                        per night
-                      </p>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchTerm(advancedLocation);
+                        setAdvancedOpen(false);
+                      }}
+                      className="w-full py-3.5 rounded-xl bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-semibold text-base transition-colors"
+                    >
+                      Search
+                    </button>
                   </div>
-                </motion.div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Type pills */}
+          {!isLoading && shortStays.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-2 mt-6">
+              {typeOptions.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setActiveType(t)}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    activeType === t
+                      ? 'bg-[#C7A667] text-black'
+                      : dark
+                        ? 'bg-white/10 border border-white/10 text-white/80 hover:text-white'
+                        : 'bg-card border border-border text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {t}
+                </button>
               ))}
             </div>
           )}
         </div>
-      </div>
+      </section>
 
+      {/* Properties grid */}
+      <section className="py-12">
+        <div className="container mx-auto px-4">
+          {isLoading ? (
+            <div className="flex justify-center items-center py-20">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C7A667]" />
+            </div>
+          ) : error ? (
+            <div className={`text-center py-20 ${muted}`}>{error}</div>
+          ) : shortStays.length === 0 ? (
+            <div className={`text-center py-16 ${muted}`}>
+              <p className="text-lg mb-2">No short stay properties available</p>
+              <p className="text-sm">Check back later or list your own property as a host.</p>
+            </div>
+          ) : (
+            <>
+              <p className={`text-sm ${muted} mb-6`}>{filteredShortStays.length} properties found</p>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredShortStays.map((property, index) => (
+                  <motion.div
+                    key={property.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className={`rounded-xl overflow-hidden border transition-all duration-300 group ${cardBg} hover:border-[#C7A667]/40`}
+                  >
+                    <div className="h-52 overflow-hidden relative">
+                      <img
+                        src={property.image}
+                        alt={property.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className={`absolute top-3 right-3 backdrop-blur-sm rounded-full px-2.5 py-1 flex items-center gap-1 text-sm font-medium ${dark ? 'bg-black/70 text-white' : 'bg-white/90 text-gray-800'}`}>
+                        <Star className="text-[#C7A667] fill-[#C7A667]" size={14} />
+                        {property.rating}
+                      </div>
+                      <div className="absolute top-3 left-3 bg-[#C7A667]/90 text-black rounded-full px-2.5 py-1 text-xs font-medium">
+                        {property.category}
+                      </div>
+                    </div>
+                    <div className="p-5">
+                      <h3 className={`text-lg font-semibold mb-1 ${dark ? 'text-white' : 'text-gray-900'}`}>{property.name}</h3>
+                      <div className={`flex items-center gap-1.5 ${muted} text-sm mb-3`}>
+                        <MapPin size={14} /> {property.location}
+                      </div>
+                      <div className={`flex items-center gap-4 ${muted} text-sm mb-3`}>
+                        <span className="flex items-center gap-1"><BedDouble size={14} /> {property.beds}</span>
+                        <span className="flex items-center gap-1"><Bath size={14} /> {property.baths}</span>
+                        <span className="flex items-center gap-1"><Users size={14} /> {property.guests}</span>
+                      </div>
+                      <div className={`flex items-center justify-between border-t pt-3 ${dark ? 'border-white/10' : 'border-border/50'}`}>
+                        <span className="text-[#C7A667] font-bold text-lg">
+                          {property.price}
+                          <span className={`${muted} font-normal text-xs`}>/night</span>
+                        </span>
+                        <Link
+                          to={`/property/${property.id}`}
+                          className="inline-flex items-center justify-center rounded-md text-sm font-medium border border-[#C7A667]/50 bg-transparent px-3 py-1.5 text-[#C7A667] hover:bg-[#C7A667]/10 transition-colors"
+                        >
+                          View Details
+                        </Link>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+              {filteredShortStays.length === 0 && (
+                <div className={`text-center py-16 ${muted}`}>
+                  <p className="text-lg mb-2">No properties found</p>
+                  <p className="text-sm">Try adjusting your search or filters, or chat with our assistant.</p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className={`border-t py-12 ${dark ? 'border-white/10' : 'border-gray-200'}`}>
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-2">
+              <img src="/logos/realaistlogo.png" alt="Realaist" className="h-6 w-auto" />
+              <span className={`font-semibold text-lg ${dark ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}>
+                Realaist <span className="text-[#C7A667]">Stays</span>
+              </span>
+            </div>
+            <div className="flex gap-6 text-sm">
+              <a href="/short-stays#features" className={`${muted} hover:text-[#C7A667] transition-colors`}>Features</a>
+              <Link to="/contact" className={`${muted} hover:text-[#C7A667] transition-colors`}>Contact</Link>
+            </div>
+            <p className={`text-xs ${muted}`}>© 2026 Realaist. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
+
+      {/* Chat FAB */}
+      <button
+        type="button"
+        onClick={() => setChatOpen(!chatOpen)}
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-[#C7A667] text-black shadow-lg flex items-center justify-center hover:scale-105 transition-transform"
+      >
+        {chatOpen ? <X size={24} /> : <MessageCircle size={24} />}
+      </button>
+
+      {/* Chat panel */}
+      <AnimatePresence>
+        {chatOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className={`fixed bottom-24 right-6 z-50 w-[360px] max-h-[500px] rounded-2xl border flex flex-col overflow-hidden ${
+              dark ? 'bg-[#0E0E10] border-white/10' : 'bg-card border-border'
+            } shadow-2xl`}
+          >
+            <div className="px-4 py-3 border-b flex items-center gap-2 bg-[#C7A667]/10 border-[#C7A667]/20">
+              <MessageCircle className="text-[#C7A667]" size={18} />
+              <span className="font-semibold text-sm">Travel Assistant</span>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px]">
+              {chatMessages.map((msg, i) => (
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div
+                    className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                      msg.role === 'user'
+                        ? 'bg-[#C7A667] text-black rounded-br-md'
+                        : dark ? 'bg-white/10 text-white rounded-bl-md' : 'bg-muted text-foreground rounded-bl-md'
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
+                </div>
+              ))}
+              <div ref={chatEndRef} />
+            </div>
+            <div className={`p-3 border-t flex gap-2 ${dark ? 'border-white/10' : 'border-gray-200'}`}>
+              <input
+                type="text"
+                placeholder="Ask about properties..."
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                className={`flex-1 h-9 px-3 rounded-md text-sm outline-none focus:ring-2 focus:ring-[#C7A667]/30 ${
+                  dark ? 'bg-white/5 border border-white/10 text-white placeholder-white/40' : 'bg-gray-100 border border-gray-200 text-gray-900'
+                }`}
+              />
+              <button
+                type="button"
+                className="h-9 w-9 shrink-0 rounded-md bg-[#C7A667] text-black hover:bg-[#C7A667]/90 flex items-center justify-center"
+                onClick={sendMessage}
+              >
+                <Send size={16} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

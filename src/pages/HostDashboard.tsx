@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Bed, MessageSquare, Plus, MapPin, DollarSign, ExternalLink, Home } from 'lucide-react';
+import { Bed, MessageSquare, Plus, MapPin, DollarSign, ExternalLink, Home, Megaphone } from 'lucide-react';
 import { propertiesService, Property } from '../services/propertiesService';
 
 interface HostDashboardProps {
@@ -87,7 +87,7 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ isDarkMode }) => {
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <motion.button
           onClick={() => navigate('/dashboard/short-stays')}
           className={isDarkMode ? 'p-6 rounded-2xl text-left bg-[#0E0E10] border border-white/10 hover:border-[#C7A667]/50' : 'p-6 rounded-2xl text-left bg-white border border-gray-200 hover:border-[#C7A667]/50'}
@@ -122,6 +122,23 @@ export const HostDashboard: React.FC<HostDashboardProps> = ({ isDarkMode }) => {
           </div>
           <h3 className="text-2xl font-bold mb-1">{messageCount}</h3>
           <p className={isDarkMode ? 'text-white/70' : 'text-gray-600'}>Guest messages</p>
+        </motion.button>
+
+        <motion.button
+          onClick={() => navigate('/dashboard/campaign-ads')}
+          className={isDarkMode ? 'p-6 rounded-2xl text-left bg-[#0E0E10] border border-white/10 hover:border-[#C7A667]/50' : 'p-6 rounded-2xl text-left bg-white border border-gray-200 hover:border-[#C7A667]/50'}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className={isDarkMode ? 'p-3 rounded-lg bg-white/10' : 'p-3 rounded-lg bg-blue-500/10'}>
+              <Megaphone className="w-6 h-6 text-blue-500" />
+            </div>
+            <span className="text-sm font-medium text-[#C7A667]">Manage</span>
+          </div>
+          <h3 className="text-2xl font-bold mb-1">Campaign Ads</h3>
+          <p className={isDarkMode ? 'text-white/70' : 'text-gray-600'}>Promote your short stays with ads</p>
         </motion.button>
       </div>
 

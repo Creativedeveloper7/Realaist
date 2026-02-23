@@ -59,7 +59,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         return;
       }
       if (loggedInUser?.userType === 'host') {
-        navigate('/short-stays');
+        navigate('/');
         return;
       }
       const adminEmails = [
@@ -99,7 +99,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             return;
           }
           if (parsed?.userType === 'host') {
-            navigate('/short-stays');
+            navigate('/');
             return;
           }
           const adminEmails = [

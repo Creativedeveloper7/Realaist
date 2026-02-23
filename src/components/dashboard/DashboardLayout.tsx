@@ -65,6 +65,7 @@ const hostNavItems: NavItem[] = [
   { id: 'overview', label: 'Overview', icon: Home, href: '/dashboard' },
   { id: 'short-stays', label: 'My Short Stays', icon: Bed, href: '/dashboard/short-stays' },
   { id: 'messages', label: 'Guest Messages', icon: MessageSquare, href: '/dashboard/messages' },
+  { id: 'campaign-ads', label: 'Campaign Ads', icon: Megaphone, href: '/dashboard/campaign-ads' },
   { id: 'profile', label: 'Profile', icon: User, href: '/dashboard/profile' },
 ];
 

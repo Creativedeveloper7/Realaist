@@ -42,6 +42,8 @@ export interface CreateScheduledVisitData {
   message?: string
   visitorName: string
   visitorEmail: string
+  /** For short-stay bookings: last night of stay (YYYY-MM-DD). Omit for single-day visits. */
+  checkOutDate?: string
 }
 
 class ScheduledVisitsService {
@@ -64,18 +66,22 @@ class ScheduledVisitsService {
       // For unauthenticated visitors, we will proceed without a buyer_id
       const buyerId = user?.id || null
 
+      const insertPayload: Record<string, unknown> = {
+        property_id: data.propertyId,
+        buyer_id: buyerId,
+        developer_id: property.developer_id,
+        scheduled_date: data.scheduledDate,
+        scheduled_time: data.scheduledTime,
+        message: data.message || null,
+        status: 'scheduled'
+      }
+      if (data.checkOutDate) {
+        insertPayload.check_out_date = data.checkOutDate
+      }
       // Create the scheduled visit
       const { data: visitData, error } = await supabase
         .from('scheduled_visits')
-        .insert({
-          property_id: data.propertyId,
-          buyer_id: buyerId,
-          developer_id: property.developer_id,
-          scheduled_date: data.scheduledDate,
-          scheduled_time: data.scheduledTime,
-          message: data.message || null,
-          status: 'scheduled'
-        })
+        .insert(insertPayload as Record<string, string | null>)
         .select(`
           *,
           property:properties!scheduled_visits_property_id_fkey(
@@ -347,6 +353,41 @@ class ScheduledVisitsService {
     } catch (error) {
       console.error('Error updating visit status:', error)
       return { error: 'An unexpected error occurred' }
+    }
+  }
+
+  /**
+   * Get all booked dates for a property (for availability calendar and blocking overbooking).
+   * Returns every date that falls within any scheduled_visit (scheduled_date through check_out_date, or single day if no check_out_date).
+   */
+  async getBookedDatesForProperty(propertyId: string): Promise<{ bookedDates: string[]; error: string | null }> {
+    try {
+      const { data: rows, error } = await supabase
+        .from('scheduled_visits')
+        .select('scheduled_date, check_out_date')
+        .eq('property_id', propertyId)
+        .in('status', ['scheduled', 'confirmed'])
+
+      if (error) {
+        console.error('getBookedDatesForProperty:', error)
+        return { bookedDates: [], error: error.message }
+      }
+
+      const set = new Set<string>()
+      for (const row of rows || []) {
+        const start = row.scheduled_date
+        if (!start) continue
+        const end = row.check_out_date || start
+        const startDate = new Date(start + 'T12:00:00')
+        const endDate = new Date(end + 'T12:00:00')
+        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+          set.add(d.toISOString().slice(0, 10))
+        }
+      }
+      return { bookedDates: Array.from(set).sort(), error: null }
+    } catch (e) {
+      console.error('getBookedDatesForProperty:', e)
+      return { bookedDates: [], error: e instanceof Error ? e.message : 'Unknown error' }
     }
   }
 

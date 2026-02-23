@@ -101,11 +101,9 @@ class AuthService {
         const { data: { user }, error } = await Promise.race([authPromise, timeoutPromise])
         
         if (error || !user) {
-          console.log('AuthService: getUser failed, checking if user is still valid:', error?.message);
           // Don't immediately return null - check if we have a stored user first
           const storedUser = localStorage.getItem('current_user')
           if (storedUser) {
-            console.log('AuthService: Using stored user data as fallback');
             return JSON.parse(storedUser)
           }
           return null

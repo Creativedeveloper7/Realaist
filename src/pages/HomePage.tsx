@@ -199,7 +199,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onLoginClick }) => {
 
         <main>
           {/* Hero Section */}
-          <Hero isDarkMode={isDarkMode} />
+          <Hero isDarkMode={isDarkMode} onLoginClick={onLoginClick} />
 
 
           {/* About Section */}

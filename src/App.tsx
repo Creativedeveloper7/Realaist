@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useTheme } from './ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -7,53 +7,71 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { DashboardLayout } from './components/dashboard/DashboardLayout';
 import { UserProfile } from './components/dashboard/UserProfile';
 import { DeveloperCacheTools } from './components/CacheClearButton';
-import { Dashboard } from './pages/Dashboard';
-import { DeveloperDashboard } from './pages/DeveloperDashboard';
 import { HomePage } from './pages/HomePage';
-import { MyProperties } from './pages/MyProperties';
-import ScheduledVisits from './pages/ScheduledVisits';
-import { Analytics } from './pages/Analytics';
-import { Blogs } from './pages/Blogs';
-import DashboardCampaignAds from './pages/DashboardCampaignAds';
-import ShortStays from './pages/ShortStays';
-import { HostMessages } from './pages/HostMessages';
-import { AdminDashboard } from './pages/AdminDashboard';
-import OverviewPage from './pages/admin/OverviewPage';
-import AnalyticsPage from './pages/admin/AnalyticsPage';
-import { AdminLogin } from './pages/AdminLogin';
+import HostsHomePage from './pages/HostsHomePage';
 import { AdminLayout } from './components/dashboard/AdminLayout';
-import PropertiesPage from './pages/admin/PropertiesPage';
-import HostsPage from './pages/admin/HostsPage';
-import CampaignManagement from './pages/admin/CampaignManagement';
-import RevenuePage from './pages/admin/RevenuePage';
-import MessagesPage from './pages/admin/MessagesPage';
-import ReportsPage from './pages/admin/ReportsPage';
-import SettingsPage from './pages/admin/SettingsPage';
-import { default as PublicBlogsPage } from './BlogsPage';
-import BlogDetailsPage from './BlogDetailsPage';
-import PropertyDetails from './PropertyDetails';
-import HousesPage from './HousesPage';
-import ShortStaysPage from './pages/ShortStaysPage';
-import MessageHost from './pages/MessageHost';
-import ContactPage from './pages/ContactPage';
-import { CampaignPreview } from './pages/CampaignPreview';
+import { AdminLogin } from './pages/AdminLogin';
+
+// Lazy-loaded pages for faster initial load
+const PropertyDetails = lazy(() => import('./PropertyDetails'));
+const HousesPage = lazy(() => import('./HousesPage').then(m => ({ default: m.default })));
+const ShortStaysPage = lazy(() => import('./pages/ShortStaysPage'));
+const MessageHost = lazy(() => import('./pages/MessageHost'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
+const CampaignPreview = lazy(() => import('./pages/CampaignPreview').then(m => ({ default: m.CampaignPreview })));
+const PublicBlogsPage = lazy(() => import('./BlogsPage').then(m => ({ default: m.default })));
+const BlogDetailsPage = lazy(() => import('./BlogDetailsPage'));
+const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
+const DeveloperDashboard = lazy(() => import('./pages/DeveloperDashboard').then(m => ({ default: m.DeveloperDashboard })));
+const MyProperties = lazy(() => import('./pages/MyProperties').then(m => ({ default: m.MyProperties })));
+const ScheduledVisits = lazy(() => import('./pages/ScheduledVisits'));
+const Analytics = lazy(() => import('./pages/Analytics').then(m => ({ default: m.Analytics })));
+const Blogs = lazy(() => import('./pages/Blogs').then(m => ({ default: m.Blogs })));
+const DashboardCampaignAds = lazy(() => import('./pages/DashboardCampaignAds'));
+const ShortStays = lazy(() => import('./pages/ShortStays').then(m => ({ default: m.default })));
+const HostMessages = lazy(() => import('./pages/HostMessages').then(m => ({ default: m.HostMessages })));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const OverviewPage = lazy(() => import('./pages/admin/OverviewPage'));
+const AnalyticsPage = lazy(() => import('./pages/admin/AnalyticsPage'));
+const PropertiesPage = lazy(() => import('./pages/admin/PropertiesPage'));
+const HostsPage = lazy(() => import('./pages/admin/HostsPage'));
+const CampaignManagement = lazy(() => import('./pages/admin/CampaignManagement'));
+const RevenuePage = lazy(() => import('./pages/admin/RevenuePage'));
+const MessagesPage = lazy(() => import('./pages/admin/MessagesPage'));
+const ReportsPage = lazy(() => import('./pages/admin/ReportsPage'));
+const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
 
 // Import styles
 import './styles/global.css';
 
-/** When a host is logged in, redirect to /short-stays instead of showing the wrapped route. */
+/** When a host is logged in, redirect to / (host home) instead of showing the wrapped route. */
 function HostRestrictedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user } = useAuth();
   if (isAuthenticated && user?.userType === 'host') {
-    return <Navigate to="/short-stays" replace />;
+    return <Navigate to="/" replace />;
   }
   return <>{children}</>;
 }
 
-/** Redirect unknown routes: host → /short-stays, others → /. */
+/** Home: show HostsHomePage for hosts, HomePage for others. Wait for auth to be ready to avoid flashing the wrong page on refresh. */
+function HomeOrHostHome({ onLoginClick }: { onLoginClick: () => void }) {
+  const { isAuthReady, isAuthenticated, user } = useAuth();
+  if (!isAuthReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#111217]">
+        <div className="w-8 h-8 border-2 border-[#C7A667] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (isAuthenticated && user?.userType === 'host') {
+    return <HostsHomePage />;
+  }
+  return <HomePage onLoginClick={onLoginClick} />;
+}
+
+/** Redirect unknown routes to home. */
 function NavigateToDefault() {
-  const { isAuthenticated, user } = useAuth();
-  return <Navigate to={isAuthenticated && user?.userType === 'host' ? '/short-stays' : '/'} replace />;
+  return <Navigate to="/" replace />;
 }
 
 // Main App Component with Authentication
@@ -82,18 +100,18 @@ function AppContent() {
     return () => window.removeEventListener('realaist:open-auth', openHandler);
   }, []);
 
+  const pageFallback = (
+    <div className="min-h-screen flex items-center justify-center bg-[#111217]">
+      <div className="w-8 h-8 border-2 border-[#C7A667] border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+
   return (
     <>
+      <Suspense fallback={pageFallback}>
       <Routes>
-        {/* Public Routes — hosts are redirected to /short-stays for these */}
-        <Route
-          path="/"
-          element={
-            <HostRestrictedRoute>
-              <HomePage onLoginClick={handleLoginClick} />
-            </HostRestrictedRoute>
-          }
-        />
+        {/* Home: host sees HostsHomePage, others see HomePage */}
+        <Route path="/" element={<HomeOrHostHome onLoginClick={handleLoginClick} />} />
 
         <Route path="/property/:propertyId" element={<PropertyDetails />} />
         <Route path="/p/:propertyId" element={<PropertyDetails />} />
@@ -358,6 +376,7 @@ function AppContent() {
         {/* Redirect any unknown routes to home */}
         <Route path="*" element={<NavigateToDefault />} />
       </Routes>
+      </Suspense>
 
       {/* Global Auth Modal */}
       <AuthModal
