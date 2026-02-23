@@ -276,7 +276,8 @@ export default function PropertyDetails() {
       type: dbProperty.propertyType,
       landArea: formatLandArea(dbProperty.squareFeet),
       amenities: (dbProperty as any).amenities || [],
-      features: (dbProperty as any).features || []
+      features: (dbProperty as any).features || [],
+      videoUrl: (dbProperty as any).videoUrl || undefined
     };
   };
 

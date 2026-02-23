@@ -238,6 +238,8 @@ export interface Property {
   }
   createdAt: string
   updatedAt: string
+  /** Optional tour/video URL; used by "Watch Video" on short stay details */
+  videoUrl?: string
   // UI-only metadata (kept locally for now when DB is unreachable)
   amenities?: string[]
   features?: string[]
@@ -256,6 +258,7 @@ export interface CreatePropertyData {
   squareFeet?: number
   images?: string[]
   status?: 'active' | 'sold' | 'pending' | 'draft'
+  videoUrl?: string
   // UI-only fields to persist locally on offline/timeout
   amenities?: string[]
   features?: string[]
@@ -330,6 +333,7 @@ class PropertiesService {
               square_feet,
               images,
               status,
+              video_url,
               developer_id,
               created_at,
               updated_at,
@@ -441,6 +445,7 @@ class PropertiesService {
             })() : undefined,
             createdAt: item.created_at,
             updatedAt: item.updated_at,
+            videoUrl: item.video_url || undefined,
             amenities: item.amenities || [],
             features: item.features || []
           }))
@@ -598,6 +603,7 @@ class PropertiesService {
           developer: developerData,
           createdAt: item.created_at,
           updatedAt: item.updated_at,
+          videoUrl: item.video_url || undefined,
           amenities: item.amenities || [],
           features: item.features || []
         };
@@ -637,6 +643,7 @@ class PropertiesService {
               square_feet,
               images,
               status,
+              video_url,
               developer_id,
               created_at,
               updated_at,
@@ -736,6 +743,7 @@ class PropertiesService {
             developer: developerData,
             createdAt: data.created_at,
             updatedAt: data.updated_at,
+            videoUrl: data.video_url || undefined,
             amenities: data.amenities || [],
             features: data.features || []
           }
@@ -786,6 +794,7 @@ class PropertiesService {
           images: data.images || [],
           status: data.status || 'active',
           developer_id: user.id,
+          video_url: data.videoUrl || null,
           amenities: data.amenities || [],
           features: data.features || []
         })
@@ -864,6 +873,7 @@ class PropertiesService {
       if (data.squareFeet !== undefined) updateData.square_feet = data.squareFeet
       if (data.images) updateData.images = data.images
       if (data.status) updateData.status = data.status
+      if (data.videoUrl !== undefined) updateData.video_url = data.videoUrl || null
       if (data.amenities) updateData.amenities = data.amenities
       if (data.features) updateData.features = data.features
 
@@ -910,6 +920,7 @@ class PropertiesService {
         } : undefined,
         createdAt: propertyData.created_at,
         updatedAt: propertyData.updated_at,
+        videoUrl: propertyData.video_url || undefined,
         amenities: propertyData.amenities || [],
         features: propertyData.features || []
       }
@@ -1026,6 +1037,7 @@ class PropertiesService {
         } : undefined,
         createdAt: item.created_at,
         updatedAt: item.updated_at,
+        videoUrl: item.video_url || undefined,
         amenities: item.amenities || [],
         features: item.features || []
       }))

@@ -53,6 +53,7 @@ interface ShortStayForm {
   weekendBasePrice: string;
   registerForAds: boolean;
   images: File[];
+  videoLink: string;
 }
 
 const featureOptions = ['Peaceful', 'Central', 'Spacious', 'Family-friendly', 'Stylish', 'Unique'];
@@ -91,6 +92,7 @@ const defaultForm: ShortStayForm = {
   weekendBasePrice: '',
   registerForAds: false,
   images: [],
+  videoLink: '',
 };
 
 function parseDescriptionForEdit(description: string): { mainDescription: string; placeType: ShortStayForm['placeType']; category: ShortStayForm['category']; guests: number; bedrooms: number; beds: number; bathrooms: number } {
@@ -266,6 +268,7 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
       weekendBasePrice: weekend ? String(Math.round(weekend / 1.07)) : '',
       registerForAds: false,
       images: [],
+      videoLink: property.videoUrl || '',
     });
     setExistingImageUrls(property.images || []);
   };
@@ -365,6 +368,7 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
           images: allImages,
           amenities: form.amenities,
           features: form.features,
+          videoUrl: form.videoLink.trim() || undefined,
         });
 
         if (updateErr || !updated) {
@@ -391,6 +395,7 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
           images: [],
           amenities: form.amenities,
           features: form.features,
+          videoUrl: form.videoLink.trim() || undefined,
         };
 
         const result = await propertiesService.createProperty(propertyData);
@@ -411,8 +416,12 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
               console.warn('Error uploading short stay image:', err);
             }
           }
-          if (imageUrls.length > 0) {
-            await propertiesService.updateProperty({ id: property.id, images: imageUrls });
+          if (imageUrls.length > 0 || form.videoLink.trim()) {
+            await propertiesService.updateProperty({
+              id: property.id,
+              ...(imageUrls.length > 0 && { images: imageUrls }),
+              ...(form.videoLink.trim() && { videoUrl: form.videoLink.trim() }),
+            });
           }
         }
 
@@ -953,6 +962,25 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
                 ))}
               </div>
             )}
+
+            <div>
+              <label htmlFor="short-stay-video-link" className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-white/80' : 'text-gray-700'}`}>
+                Video link (optional)
+              </label>
+              <input
+                id="short-stay-video-link"
+                type="url"
+                value={form.videoLink}
+                onChange={e => setForm(prev => ({ ...prev, videoLink: e.target.value }))}
+                placeholder="https://..."
+                className={`w-full px-4 py-3 rounded-lg border ${
+                  isDarkMode ? 'bg-black/40 border-white/20 text-white placeholder:text-white/50' : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-500'
+                }`}
+              />
+              <p className={`mt-1 text-xs ${isDarkMode ? 'text-white/60' : 'text-gray-500'}`}>
+                This link is shown as &quot;Watch Video&quot; on the property details page.
+              </p>
+            </div>
           </div>
         )}
 

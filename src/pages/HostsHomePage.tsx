@@ -52,10 +52,10 @@ export default function HostsHomePage() {
       {/* Hero section */}
       <main>
         <section className="relative min-h-screen flex items-center justify-start overflow-hidden">
-          {/* Background video (add public/hero-video.mp4 for custom video) or gradient fallback */}
+          {/* Background video (Pexels); gradient fallback on error */}
           <div className={`absolute inset-0 ${dark ? 'bg-[#111217]' : 'bg-gray-50'}`}>
             <video
-              src="/logos/hosthero.mp4"
+              src="/logos/hosthero2.mp4"
               autoPlay
               loop
               muted
