@@ -385,7 +385,7 @@ export default function PropertyDetails() {
     }
   }, [property]);
 
-  // Fetch booked dates for short-stay availability calendar
+  // Fetch booked dates for short-stay availability calendar (on load and when booking modal opens)
   useEffect(() => {
     const isShort = (property?.type || '').toLowerCase() === 'short stay';
     if (!property?.id || !isShort) {
@@ -397,7 +397,7 @@ export default function PropertyDetails() {
       if (!cancelled && !error) setBookedDatesForCalendar(bookedDates);
     });
     return () => { cancelled = true; };
-  }, [property?.id, property?.type]);
+  }, [property?.id, property?.type, bookingModalOpen]);
 
   // Resolve "Current location" to real place name when we have lat/lng (e.g. Kikuyu)
   useEffect(() => {
@@ -1834,6 +1834,10 @@ export default function PropertyDetails() {
                 onSelectRange={(checkIn, checkOut) => {
                   setCheckInDate(checkIn);
                   setCheckOutDate(checkOut);
+                  setBookingMessage('');
+                }}
+                onInvalidRange={() => {
+                  setBookingMessage('That range includes dates that are already booked. Please choose different dates.');
                 }}
                 selectedCheckIn={checkInDate}
                 selectedCheckOut={checkOutDate}

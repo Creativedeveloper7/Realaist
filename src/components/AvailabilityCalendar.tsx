@@ -14,12 +14,18 @@ export interface AvailabilityCalendarProps {
   selectedCheckIn?: string;
   /** For picker: pre-selected check-out (YYYY-MM-DD) */
   selectedCheckOut?: string;
+  /** Called when user selects a range that includes booked dates (so parent can show a message) */
+  onInvalidRange?: () => void;
 }
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+/** Format date as YYYY-MM-DD in local time (matches DB and avoids timezone bugs). */
 function toYMD(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function isInRange(date: string, start: string, end: string): boolean {
@@ -35,6 +41,7 @@ export function AvailabilityCalendar({
   monthsCount = 2,
   selectedCheckIn = '',
   selectedCheckOut = '',
+  onInvalidRange,
 }: AvailabilityCalendarProps) {
   const bookedSet = useMemo(() => new Set(bookedDates), [bookedDates]);
   const [viewMonth, setViewMonth] = useState(() => {
@@ -78,6 +85,18 @@ export function AvailabilityCalendar({
     return days;
   };
 
+  /** Return true if any day in [start, end] (inclusive) is booked. */
+  const rangeHasBookedDay = (start: string, end: string): boolean => {
+    const [sy, sm, sd] = start.split('-').map(Number);
+    const [ey, em, ed] = end.split('-').map(Number);
+    const cur = new Date(sy, sm - 1, sd);
+    const last = new Date(ey, em - 1, ed);
+    for (; cur <= last; cur.setDate(cur.getDate() + 1)) {
+      if (bookedSet.has(toYMD(cur))) return true;
+    }
+    return false;
+  };
+
   const handleDayClick = (ymd: string) => {
     if (!isPicker || bookedSet.has(ymd)) return;
     if (ymd < today) return;
@@ -89,6 +108,12 @@ export function AvailabilityCalendar({
     if (rangeStart) {
       const start = ymd < rangeStart ? ymd : rangeStart;
       const end = ymd < rangeStart ? rangeStart : ymd;
+      if (rangeHasBookedDay(start, end)) {
+        setRangeStart(ymd);
+        setRangeEnd(null);
+        onInvalidRange?.();
+        return;
+      }
       setRangeStart(start);
       setRangeEnd(end);
       onSelectRange(start, end);

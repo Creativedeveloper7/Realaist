@@ -391,14 +391,22 @@ class ScheduledVisitsService {
       }
 
       const set = new Set<string>()
+      const toYMD = (d: Date) => {
+        const y = d.getFullYear()
+        const m = String(d.getMonth() + 1).padStart(2, '0')
+        const day = String(d.getDate()).padStart(2, '0')
+        return `${y}-${m}-${day}`
+      }
       for (const row of rows || []) {
         const start = row.scheduled_date
         if (!start) continue
         const end = row.check_out_date || start
-        const startDate = new Date(start + 'T12:00:00')
-        const endDate = new Date(end + 'T12:00:00')
-        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-          set.add(d.toISOString().slice(0, 10))
+        const [sy, sm, sd] = start.split('-').map(Number)
+        const [ey, em, ed] = end.split('-').map(Number)
+        const cur = new Date(sy, sm - 1, sd)
+        const last = new Date(ey, em - 1, ed)
+        for (; cur <= last; cur.setDate(cur.getDate() + 1)) {
+          set.add(toYMD(cur))
         }
       }
       return { bookedDates: Array.from(set).sort(), error: null }
