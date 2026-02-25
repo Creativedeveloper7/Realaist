@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../ThemeContext';
 import { 
   Home, 
   Search, 
@@ -74,9 +75,17 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   isDarkMode 
 }) => {
   const { user, logout } = useAuth();
+  const { setTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Apply saved theme preference when user is loaded (e.g. returning host who saved dark mode)
+  useEffect(() => {
+    if (user?.preferences?.darkMode !== undefined) {
+      setTheme(user.preferences.darkMode);
+    }
+  }, [user?.id]);
   
   // Get navigation items based on user type
   const getNavItems = () => {

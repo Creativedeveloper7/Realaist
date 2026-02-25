@@ -49,6 +49,7 @@ export interface AuthContextType {
   signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   updateProfile: (userData: Partial<User>) => Promise<{ success: boolean; error?: string }>;
+  updatePreferences: (prefs: User['preferences']) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -68,6 +69,7 @@ function parseCachedUser(): User | null {
     const userType = ADMIN_EMAILS_LIST.includes((authUser.email || '').toLowerCase())
       ? 'admin'
       : (authUser.userType || 'buyer');
+    const prefs = (authUser as any).preferences;
     return {
       id: authUser.id,
       email: authUser.email,
@@ -85,7 +87,13 @@ function parseCachedUser(): User | null {
       facebook: authUser.facebook,
       tiktok: authUser.tiktok,
       logoUrl: authUser.logoUrl,
-      preferences: { notifications: true, darkMode: false, language: 'en' },
+      preferences: prefs && typeof prefs === 'object'
+        ? {
+            notifications: !!prefs.notifications,
+            darkMode: !!prefs.darkMode,
+            language: typeof prefs.language === 'string' ? prefs.language : 'en',
+          }
+        : { notifications: true, darkMode: false, language: 'en' },
     };
   } catch {
     return null;
@@ -140,7 +148,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       facebook: authUser.facebook,
       tiktok: authUser.tiktok,
       logoUrl: authUser.logoUrl,
-      preferences: {
+      preferences: authUser.preferences ?? {
         notifications: true,
         darkMode: false,
         language: 'en',
@@ -327,6 +335,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const updatePreferences = async (prefs: User['preferences']) => {
+    try {
+      if (!user) return { success: false, error: 'No user logged in' };
+      const updatedUser = { ...user, preferences: prefs };
+      setUser(updatedUser);
+      try {
+        const stored = localStorage.getItem('current_user');
+        const parsed = stored ? JSON.parse(stored) : {};
+        localStorage.setItem('current_user', JSON.stringify({ ...parsed, preferences: prefs }));
+      } catch {
+        // ignore localStorage errors
+      }
+      return { success: true };
+    } catch (error) {
+      console.error('Preferences update error:', error);
+      return { success: false, error: 'Failed to save preferences.' };
+    }
+  };
+
   const contextValue: AuthContextType = {
     user,
     isLoading,
@@ -337,6 +364,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signInWithGoogle,
     logout,
     updateProfile,
+    updatePreferences,
   };
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;

@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 interface ThemeContextType {
   isDarkMode: boolean;
   toggleTheme: () => void;
+  setTheme: (isDark: boolean) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -21,16 +22,19 @@ interface ThemeProviderProps {
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    // Check localStorage first, then default to true (dark mode)
     const saved = localStorage.getItem('theme');
     if (saved !== null) {
       return saved === 'dark';
     }
-    return true; // Default to dark mode
+    return false; // Default to light mode
   });
 
   const toggleTheme = () => {
     setIsDarkMode(prev => !prev);
+  };
+
+  const setTheme = (isDark: boolean) => {
+    setIsDarkMode(isDark);
   };
 
   useEffect(() => {
@@ -45,6 +49,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const value = {
     isDarkMode,
     toggleTheme,
+    setTheme,
   };
 
   return (

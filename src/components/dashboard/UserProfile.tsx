@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../ThemeContext';
 import { 
   User, 
   Mail, 
@@ -26,6 +27,7 @@ interface UserProfileProps {
 
 export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
   const { user, updateProfile, updatePreferences } = useAuth();
+  const { setTheme } = useTheme();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -199,13 +201,19 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
 
   const handleSavePreferences = async () => {
     setIsLoading(true);
+    setMessage(null);
     try {
       const result = await updatePreferences(preferences);
       if (result.success) {
-        // Preferences updated successfully
+        setTheme(preferences.darkMode);
+        setMessage({ type: 'success', text: 'Preferences saved.' });
+        setTimeout(() => setMessage(null), 3000);
+      } else {
+        setMessage({ type: 'error', text: result.error || 'Failed to save preferences.' });
       }
     } catch (error) {
       console.error('Failed to update preferences:', error);
+      setMessage({ type: 'error', text: 'Failed to save preferences. Please try again.' });
     } finally {
       setIsLoading(false);
     }
