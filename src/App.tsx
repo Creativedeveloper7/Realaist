@@ -7,7 +7,6 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { DashboardLayout } from './components/dashboard/DashboardLayout';
 import { UserProfile } from './components/dashboard/UserProfile';
 import { DeveloperCacheTools } from './components/CacheClearButton';
-import { HomePage } from './pages/HomePage';
 import HostsHomePage from './pages/HostsHomePage';
 import { AdminLayout } from './components/dashboard/AdminLayout';
 import { AdminLogin } from './pages/AdminLogin';
@@ -53,20 +52,9 @@ function HostRestrictedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** Home: show HostsHomePage for hosts, HomePage for others. Wait for auth to be ready to avoid flashing the wrong page on refresh. */
-function HomeOrHostHome({ onLoginClick }: { onLoginClick: () => void }) {
-  const { isAuthReady, isAuthenticated, user } = useAuth();
-  if (!isAuthReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#111217]">
-        <div className="w-8 h-8 border-2 border-[#C7A667] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-  if (isAuthenticated && user?.userType === 'host') {
-    return <HostsHomePage />;
-  }
-  return <HomePage onLoginClick={onLoginClick} />;
+/** Home: always show hosts side (Realaist Stays). Original landing page is no longer used. */
+function HomeRoute() {
+  return <HostsHomePage />;
 }
 
 /** Redirect unknown routes to home. */
@@ -80,10 +68,6 @@ function AppContent() {
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const location = useLocation();
 
-  const handleLoginClick = () => {
-    setLoginModalOpen(true);
-  };
-
   // Open Auth modal when URL contains ?auth=login or ?auth=signup
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -92,6 +76,11 @@ function AppContent() {
       setLoginModalOpen(true);
     }
   }, [location.search]);
+
+  const authInitialMode = (() => {
+    const auth = new URLSearchParams(location.search).get('auth');
+    return auth === 'signup' ? 'signup' : 'login';
+  })();
 
   // Open Auth modal via custom event from any page
   useEffect(() => {
@@ -110,8 +99,8 @@ function AppContent() {
     <>
       <Suspense fallback={pageFallback}>
       <Routes>
-        {/* Home: host sees HostsHomePage, others see HomePage */}
-        <Route path="/" element={<HomeOrHostHome onLoginClick={handleLoginClick} />} />
+        {/* Home: always hosts side; navbar has Login/Sign up */}
+        <Route path="/" element={<HomeRoute />} />
 
         <Route path="/property/:propertyId" element={<PropertyDetails />} />
         <Route path="/p/:propertyId" element={<PropertyDetails />} />
@@ -388,6 +377,7 @@ function AppContent() {
           window.history.replaceState({}, '', url.toString());
         }}
         isDarkMode={isDarkMode}
+        initialMode={authInitialMode}
       />
 
       {/* Developer Cache Tools */}

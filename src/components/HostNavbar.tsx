@@ -9,7 +9,7 @@ interface HostNavbarProps {
 
 /**
  * Navbar for the host/short-stays experience: Realaist Stays branding, Properties, Blog, Contact,
- * and either Dashboard+Logout (when authenticated) or Sign In (when not).
+ * and either Dashboard+Logout (when authenticated) or Log In / Sign Up (when not).
  * Used on HostsHomePage, PropertyDetails (when host), and ShortStaysPage (for all users).
  */
 export function HostNavbar({ isDarkMode }: HostNavbarProps) {
@@ -29,10 +29,10 @@ export function HostNavbar({ isDarkMode }: HostNavbarProps) {
     navigate('/');
   };
 
-  const handleSignInClick = () => {
+  const openAuth = (mode: 'login' | 'signup') => {
     window.dispatchEvent(new Event('realaist:open-auth'));
     const current = new URL(window.location.href);
-    current.searchParams.set('auth', 'open');
+    current.searchParams.set('auth', mode);
     navigate(`${current.pathname}${current.search}`, { replace: true });
   };
 
@@ -76,13 +76,22 @@ export function HostNavbar({ isDarkMode }: HostNavbarProps) {
               </button>
             </>
           ) : (
-            <button
-              type="button"
-              onClick={handleSignInClick}
-              className="px-4 py-2 rounded-lg bg-[#C7A667] text-black text-sm font-medium hover:opacity-90 transition-opacity"
-            >
-              Sign In
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => openAuth('login')}
+                className={`text-sm ${muted} hover:text-[#C7A667] transition-colors`}
+              >
+                Log In
+              </button>
+              <button
+                type="button"
+                onClick={() => openAuth('signup')}
+                className="px-4 py-2 rounded-lg bg-[#C7A667] text-black text-sm font-medium hover:opacity-90 transition-opacity"
+              >
+                Sign Up
+              </button>
+            </>
           )}
         </div>
 
@@ -137,13 +146,22 @@ export function HostNavbar({ isDarkMode }: HostNavbarProps) {
               </button>
             </>
           ) : (
-            <button
-              type="button"
-              onClick={() => { setOpen(false); handleSignInClick(); }}
-              className="block w-full text-left py-3 text-sm font-medium text-[#C7A667]"
-            >
-              Sign In
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => { setOpen(false); openAuth('login'); }}
+                className={`block w-full text-left py-3 text-sm ${muted} hover:text-[#C7A667]`}
+              >
+                Log In
+              </button>
+              <button
+                type="button"
+                onClick={() => { setOpen(false); openAuth('signup'); }}
+                className="block w-full text-left py-3 text-sm font-medium text-[#C7A667]"
+              >
+                Sign Up
+              </button>
+            </>
           )}
         </div>
       )}
