@@ -575,7 +575,7 @@ export default function PropertyDetails() {
       <div className={`min-h-screen transition-colors duration-300 ${
         isDarkMode ? 'bg-[#111217] text-white' : 'bg-white text-gray-900'
       }`}>
-        {isHost ? (
+        {(isShortStay || isHost) ? (
           <HostNavbar isDarkMode={isDarkMode} />
         ) : (
           <Header 
@@ -590,8 +590,8 @@ export default function PropertyDetails() {
           />
         )}
         
-        {/* Mobile Menu (default navbar only; host uses HostNavbar's own menu) */}
-        {!isHost && mobileMenuOpen && (
+        {/* Mobile Menu (original Header only; short-stay and host use HostNavbar's own menu) */}
+        {!isShortStay && !isHost && mobileMenuOpen && (
           <motion.div
             className="fixed inset-0 z-40 md:hidden"
             initial={{ opacity: 0 }}
