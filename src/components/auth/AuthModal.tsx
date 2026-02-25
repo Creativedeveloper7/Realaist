@@ -4,7 +4,7 @@ import { LoginForm } from './LoginForm';
 import { DeveloperSignupForm } from './DeveloperSignupForm';
 import { HostSignupForm } from './HostSignupForm';
 import { GoogleSignupHandler } from './GoogleSignupHandler';
-import { Building2, Home } from 'lucide-react';
+import { Home } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -135,30 +135,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           )}
           {currentStep === 'signupChoice' && (
             <div key="signupChoice" className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <motion.button
-                  type="button"
-                  onClick={() => setCurrentStep('developerSignup')}
-                  className={`flex items-center gap-4 p-6 rounded-xl border-2 text-left transition-all ${
-                    isDarkMode
-                      ? 'border-white/20 hover:border-[#C7A667] bg-white/5 hover:bg-white/10'
-                      : 'border-gray-200 hover:border-[#C7A667] bg-gray-50 hover:bg-gray-100'
-                  }`}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <div className="p-3 rounded-lg bg-green-500 text-white">
-                    <Building2 size={28} />
-                  </div>
-                  <div>
-                    <h4 className={`font-semibold text-lg ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                      Sign up as Developer
-                    </h4>
-                    <p className={`text-sm mt-1 ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>
-                      List and manage properties as a realtor
-                    </p>
-                  </div>
-                </motion.button>
+              <div className="grid grid-cols-1 gap-4">
                 <motion.button
                   type="button"
                   onClick={() => setCurrentStep('hostSignup')}

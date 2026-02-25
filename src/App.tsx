@@ -29,6 +29,7 @@ const Blogs = lazy(() => import('./pages/Blogs').then(m => ({ default: m.Blogs }
 const DashboardCampaignAds = lazy(() => import('./pages/DashboardCampaignAds'));
 const ShortStays = lazy(() => import('./pages/ShortStays').then(m => ({ default: m.default })));
 const HostMessages = lazy(() => import('./pages/HostMessages').then(m => ({ default: m.HostMessages })));
+const HostBookings = lazy(() => import('./pages/HostBookings').then(m => ({ default: m.default })));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
 const OverviewPage = lazy(() => import('./pages/admin/OverviewPage'));
 const AnalyticsPage = lazy(() => import('./pages/admin/AnalyticsPage'));
@@ -212,6 +213,17 @@ function AppContent() {
             <ProtectedRoute>
               <DashboardLayout isDarkMode={isDarkMode}>
                 <ShortStays isDarkMode={isDarkMode} />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/bookings"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout isDarkMode={isDarkMode}>
+                <HostBookings isDarkMode={isDarkMode} />
               </DashboardLayout>
             </ProtectedRoute>
           }

@@ -18,7 +18,8 @@ import {
   BookOpen,
   ArrowLeft,
   Megaphone,
-  Bed
+  Bed,
+  CalendarCheck
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
@@ -65,6 +66,7 @@ const developerNavItems: NavItem[] = [
 const hostNavItems: NavItem[] = [
   { id: 'overview', label: 'Overview', icon: Home, href: '/dashboard' },
   { id: 'short-stays', label: 'My Short Stays', icon: Bed, href: '/dashboard/short-stays' },
+  { id: 'bookings', label: 'Bookings', icon: CalendarCheck, href: '/dashboard/bookings' },
   { id: 'messages', label: 'Guest Messages', icon: MessageSquare, href: '/dashboard/messages' },
   { id: 'campaign-ads', label: 'Campaign Ads', icon: Megaphone, href: '/dashboard/campaign-ads' },
   { id: 'profile', label: 'Profile', icon: User, href: '/dashboard/profile' },
@@ -109,6 +111,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     if (path === '/dashboard') return 'overview';
     if (path === '/dashboard/properties') return 'properties';
     if (path === '/dashboard/short-stays') return 'short-stays';
+    if (path === '/dashboard/bookings') return 'bookings';
     if (path === '/dashboard/messages') return 'messages';
     if (path === '/dashboard/scheduled-visits') return 'scheduled-visits';
     if (path === '/dashboard/analytics') return 'analytics';
