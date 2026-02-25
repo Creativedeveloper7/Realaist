@@ -8,7 +8,7 @@ interface HostNavbarProps {
 }
 
 /**
- * Navbar for the host/short-stays experience: Realaist Stays branding, Properties, Blog, Contact,
+ * Navbar for the host/short-stays experience: Realaist Stays branding, Properties, Contact,
  * and either Dashboard+Logout (when authenticated) or Log In / Sign Up (when not).
  * Used on HostsHomePage, PropertyDetails (when host), and ShortStaysPage (for all users).
  */
@@ -53,9 +53,6 @@ export function HostNavbar({ isDarkMode }: HostNavbarProps) {
           >
             Properties
           </Link>
-          <a href="/#blog" className={`text-sm ${muted} hover:text-[#C7A667] transition-colors`}>
-            Blog
-          </a>
           <Link to="/contact" className={`text-sm ${muted} hover:text-[#C7A667] transition-colors`}>
             Contact
           </Link>
@@ -114,13 +111,6 @@ export function HostNavbar({ isDarkMode }: HostNavbarProps) {
           >
             Properties
           </Link>
-          <a
-            href="/#blog"
-            className={`block py-3 text-sm ${muted} hover:text-[#C7A667] transition-colors`}
-            onClick={() => setOpen(false)}
-          >
-            Blog
-          </a>
           <Link
             to="/contact"
             className={`block py-3 text-sm ${muted} hover:text-[#C7A667] transition-colors`}

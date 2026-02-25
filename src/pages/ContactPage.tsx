@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '../ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
-import { Header } from '../components/Header';
+import { HostNavbar } from '../components/HostNavbar';
 import { contactService } from '../services/contactService';
 import { MessageSquare, Mail } from 'lucide-react';
 
 export default function ContactPage() {
-  const { isDarkMode, toggleTheme } = useTheme();
+  const { isDarkMode } = useTheme();
   const { user, isAuthenticated } = useAuth();
   const isHost = isAuthenticated && user?.userType === 'host';
 
@@ -60,7 +60,7 @@ export default function ContactPage() {
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${dark ? 'bg-[#111217] text-white' : 'bg-white text-gray-900'}`}>
-      <Header isDarkMode={isDarkMode} toggleTheme={toggleTheme} onLoginClick={() => {}} />
+      <HostNavbar isDarkMode={isDarkMode} />
 
       <div className="pt-24 pb-16">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
