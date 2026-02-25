@@ -5,7 +5,7 @@
  * and ensure consistent cache behavior across the entire application.
  */
 
-export const CACHE_VERSION = '3.0.2';
+export const CACHE_VERSION = '3.0.3';
 
 export const CACHE_NAMES = {
   STATIC: `realaist-static-${CACHE_VERSION}`,

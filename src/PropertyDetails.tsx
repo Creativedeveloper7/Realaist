@@ -9,6 +9,7 @@ import { openPaystackInlineForBooking } from './services/paymentService';
 import { Header } from './components/Header';
 import { HostNavbar } from './components/HostNavbar';
 import { shareToWhatsApp, PropertyShareData } from './utils/whatsappShare';
+import { reverseGeocode } from './utils/geocode';
 import type { LucideIcon } from 'lucide-react';
 import { AvailabilityCalendar } from './components/AvailabilityCalendar';
 import {
@@ -196,6 +197,7 @@ export default function PropertyDetails() {
   const [bookingName, setBookingName] = useState('');
   const [bookingEmail, setBookingEmail] = useState('');
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  const [resolvedLocation, setResolvedLocation] = useState<string | null>(null);
   const [bookedDatesForCalendar, setBookedDatesForCalendar] = useState<string[]>([]);
 
   const DESCRIPTION_PREVIEW_LENGTH = 400;
@@ -279,8 +281,9 @@ export default function PropertyDetails() {
       amenities: (dbProperty as any).amenities || [],
       features: (dbProperty as any).features || [],
       videoUrl: (dbProperty as any).videoUrl || undefined,
-      latitude: (dbProperty as any).latitude ?? undefined,
-      longitude: (dbProperty as any).longitude ?? undefined
+      // Preserve coordinates for map/directions; never use location text for pin/directions
+      latitude: (dbProperty as any).latitude ?? (dbProperty as any).lat ?? undefined,
+      longitude: (dbProperty as any).longitude ?? (dbProperty as any).lng ?? undefined
     };
   };
 
@@ -307,117 +310,46 @@ export default function PropertyDetails() {
       console.log('PropertyDetails: Loading property with ID:', propertyId);
       setIsLoading(true);
       setError(null);
-      
-      // First, try to load from localStorage
-              const loadFromStorage = () => {
-                try {
-                  const storedProperties = localStorage.getItem('realaist_properties');
-                  if (storedProperties) {
-                    const properties = JSON.parse(storedProperties);
-                    const foundProperty = properties.find((p: any) => p.id === propertyId);
-                    if (foundProperty) {
-                      console.log('PropertyDetails: Found property in localStorage');
-                      console.log('PropertyDetails: Stored property developer data:', {
-                        developer: foundProperty.developer,
-                        phone: foundProperty.developer?.phone
-                      });
-                      
-                      // Check if developer data is complete
-                      if (foundProperty.developer && foundProperty.developer.phone) {
-                        console.log('PropertyDetails: Developer data is complete, using stored data');
-                        setProperty(convertPropertyToDisplay(foundProperty));
-                        setIsLoading(false);
-                        return true;
-                      } else {
-                        console.log('PropertyDetails: Developer data incomplete in localStorage, will fetch fresh data');
-                        return false; // Don't use incomplete data
-                      }
-                    }
-                  }
-                } catch (error) {
-                  console.warn('PropertyDetails: Error loading from localStorage:', error);
-                }
-                return false;
-              };
-      
-      // Try localStorage first
-      if (loadFromStorage()) {
-        return;
-      }
-      
+
       try {
-        // Try to get from properties list using direct method
-        console.log('PropertyDetails: Trying to get property from properties list...');
+        // Prefer getPropertyById first so we always get latitude/longitude for map and "Get directions"
+        const { property: dbProperty, error: fetchError } = await propertiesService.getPropertyById(propertyId);
+
+        if (!fetchError && dbProperty) {
+          const displayProperty = convertPropertyToDisplay(dbProperty);
+          setProperty(displayProperty);
+          setIsLoading(false);
+          return;
+        }
+
+        // Fallback: try list then localStorage
         const { properties: allProperties, error: listError } = await propertiesService.getPropertiesDirect();
         if (!listError && allProperties) {
           const foundProperty = allProperties.find(p => p.id === propertyId);
-          if (foundProperty) {
-            console.log('PropertyDetails: Found property in properties list');
-            console.log('PropertyDetails: Properties list developer data:', {
-              developer: foundProperty.developer,
-              phone: foundProperty.developer?.phone
-            });
-            
-            // Check if developer data is complete
-            if (foundProperty.developer && foundProperty.developer.phone) {
-              console.log('PropertyDetails: Developer data is complete in properties list');
-              const displayProperty = convertPropertyToDisplay(foundProperty);
-              console.log('PropertyDetails: Setting property with developer data:', {
-                developer: displayProperty.developer,
-                phone: displayProperty.developer?.phone
-              });
-              setProperty(displayProperty);
-              setIsLoading(false);
-              return;
-            } else {
-              console.log('PropertyDetails: Developer data incomplete in properties list, trying individual fetch');
-            }
+          if (foundProperty && foundProperty.developer?.phone) {
+            setProperty(convertPropertyToDisplay(foundProperty));
+            setIsLoading(false);
+            return;
           }
         }
-        
-        // If not found in properties list or developer data incomplete, try individual fetch (no timeout)
-        console.log('PropertyDetails: Property not found in list or developer data incomplete, trying individual fetch...');
-        const { property: dbProperty, error: fetchError } = await propertiesService.getPropertyById(propertyId);
-        
-        console.log('PropertyDetails: Individual fetch result:', { 
-          dbProperty: !!dbProperty, 
-          error: fetchError,
-          developer: dbProperty?.developer,
-          phone: dbProperty?.developer?.phone
-        });
-        
-        if (fetchError) {
-          console.error('PropertyDetails: Individual fetch failed:', fetchError);
-          setError('Property not found');
-        } else if (dbProperty) {
-          console.log('PropertyDetails: Successfully loaded property from individual fetch');
-          const devData = dbProperty.developer as any;
-          console.log('PropertyDetails: Raw developer data from API:', {
-            developer: dbProperty.developer,
-            logoUrl: devData?.logoUrl,
-            website: devData?.website,
-            instagram: devData?.instagram,
-            x: devData?.x,
-            facebook: devData?.facebook
-          });
-          const displayProperty = convertPropertyToDisplay(dbProperty);
-          const displayDev = displayProperty.developer as any;
-          console.log('PropertyDetails: Setting property with developer data:', {
-            developer: displayProperty.developer,
-            phone: displayProperty.developer?.phone,
-            logoUrl: displayDev?.logoUrl,
-            socialLinks: {
-              website: displayDev?.website,
-              instagram: displayDev?.instagram,
-              x: displayDev?.x,
-              facebook: displayDev?.facebook
+
+        try {
+          const storedProperties = localStorage.getItem('realaist_properties');
+          if (storedProperties) {
+            const properties = JSON.parse(storedProperties);
+            const foundProperty = properties.find((p: any) => p.id === propertyId);
+            if (foundProperty && foundProperty.developer?.phone) {
+              setProperty(convertPropertyToDisplay(foundProperty));
+              setIsLoading(false);
+              return;
             }
-          });
-          setProperty(displayProperty);
-        } else {
-          console.log('PropertyDetails: No property found with ID:', propertyId);
-          setError('Property not found');
+          }
+        } catch (e) {
+          console.warn('PropertyDetails: localStorage read failed', e);
         }
+
+        if (fetchError) setError(fetchError === 'Property not found' ? 'Property not found' : 'Failed to load property');
+        else setError('Property not found');
       } catch (err) {
         console.error('PropertyDetails: Error loading property:', err);
         setError('Failed to load property details');
@@ -467,6 +399,22 @@ export default function PropertyDetails() {
     return () => { cancelled = true; };
   }, [property?.id, property?.type]);
 
+  // Resolve "Current location" to real place name when we have lat/lng (e.g. Kikuyu)
+  useEffect(() => {
+    const loc = property?.location?.trim();
+    const lat = property?.latitude;
+    const lng = property?.longitude;
+    if (loc !== 'Current location' || lat == null || lng == null) {
+      setResolvedLocation(null);
+      return;
+    }
+    let cancelled = false;
+    reverseGeocode(Number(lat), Number(lng)).then((name) => {
+      if (!cancelled && name) setResolvedLocation(name);
+    });
+    return () => { cancelled = true; };
+  }, [property?.location, property?.latitude, property?.longitude]);
+
   if (isLoading) {
     return <div className={`min-h-screen flex items-center justify-center transition-colors duration-300 ${
       isDarkMode ? 'bg-[#111217] text-white' : 'bg-white text-gray-900'
@@ -501,6 +449,19 @@ export default function PropertyDetails() {
 
   const isLand = (property.type || '').toLowerCase() === 'land';
   const isShortStay = (property.type || '').toLowerCase() === 'short stay';
+  // Location (city/area) is for display only on cards and details. Never use for map pin or "Get directions".
+  const displayLocation = resolvedLocation ?? property.location ?? '';
+
+  // Map and "Get directions" must use latitude/longitude only so the pin and directions go to the exact spot, not the region
+  const rawLat = (property as any).latitude ?? (property as any).lat;
+  const rawLng = (property as any).longitude ?? (property as any).lng;
+  const mapLat = rawLat != null && !Number.isNaN(Number(rawLat)) && Math.abs(Number(rawLat)) <= 90 ? Number(rawLat) : null;
+  const mapLng = rawLng != null && !Number.isNaN(Number(rawLng)) && Math.abs(Number(rawLng)) <= 180 ? Number(rawLng) : null;
+  const hasValidCoords = mapLat !== null && mapLng !== null;
+  // Directions: only use coordinates when present; never use displayLocation/location for the link so Maps gets exact pin
+  const directionsUrl = hasValidCoords
+    ? `https://www.google.com/maps/dir/?api=1&destination=${mapLat},${mapLng}`
+    : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(property.location || '')}`;
 
   const bookingNights = (() => {
     if (!checkInDate || !checkOutDate) return 0;
@@ -530,7 +491,7 @@ export default function PropertyDetails() {
     try {
       const shareTitle = property?.title ? `${property.title} - Realaist` : 'Realaist Property';
       const shareText = property?.title && property?.location
-        ? `Check out ${property.title} in ${property.location} on Realaist.`
+        ? `Check out ${property.title} in ${displayLocation} on Realaist.`
         : 'Check out this property on Realaist.';
       const shareUrl = window.location.href;
 
@@ -560,12 +521,12 @@ export default function PropertyDetails() {
 
     const propertyData: PropertyShareData = {
       title: property.title || 'Amazing Property',
-      location: property.location || 'Prime Location',
+      location: displayLocation || 'Prime Location',
       price: property.price ? `KSh ${property.price.toLocaleString()}` : 'Contact for Price',
       imageUrl: property.images && property.images.length > 0 
         ? property.images[0] 
         : 'https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1600',
-      description: property.description || `Discover this ${property.propertyType || 'property'} in ${property.location || 'a prime location'}.`,
+      description: property.description || `Discover this ${property.propertyType || 'property'} in ${displayLocation || 'a prime location'}.`,
       propertyUrl: window.location.href
     };
 
@@ -587,7 +548,7 @@ export default function PropertyDetails() {
     }
 
     const title = property?.name || property?.title || 'your property';
-    const location = property?.location || '';
+    const location = displayLocation || '';
     const type = property?.type || 'property';
 
     const message = `Hi, I'm interested in the ${type} "${title}"${location ? ` located in ${location}` : ''} on Realaist. Is it still available?`;
@@ -885,7 +846,7 @@ export default function PropertyDetails() {
                     isDarkMode ? 'text-white/70' : 'text-gray-600'
                   }`}>
                     <span>📍</span>
-                    <span>{property.location}</span>
+                    <span>{displayLocation}</span>
                   </div>
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
@@ -1128,10 +1089,8 @@ export default function PropertyDetails() {
                   }`}>
                     <iframe
                       src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${
-                        property.latitude != null && property.longitude != null
-                          ? `${property.latitude},${property.longitude}`
-                          : encodeURIComponent(property.location)
-                      }${property.latitude != null && property.longitude != null ? '&zoom=17' : ''}`}
+                        hasValidCoords ? `${mapLat},${mapLng}` : encodeURIComponent(property.location)
+                      }${hasValidCoords ? '&zoom=17' : ''}`}
                       width="100%"
                       height="100%"
                       style={{ border: 0, borderRadius: '12px' }}
@@ -1141,11 +1100,7 @@ export default function PropertyDetails() {
                     />
                   </div>
                   <a
-                    href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-                      property.latitude != null && property.longitude != null
-                        ? `${property.latitude},${property.longitude}`
-                        : (property.location || '')
-                    )}`}
+                    href={directionsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={`inline-flex items-center gap-2 mt-3 text-sm font-medium transition-colors ${
@@ -1431,10 +1386,8 @@ export default function PropertyDetails() {
                   }`}>
                     <iframe
                       src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${
-                        property.latitude != null && property.longitude != null
-                          ? `${property.latitude},${property.longitude}`
-                          : encodeURIComponent(property.location)
-                      }${property.latitude != null && property.longitude != null ? '&zoom=17' : ''}`}
+                        hasValidCoords ? `${mapLat},${mapLng}` : encodeURIComponent(property.location)
+                      }${hasValidCoords ? '&zoom=17' : ''}`}
                       width="100%"
                       height="100%"
                       style={{ border: 0, borderRadius: '12px' }}
@@ -1444,11 +1397,7 @@ export default function PropertyDetails() {
                     />
                   </div>
                   <a
-                    href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-                      property.latitude != null && property.longitude != null
-                        ? `${property.latitude},${property.longitude}`
-                        : (property.location || '')
-                    )}`}
+                    href={directionsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={`inline-flex items-center gap-2 mt-3 text-sm font-medium transition-colors ${
@@ -2410,7 +2359,14 @@ export default function PropertyDetails() {
 }
 
 
-// Developer Properties Component
+// Parse guests from short stay description (e.g. "Accommodates: 4 guests")
+function parseGuestsFromDescription(description: string | undefined): number | null {
+  if (!description) return null;
+  const m = description.match(/Accommodates:\s*(\d+)\s*guest/i);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+// Developer Properties (non–short stay) or Related Short Stays (by location, beds, guests)
 interface DeveloperPropertiesSectionProps {
   currentProperty: any; // Using any since it's the converted display format
   isDarkMode: boolean;
@@ -2420,46 +2376,70 @@ const DeveloperPropertiesSection: React.FC<DeveloperPropertiesSectionProps> = ({
   currentProperty, 
   isDarkMode 
 }) => {
-  const [developerProperties, setDeveloperProperties] = useState<Property[]>([]);
+  const [relatedProperties, setRelatedProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const isShortStay = (currentProperty?.type || currentProperty?.propertyType || '').toLowerCase() === 'short stay';
 
   useEffect(() => {
-    const fetchDeveloperProperties = async () => {
+    const fetchRelated = async () => {
       try {
         setIsLoading(true);
-        
-        // Get all properties and filter by developer
         const { properties } = await propertiesService.getProperties();
-        
-        // Filter properties by the same developer, excluding the current property
-        const filtered = properties.filter((p: Property) => {
-          if (p.id === currentProperty.id) return false; // Exclude current property
-          
-          // Check if developer IDs match
-          return p.developerId === currentProperty.developerId;
-        });
-        
-        // Sort by creation date (newest first)
-        const sorted = filtered.sort((a: Property, b: Property) => {
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        });
-        
-        setDeveloperProperties(sorted.slice(0, 6)); // Show max 6 developer properties
+
+        if (isShortStay) {
+          // Short stays: related by location, bedrooms, and guest capacity (from description)
+          const shortStays = properties.filter((p: Property) => {
+            if (p.id === currentProperty.id) return false;
+            return (p.propertyType || '').toLowerCase() === 'short stay';
+          });
+
+          const currentLocation = (currentProperty.location || '').trim().toLowerCase();
+          const currentBeds = currentProperty.beds ?? currentProperty.bedrooms ?? 0;
+          const currentGuests = parseGuestsFromDescription(currentProperty.description) ?? currentBeds;
+
+          const scored = shortStays.map((p: Property) => {
+            const loc = (p.location || '').trim().toLowerCase();
+            const locationMatch = currentLocation && loc && (loc === currentLocation || loc.includes(currentLocation) || currentLocation.includes(loc)) ? 3 : 0;
+            const beds = p.bedrooms ?? 0;
+            const bedsDiff = Math.abs(beds - currentBeds);
+            const bedsScore = bedsDiff === 0 ? 2 : bedsDiff === 1 ? 1 : 0;
+            const guests = parseGuestsFromDescription(p.description) ?? beds;
+            const guestsDiff = Math.abs(guests - currentGuests);
+            const guestsScore = guestsDiff === 0 ? 2 : guestsDiff === 1 ? 1 : 0;
+            return { property: p, score: locationMatch + bedsScore + guestsScore };
+          });
+
+          const sorted = scored
+            .filter(({ score }) => score > 0)
+            .sort((a, b) => b.score - a.score)
+            .map(({ property }) => property);
+          // If no scored matches, show other short stays by date
+          const fallback = scored.filter(({ score }) => score === 0).map(({ property }) => property)
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          setRelatedProperties([...sorted, ...fallback].slice(0, 6));
+        } else {
+          // Non–short stay: same developer
+          const filtered = properties.filter((p: Property) => {
+            if (p.id === currentProperty.id) return false;
+            return p.developerId === currentProperty.developerId;
+          });
+          const sorted = filtered.sort((a: Property, b: Property) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          setRelatedProperties(sorted.slice(0, 6));
+        }
       } catch (error) {
-        console.error('Error fetching developer properties:', error);
-        setDeveloperProperties([]);
+        console.error('Error fetching related properties:', error);
+        setRelatedProperties([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (currentProperty.developerId) {
-      fetchDeveloperProperties();
-    } else {
-      setIsLoading(false);
-    }
-  }, [currentProperty]);
+    if (currentProperty?.id) fetchRelated();
+    else setIsLoading(false);
+  }, [currentProperty?.id, isShortStay]);
+
 
   const handlePropertyClick = (propertyId: string) => {
     navigate(`/property/${propertyId}`);
@@ -2475,7 +2455,7 @@ const DeveloperPropertiesSection: React.FC<DeveloperPropertiesSectionProps> = ({
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#C7A667] mx-auto"></div>
             <p className={`mt-2 ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>
-              Loading other properties by this developer...
+              {isShortStay ? 'Loading related short stays...' : 'Loading other properties by this developer...'}
             </p>
           </div>
         </div>
@@ -2483,7 +2463,7 @@ const DeveloperPropertiesSection: React.FC<DeveloperPropertiesSectionProps> = ({
     );
   }
 
-  if (developerProperties.length === 0) {
+  if (relatedProperties.length === 0) {
     return null;
   }
 
@@ -2506,17 +2486,17 @@ const DeveloperPropertiesSection: React.FC<DeveloperPropertiesSectionProps> = ({
           <h2 className={`text-3xl font-bold mb-4 ${
             isDarkMode ? 'text-white' : 'text-gray-900'
           }`}>
-            Other Properties by {developerName}
+            {isShortStay ? 'Related short stays' : `Other Properties by ${developerName}`}
           </h2>
           <p className={`text-lg ${
             isDarkMode ? 'text-white/70' : 'text-gray-600'
           }`}>
-            Discover more properties from this developer
+            {isShortStay ? 'Similar location, beds & capacity' : 'Discover more properties from this developer'}
           </p>
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {developerProperties.map((property, index) => (
+          {relatedProperties.map((property, index) => (
             <motion.div
               key={property.id}
               className={`group cursor-pointer rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl ${
@@ -2653,45 +2633,6 @@ const DeveloperPropertiesSection: React.FC<DeveloperPropertiesSectionProps> = ({
           ))}
         </div>
 
-        {/* Developer Contact Info */}
-        {currentProperty.developer && (
-          <motion.div
-            className="text-center mt-12"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-          >
-            <div className={`inline-flex items-center gap-4 px-8 py-4 rounded-2xl border ${
-              isDarkMode 
-                ? 'border-white/10 bg-white/5' 
-                : 'border-gray-200 bg-white'
-            }`}>
-              <div className="text-center">
-                <p className={`text-sm font-medium mb-1 ${
-                  isDarkMode ? 'text-white/80' : 'text-gray-700'
-                }`}>
-                  Interested in more properties?
-                </p>
-                <p className={`text-xs ${
-                  isDarkMode ? 'text-white/60' : 'text-gray-500'
-                }`}>
-                  Contact {developerName} directly
-                </p>
-              </div>
-              {currentProperty.developer.phone && (
-                <motion.a
-                  href={`tel:${currentProperty.developer.phone}`}
-                  className="px-6 py-3 bg-[#C7A667] text-black font-medium rounded-lg hover:bg-[#B89657] transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  📞 Call Developer
-                </motion.a>
-              )}
-            </div>
-          </motion.div>
-        )}
       </div>
     </section>
   );

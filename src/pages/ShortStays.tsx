@@ -34,6 +34,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { propertiesService, CreatePropertyData, Property } from '../services/propertiesService';
 import { storageService } from '../services/storageService';
+import { reverseGeocode } from '../utils/geocode';
 
 interface ShortStaysProps {
   isDarkMode: boolean;
@@ -151,6 +152,7 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [gettingLocation, setGettingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [resolvedLocationNames, setResolvedLocationNames] = useState<Record<string, string>>({});
 
   const [form, setForm] = useState<ShortStayForm>({ ...defaultForm });
 
@@ -179,6 +181,22 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
     };
     load();
   }, [user?.id, viewMode]);
+
+  // Resolve "Current location" to place name for list cards when we have lat/lng
+  useEffect(() => {
+    const needResolve = myShortStays.filter(
+      (p) => p.location?.trim() === 'Current location' && p.latitude != null && p.longitude != null
+    );
+    if (needResolve.length === 0) return;
+    const keysToFetch = [...new Set(needResolve.map((p) => `${Number(p.latitude).toFixed(4)},${Number(p.longitude).toFixed(4)}`))];
+    keysToFetch.forEach((key) => {
+      if (resolvedLocationNames[key]) return;
+      const [latStr, lngStr] = key.split(',');
+      reverseGeocode(Number(latStr), Number(lngStr)).then((name) => {
+        if (name) setResolvedLocationNames((cur) => (cur[key] ? cur : { ...cur, [key]: name }));
+      });
+    });
+  }, [myShortStays, resolvedLocationNames]);
 
   useEffect(() => {
     const onCreated = (e: Event) => {
@@ -574,7 +592,11 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
                       <h3 className={`font-semibold text-lg truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{property.title}</h3>
                       <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
                         <MapPin size={14} className="shrink-0" />
-                        <span className="truncate">{property.location}</span>
+                        <span className="truncate">
+                          {property.location?.trim() === 'Current location' && property.latitude != null && property.longitude != null
+                            ? (resolvedLocationNames[`${Number(property.latitude).toFixed(4)},${Number(property.longitude).toFixed(4)}`] ?? property.location)
+                            : property.location}
+                        </span>
                       </div>
                       <p className={`mt-1 text-sm ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>
                         KSh {(property.price ?? 0).toLocaleString()} / night
@@ -845,12 +867,21 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
                   setGettingLocation(true);
                   setLocationError(null);
                   navigator.geolocation.getCurrentPosition(
-                    (pos) => {
+                    async (pos) => {
+                      const lat = pos.coords.latitude;
+                      const lng = pos.coords.longitude;
                       setForm(prev => ({
                         ...prev,
-                        locationLatitude: String(pos.coords.latitude),
-                        locationLongitude: String(pos.coords.longitude),
-                        ...(prev.location.trim() === '' && { location: 'Current location' }),
+                        locationLatitude: String(lat),
+                        locationLongitude: String(lng),
+                      }));
+                      // Resolve place name so cards/details show e.g. "Kikuyu" instead of "Current location"
+                      const placeName = await reverseGeocode(lat, lng);
+                      setForm(prev => ({
+                        ...prev,
+                        location: (prev.location.trim() === '' || prev.location === 'Current location')
+                          ? (placeName || 'Current location')
+                          : prev.location,
                       }));
                       setGettingLocation(false);
                     },

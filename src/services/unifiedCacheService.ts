@@ -25,7 +25,7 @@ class UnifiedCacheService {
   private memoryCache = new Map<string, CacheEntry<any>>();
   private readonly DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
   private readonly DEFAULT_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
-  private readonly CACHE_VERSION = '3.0.2';
+  private readonly CACHE_VERSION = '3.0.3';
 
   /**
    * Get cached data or fetch from network
