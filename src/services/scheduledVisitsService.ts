@@ -7,8 +7,14 @@ export interface ScheduledVisit {
   developerId: string
   scheduledDate: string
   scheduledTime: string
+  /** For short-stay: last night of stay (YYYY-MM-DD). */
+  checkOutDate?: string
   status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled'
   message?: string
+  /** Guest name from booking form (short stay). */
+  visitorName?: string
+  /** Guest email from booking form (for receipt). */
+  visitorEmail?: string
   createdAt: string
   updatedAt: string
   // Related data
@@ -73,7 +79,9 @@ class ScheduledVisitsService {
         scheduled_date: data.scheduledDate,
         scheduled_time: data.scheduledTime,
         message: data.message || null,
-        status: 'scheduled'
+        status: 'scheduled',
+        visitor_name: data.visitorName || null,
+        visitor_email: data.visitorEmail || null
       }
       if (data.checkOutDate) {
         insertPayload.check_out_date = data.checkOutDate
@@ -121,8 +129,11 @@ class ScheduledVisitsService {
         developerId: visitData.developer_id,
         scheduledDate: visitData.scheduled_date,
         scheduledTime: visitData.scheduled_time,
+        checkOutDate: visitData.check_out_date,
         status: visitData.status,
         message: visitData.message,
+        visitorName: visitData.visitor_name,
+        visitorEmail: visitData.visitor_email,
         createdAt: visitData.created_at,
         updatedAt: visitData.updated_at,
         property: visitData.property ? {
@@ -212,6 +223,9 @@ class ScheduledVisitsService {
         message: item.message,
         createdAt: item.created_at,
         updatedAt: item.updated_at,
+        checkOutDate: item.check_out_date,
+        visitorName: item.visitor_name,
+        visitorEmail: item.visitor_email,
         property: item.property ? {
           id: item.property.id,
           title: item.property.title,
@@ -299,6 +313,9 @@ class ScheduledVisitsService {
         message: item.message,
         createdAt: item.created_at,
         updatedAt: item.updated_at,
+        checkOutDate: item.check_out_date,
+        visitorName: item.visitor_name,
+        visitorEmail: item.visitor_email,
         property: item.property ? {
           id: item.property.id,
           title: item.property.title,

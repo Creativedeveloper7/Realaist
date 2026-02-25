@@ -15,6 +15,7 @@ export interface AuthUser {
   instagram?: string
   x?: string
   facebook?: string
+  tiktok?: string
   logoUrl?: string
 }
 
@@ -155,7 +156,13 @@ class AuthService {
           userType: newProfile.user_type,
           companyName: newProfile.company_name,
           licenseNumber: newProfile.license_number,
-          address: newProfile.address ?? undefined
+          address: newProfile.address ?? undefined,
+          website: newProfile.website,
+          instagram: newProfile.instagram,
+          x: newProfile.x,
+          facebook: newProfile.facebook,
+          tiktok: newProfile.tiktok,
+          logoUrl: newProfile.logo_url
         }
       }
 
@@ -174,6 +181,7 @@ class AuthService {
           instagram: profile.instagram,
           x: profile.x,
           facebook: profile.facebook,
+          tiktok: profile.tiktok,
           logoUrl: profile.logo_url
         }
 
@@ -341,6 +349,7 @@ class AuthService {
         instagram: profile.instagram,
         x: profile.x,
         facebook: profile.facebook,
+        tiktok: profile.tiktok,
         logoUrl: profile.logo_url
       }
 
@@ -440,15 +449,16 @@ class AuthService {
             userType: newProfile.user_type,
             companyName: newProfile.company_name,
             licenseNumber: newProfile.license_number,
-            website: newProfile.website,
-            instagram: newProfile.instagram,
-            x: newProfile.x,
-            facebook: newProfile.facebook,
-            logoUrl: newProfile.logo_url
-          },
-          error: null
-        }
+          website: newProfile.website,
+          instagram: newProfile.instagram,
+          x: newProfile.x,
+          facebook: newProfile.facebook,
+          tiktok: newProfile.tiktok,
+          logoUrl: newProfile.logo_url
+        },
+        error: null
       }
+    }
 
       return {
         user: {
@@ -465,6 +475,7 @@ class AuthService {
           instagram: profile.instagram,
           x: profile.x,
           facebook: profile.facebook,
+          tiktok: profile.tiktok,
           logoUrl: profile.logo_url
         },
         error: null
@@ -544,27 +555,43 @@ class AuthService {
         return { user: null, error: 'User not authenticated' }
       }
 
-      const { data: profile, error: profileError } = await supabase
+      const basePayload: Record<string, unknown> = {
+        first_name: updates.firstName,
+        last_name: updates.lastName,
+        phone: updates.phone,
+        avatar_url: updates.avatarUrl,
+        company_name: updates.companyName,
+        license_number: updates.licenseNumber,
+        address: updates.address ?? undefined,
+        website: updates.website,
+        instagram: updates.instagram,
+        x: updates.x,
+        facebook: updates.facebook,
+        logo_url: updates.logoUrl,
+        updated_at: new Date().toISOString()
+      }
+      const updateWithTiktok = { ...basePayload }
+      if (updates.tiktok !== undefined) {
+        updateWithTiktok.tiktok = updates.tiktok
+      }
+
+      let result = await supabase
         .from('profiles')
-        .update({
-          first_name: updates.firstName,
-          last_name: updates.lastName,
-          phone: updates.phone,
-          avatar_url: updates.avatarUrl,
-          company_name: updates.companyName,
-          license_number: updates.licenseNumber,
-          address: updates.address ?? undefined,
-          website: updates.website,
-          instagram: updates.instagram,
-          x: updates.x,
-          facebook: updates.facebook,
-          logo_url: updates.logoUrl,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateWithTiktok)
         .eq('id', user.id)
         .select()
         .single()
 
+      if (result.error && /tiktok|schema cache/i.test(result.error.message)) {
+        result = await supabase
+          .from('profiles')
+          .update(basePayload)
+          .eq('id', user.id)
+          .select()
+          .single()
+      }
+
+      const { data: profile, error: profileError } = result
       if (profileError) {
         return { user: null, error: profileError.message }
       }
@@ -584,6 +611,7 @@ class AuthService {
         instagram: profile.instagram,
         x: profile.x,
         facebook: profile.facebook,
+        tiktok: profile.tiktok,
         logoUrl: profile.logo_url
       }
 

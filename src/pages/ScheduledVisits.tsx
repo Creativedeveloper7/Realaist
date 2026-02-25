@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { Mail } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { scheduledVisitsService, ScheduledVisit } from '../services/scheduledVisitsService';
 import { propertiesService, Property } from '../services/propertiesService';
+import { openReceiptEmailToGuest, getGuestEmailForReceipt } from '../utils/bookingReceiptEmail';
 
 interface ScheduledVisitsProps {
   isDarkMode: boolean;
@@ -466,9 +468,9 @@ export default function ScheduledVisits({ isDarkMode }: ScheduledVisitsProps) {
                   {/* Buyer / Client Info */}
                   {(() => {
                     const manualClient = extractClientFromMessage(visit.message);
-                    const displayName = manualClient?.name || (visit.buyer ? `${visit.buyer.firstName} ${visit.buyer.lastName}` : 'Unknown Client');
+                    const displayName = visit.visitorName || manualClient?.name || (visit.buyer ? `${visit.buyer.firstName} ${visit.buyer.lastName}` : 'Unknown Client');
                     const displayPhone = manualClient?.phone || visit.buyer?.phone;
-                    const displayEmail = visit.buyer?.email || 'No email';
+                    const displayEmail = visit.visitorEmail || visit.buyer?.email || 'No email';
 
                     return (
                       <div className="flex-1 min-w-0">
@@ -527,6 +529,25 @@ export default function ScheduledVisits({ isDarkMode }: ScheduledVisitsProps) {
                           className="px-3 py-1.5 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 transition-colors whitespace-nowrap w-full sm:w-auto"
                         >
                           Mark Complete
+                        </button>
+                      )}
+
+                      {/* Email receipt to guest (short-stay paid bookings) */}
+                      {(visit.message?.includes('Short stay booking') || visit.checkOutDate) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!getGuestEmailForReceipt(visit)) {
+                              alert('No guest email on file for this booking. You can add the guest email in the Contact Details and send the receipt manually.');
+                              return;
+                            }
+                            openReceiptEmailToGuest(visit);
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C7A667] text-black text-xs font-medium rounded hover:bg-[#B89657] transition-colors whitespace-nowrap"
+                          title="Open your email app with a confirmation receipt pre-filled to send to the guest"
+                        >
+                          <Mail size={14} />
+                          Email receipt
                         </button>
                       )}
                     </div>

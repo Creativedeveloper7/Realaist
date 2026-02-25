@@ -27,7 +27,9 @@ import {
   Trash2,
   MapPin,
   ExternalLink,
-  Plus
+  Plus,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { propertiesService, CreatePropertyData, Property } from '../services/propertiesService';
@@ -45,6 +47,8 @@ interface ShortStayForm {
   beds: number;
   bathrooms: number;
   location: string;
+  locationLatitude: string;
+  locationLongitude: string;
   title: string;
   description: string;
   features: string[];
@@ -84,6 +88,8 @@ const defaultForm: ShortStayForm = {
   beds: 1,
   bathrooms: 1,
   location: '',
+  locationLatitude: '',
+  locationLongitude: '',
   title: '',
   description: '',
   features: [],
@@ -143,6 +149,8 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
   const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [gettingLocation, setGettingLocation] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   const [form, setForm] = useState<ShortStayForm>({ ...defaultForm });
 
@@ -248,6 +256,26 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
     setExistingImageUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const moveExistingImage = (index: number, direction: 'up' | 'down') => {
+    setExistingImageUrls((prev) => {
+      const next = [...prev];
+      const j = direction === 'up' ? index - 1 : index + 1;
+      if (j < 0 || j >= next.length) return prev;
+      [next[index], next[j]] = [next[j], next[index]];
+      return next;
+    });
+  };
+
+  const moveNewImage = (index: number, direction: 'up' | 'down') => {
+    setForm((prev) => {
+      const next = [...prev.images];
+      const j = direction === 'up' ? index - 1 : index + 1;
+      if (j < 0 || j >= next.length) return prev;
+      [next[index], next[j]] = [next[j], next[index]];
+      return { ...prev, images: next };
+    });
+  };
+
   const loadPropertyIntoForm = (property: Property) => {
     const parsed = parseDescriptionForEdit(property.description || '');
     const weekday = property.weekdayPrice ?? property.price;
@@ -260,6 +288,8 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
       beds: parsed.beds,
       bathrooms: property.bathrooms ?? parsed.bathrooms,
       location: property.location || '',
+      locationLatitude: property.latitude != null ? String(property.latitude) : '',
+      locationLongitude: property.longitude != null ? String(property.longitude) : '',
       title: property.title || '',
       description: parsed.mainDescription,
       features: Array.isArray(property.features) ? property.features : [],
@@ -339,6 +369,13 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
     const nightlyWeekendWithTax = guestVisibleWeekendPrice || Math.round(weekendBaseNumber * 1.07);
     const descriptionText = `${form.description}\n\nProperty Details:\n• Place type: ${form.placeType.replace('_', ' ')}\n• Category: ${form.category}\n• Accommodates: ${form.guests} guest${form.guests !== 1 ? 's' : ''}\n• Bedrooms: ${form.bedrooms}\n• Beds: ${form.beds}\n• Bathrooms: ${form.bathrooms}`;
 
+    const parsedLat = form.locationLatitude.trim() ? parseFloat(form.locationLatitude) : undefined;
+    const parsedLng = form.locationLongitude.trim() ? parseFloat(form.locationLongitude) : undefined;
+    const hasValidCoords = parsedLat !== undefined && parsedLng !== undefined && !isNaN(parsedLat) && !isNaN(parsedLng)
+      && Math.abs(parsedLat) <= 90 && Math.abs(parsedLng) <= 180;
+    const latitude = hasValidCoords ? parsedLat! : undefined;
+    const longitude = hasValidCoords ? parsedLng! : undefined;
+
     try {
       if (editingId) {
         // Update existing property
@@ -369,6 +406,8 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
           amenities: form.amenities,
           features: form.features,
           videoUrl: form.videoLink.trim() || undefined,
+          latitude,
+          longitude,
         });
 
         if (updateErr || !updated) {
@@ -396,6 +435,8 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
           amenities: form.amenities,
           features: form.features,
           videoUrl: form.videoLink.trim() || undefined,
+          latitude,
+          longitude,
         };
 
         const result = await propertiesService.createProperty(propertyData);
@@ -751,13 +792,101 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
                 <input
                   type="text"
                   value={form.location}
-                  onChange={e => setForm(prev => ({ ...prev, location: e.target.value }))}
+                  onChange={e => { setForm(prev => ({ ...prev, location: e.target.value })); setLocationError(null); }}
                   className={`w-full px-3 py-2 rounded-lg border ${
                     isDarkMode ? 'bg-black/40 border-white/20 text-white' : 'bg-white border-gray-300 text-gray-900'
                   }`}
                   placeholder="e.g. Westlands, Nairobi"
                 />
               </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-white/80' : 'text-gray-700'}`}>
+                  Latitude (optional, for accurate map pin)
+                </label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={form.locationLatitude}
+                  onChange={e => setForm(prev => ({ ...prev, locationLatitude: e.target.value }))}
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    isDarkMode ? 'bg-black/40 border-white/20 text-white' : 'bg-white border-gray-300 text-gray-900'
+                  }`}
+                  placeholder="e.g. -1.2921"
+                />
+              </div>
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-white/80' : 'text-gray-700'}`}>
+                  Longitude (optional, for accurate map pin)
+                </label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={form.locationLongitude}
+                  onChange={e => setForm(prev => ({ ...prev, locationLongitude: e.target.value }))}
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    isDarkMode ? 'bg-black/40 border-white/20 text-white' : 'bg-white border-gray-300 text-gray-900'
+                  }`}
+                  placeholder="e.g. 36.8219"
+                />
+              </div>
+            </div>
+
+            <div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!navigator.geolocation) {
+                    setLocationError('Geolocation is not supported by your browser.');
+                    return;
+                  }
+                  setGettingLocation(true);
+                  setLocationError(null);
+                  navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                      setForm(prev => ({
+                        ...prev,
+                        locationLatitude: String(pos.coords.latitude),
+                        locationLongitude: String(pos.coords.longitude),
+                        ...(prev.location.trim() === '' && { location: 'Current location' }),
+                      }));
+                      setGettingLocation(false);
+                    },
+                    (err) => {
+                      setGettingLocation(false);
+                      if (err.code === err.PERMISSION_DENIED) {
+                        setLocationError('Location access was denied. You can enter latitude and longitude manually.');
+                      } else {
+                        setLocationError(err.message || 'Could not get your location. Try entering coordinates manually.');
+                      }
+                    },
+                    { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+                  );
+                }}
+                disabled={gettingLocation}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium ${
+                  isDarkMode
+                    ? 'border-white/20 text-white hover:bg-white/10'
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                } disabled:opacity-50`}
+              >
+                {gettingLocation ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Getting location…
+                  </>
+                ) : (
+                  <>
+                    <MapPin className="w-4 h-4" />
+                    Use my current location
+                  </>
+                )}
+              </button>
+              {locationError && (
+                <p className={`mt-2 text-sm ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`}>{locationError}</p>
+              )}
             </div>
 
             <div className="grid md:grid-cols-4 gap-4">
@@ -903,17 +1032,40 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
 
             {editingId && existingImageUrls.length > 0 && (
               <div>
-                <p className={`text-sm font-medium mb-2 ${isDarkMode ? 'text-white/80' : 'text-gray-700'}`}>Current photos</p>
+                <p className={`text-sm font-medium mb-2 ${isDarkMode ? 'text-white/80' : 'text-gray-700'}`}>Current photos — use arrows to reorder (first = cover)</p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {existingImageUrls.map((url, index) => (
                     <div key={`existing-${index}`} className="relative group">
                       <div className="aspect-square rounded-xl overflow-hidden bg-gray-200">
                         <img src={url} alt={`Current ${index + 1}`} className="w-full h-full object-cover" />
                       </div>
+                      {index === 0 && (
+                        <span className={`absolute top-2 left-2 px-2 py-0.5 rounded text-xs font-medium ${isDarkMode ? 'bg-amber-500/90 text-black' : 'bg-amber-400 text-black'}`}>Cover</span>
+                      )}
+                      <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          type="button"
+                          onClick={() => moveExistingImage(index, 'up')}
+                          disabled={index === 0}
+                          className={`p-1.5 rounded-full text-xs ${index === 0 ? 'bg-black/30 text-white/50 cursor-not-allowed' : 'bg-black/70 text-white hover:bg-black/90'}`}
+                          title="Move earlier"
+                        >
+                          <ChevronUp className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveExistingImage(index, 'down')}
+                          disabled={index === existingImageUrls.length - 1}
+                          className={`p-1.5 rounded-full text-xs ${index === existingImageUrls.length - 1 ? 'bg-black/30 text-white/50 cursor-not-allowed' : 'bg-black/70 text-white hover:bg-black/90'}`}
+                          title="Move later"
+                        >
+                          <ChevronDown className="w-4 h-4" />
+                        </button>
+                      </div>
                       <button
                         type="button"
                         onClick={() => removeExistingImage(index)}
-                        className="absolute top-2 right-2 px-2 py-1 rounded-full text-xs bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute bottom-2 right-2 px-2 py-1 rounded-full text-xs bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         Remove
                       </button>
@@ -945,21 +1097,53 @@ export const ShortStays: React.FC<ShortStaysProps> = ({ isDarkMode }) => {
             </div>
 
             {form.images.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {form.images.map((image, index) => (
-                  <div key={index} className="relative group">
-                    <div className="aspect-square rounded-xl overflow-hidden bg-gray-200">
-                      <img src={URL.createObjectURL(image)} alt={`Short stay ${index + 1}`} className="w-full h-full object-cover" />
+              <div>
+                <p className={`text-sm font-medium mb-2 ${isDarkMode ? 'text-white/80' : 'text-gray-700'}`}>New uploads — use arrows to set order (first = cover)</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {form.images.map((image, index) => (
+                    <div key={index} className="relative group">
+                      <div className="aspect-square rounded-xl overflow-hidden bg-gray-200">
+                        <img src={URL.createObjectURL(image)} alt={`Short stay ${index + 1}`} className="w-full h-full object-cover" />
+                      </div>
+                      {index === 0 && !editingId && (
+                        <span className={`absolute top-2 left-2 px-2 py-0.5 rounded text-xs font-medium ${isDarkMode ? 'bg-amber-500/90 text-black' : 'bg-amber-400 text-black'}`}>Cover</span>
+                      )}
+                      {editingId && existingImageUrls.length === 0 && index === 0 && (
+                        <span className={`absolute top-2 left-2 px-2 py-0.5 rounded text-xs font-medium ${isDarkMode ? 'bg-amber-500/90 text-black' : 'bg-amber-400 text-black'}`}>Cover</span>
+                      )}
+                      {editingId && existingImageUrls.length > 0 && index === 0 && (
+                        <span className={`absolute top-2 left-2 px-2 py-0.5 rounded text-xs ${isDarkMode ? 'bg-white/20 text-white' : 'bg-gray-700/80 text-white'}`}>First of new</span>
+                      )}
+                      <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          type="button"
+                          onClick={() => moveNewImage(index, 'up')}
+                          disabled={index === 0}
+                          className={`p-1.5 rounded-full text-xs ${index === 0 ? 'bg-black/30 text-white/50 cursor-not-allowed' : 'bg-black/70 text-white hover:bg-black/90'}`}
+                          title="Move earlier"
+                        >
+                          <ChevronUp className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveNewImage(index, 'down')}
+                          disabled={index === form.images.length - 1}
+                          className={`p-1.5 rounded-full text-xs ${index === form.images.length - 1 ? 'bg-black/30 text-white/50 cursor-not-allowed' : 'bg-black/70 text-white hover:bg-black/90'}`}
+                          title="Move later"
+                        >
+                          <ChevronDown className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute bottom-2 right-2 px-2 py-1 rounded-full text-xs bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        Remove
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      className="absolute top-2 right-2 px-2 py-1 rounded-full text-xs bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
 

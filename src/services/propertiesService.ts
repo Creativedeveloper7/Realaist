@@ -240,6 +240,9 @@ export interface Property {
   updatedAt: string
   /** Optional tour/video URL; used by "Watch Video" on short stay details */
   videoUrl?: string
+  /** Optional coordinates for map pin and accurate location. */
+  latitude?: number | null
+  longitude?: number | null
   // UI-only metadata (kept locally for now when DB is unreachable)
   amenities?: string[]
   features?: string[]
@@ -259,6 +262,9 @@ export interface CreatePropertyData {
   images?: string[]
   status?: 'active' | 'sold' | 'pending' | 'draft'
   videoUrl?: string
+  /** Optional coordinates for accurate location / map. */
+  latitude?: number | null
+  longitude?: number | null
   // UI-only fields to persist locally on offline/timeout
   amenities?: string[]
   features?: string[]
@@ -334,6 +340,8 @@ class PropertiesService {
               images,
               status,
               video_url,
+              latitude,
+              longitude,
               developer_id,
               created_at,
               updated_at,
@@ -446,6 +454,8 @@ class PropertiesService {
             createdAt: item.created_at,
             updatedAt: item.updated_at,
             videoUrl: item.video_url || undefined,
+            latitude: item.latitude ?? undefined,
+            longitude: item.longitude ?? undefined,
             amenities: item.amenities || [],
             features: item.features || []
           }))
@@ -644,6 +654,8 @@ class PropertiesService {
               images,
               status,
               video_url,
+              latitude,
+              longitude,
               developer_id,
               created_at,
               updated_at,
@@ -744,6 +756,8 @@ class PropertiesService {
             createdAt: data.created_at,
             updatedAt: data.updated_at,
             videoUrl: data.video_url || undefined,
+            latitude: data.latitude ?? undefined,
+            longitude: data.longitude ?? undefined,
             amenities: data.amenities || [],
             features: data.features || []
           }
@@ -795,6 +809,8 @@ class PropertiesService {
           status: data.status || 'active',
           developer_id: user.id,
           video_url: data.videoUrl || null,
+          latitude: data.latitude ?? null,
+          longitude: data.longitude ?? null,
           amenities: data.amenities || [],
           features: data.features || []
         })
@@ -874,6 +890,8 @@ class PropertiesService {
       if (data.images) updateData.images = data.images
       if (data.status) updateData.status = data.status
       if (data.videoUrl !== undefined) updateData.video_url = data.videoUrl || null
+      if (data.latitude !== undefined) updateData.latitude = data.latitude ?? null
+      if (data.longitude !== undefined) updateData.longitude = data.longitude ?? null
       if (data.amenities) updateData.amenities = data.amenities
       if (data.features) updateData.features = data.features
 
@@ -921,6 +939,8 @@ class PropertiesService {
         createdAt: propertyData.created_at,
         updatedAt: propertyData.updated_at,
         videoUrl: propertyData.video_url || undefined,
+        latitude: propertyData.latitude ?? undefined,
+        longitude: propertyData.longitude ?? undefined,
         amenities: propertyData.amenities || [],
         features: propertyData.features || []
       }
@@ -1038,6 +1058,8 @@ class PropertiesService {
         createdAt: item.created_at,
         updatedAt: item.updated_at,
         videoUrl: item.video_url || undefined,
+        latitude: item.latitude ?? undefined,
+        longitude: item.longitude ?? undefined,
         amenities: item.amenities || [],
         features: item.features || []
       }))

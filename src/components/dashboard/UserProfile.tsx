@@ -41,6 +41,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
     instagram: user?.instagram || '',
     x: user?.x || '',
     facebook: user?.facebook || '',
+    tiktok: user?.tiktok || '',
   });
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const logoInputRef = useRef<HTMLInputElement | null>(null);
@@ -65,7 +66,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
         instagram: user.instagram || '',
         x: user.x || '',
         facebook: user.facebook || '',
+        tiktok: user.tiktok || '',
       });
+      // Hosts can edit without clicking "Edit Profile" – start in edit mode
+      if (user.userType === 'host') {
+        setIsEditing(true);
+      }
     }
   }, [user]);
 
@@ -155,7 +161,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
 
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${user.id}/${fileName}`;
+      const filePath = `${user.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file, {
         cacheControl: '3600',
@@ -239,9 +245,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
               </div>
             )}
             <button
+              type="button"
               className="absolute -bottom-1 -right-1 sm:-bottom-2 sm:-right-2 w-7 h-7 sm:w-8 sm:h-8 bg-[#C7A667] rounded-full flex items-center justify-center text-black disabled:opacity-60 disabled:cursor-not-allowed"
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploadingAvatar}
+              title="Upload profile picture"
             >
               <Camera size={14} />
             </button>
@@ -271,7 +279,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
               </span>
               <span className="flex items-center justify-center sm:justify-start gap-1 whitespace-nowrap">
                 <Shield size={14} className="flex-shrink-0" />
-                {user?.userType === 'developer' ? 'Developer' : 'Buyer'}
+                {user?.userType === 'developer' ? 'Developer' : user?.userType === 'host' ? 'Host' : 'Buyer'}
               </span>
               {user?.userType === 'developer' && user?.licenseNumber && (
                 <span className="flex items-center justify-center sm:justify-start gap-1 truncate">
@@ -282,6 +290,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
             </div>
           </div>
           <motion.button
+            type="button"
             className="px-4 py-2 bg-[#C7A667] text-black rounded-lg font-medium text-sm sm:text-base whitespace-nowrap self-center sm:self-auto"
             onClick={() => setIsEditing(!isEditing)}
             whileHover={{ scale: 1.05 }}
@@ -445,12 +454,15 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
                     />
                   </div>
                 </div>
+              </>
+            )}
 
-                {/* Social Links Section */}
-                <div className="mt-6 pt-6 border-t border-white/10 dark:border-gray-200/20">
+            {/* Social Links & Profile Photo – for developers and hosts */}
+            {(user?.userType === 'developer' || user?.userType === 'host') && (
+                <div className={`mt-6 pt-6 border-t border-white/10 dark:border-gray-200/20 ${user?.userType === 'developer' ? '' : 'mt-4 pt-4'}`}>
                   <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
                     <Globe className="w-4 h-4 text-[#C7A667]" />
-                    Social Links & Branding
+                    {user?.userType === 'host' ? 'Social links & profile photo' : 'Social Links & Branding'}
                   </h4>
                   
                   <div className="space-y-3 sm:space-y-4">
@@ -550,9 +562,33 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
                       </div>
                     </div>
 
-                    {/* Logo Upload */}
                     <div>
-                      <label className="block text-sm font-medium mb-2">Company Logo</label>
+                      <label className="block text-sm font-medium mb-2">TikTok</label>
+                      <div className="relative">
+                        <LinkIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                          type="url"
+                          name="tiktok"
+                          value={formData.tiktok}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          placeholder="https://tiktok.com/@yourprofile"
+                          className={`w-full pl-12 pr-4 py-3 rounded-lg border transition-colors ${
+                            isEditing
+                              ? isDarkMode
+                                ? 'bg-white/5 border-white/15 text-white'
+                                : 'bg-white border-gray-300 text-gray-900'
+                              : isDarkMode
+                                ? 'bg-white/5 border-white/10 text-white/70'
+                                : 'bg-gray-50 border-gray-200 text-gray-500'
+                          }`}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Logo / Profile photo for listings */}
+                    <div>
+                      <label className="block text-sm font-medium mb-2">{user?.userType === 'host' ? 'Profile photo (shown on your short stay listings)' : 'Company Logo'}</label>
                       <div className="flex items-center gap-4">
                         {user?.logoUrl ? (
                           <img
@@ -569,7 +605,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
                           <button
                             type="button"
                             onClick={() => logoInputRef.current?.click()}
-                            disabled={!isEditing || isUploadingLogo}
+                            disabled={isUploadingLogo}
                             className={`px-4 py-2 rounded-lg border transition-colors text-sm ${
                               isEditing
                                 ? isDarkMode
@@ -580,7 +616,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
                                   : 'border-gray-200 text-gray-400 cursor-not-allowed'
                             }`}
                           >
-                            {isUploadingLogo ? 'Uploading...' : user?.logoUrl ? 'Change Logo' : 'Upload Logo'}
+                            {isUploadingLogo ? 'Uploading...' : user?.logoUrl ? 'Change' : 'Upload'}
                           </button>
                           <input
                             ref={logoInputRef}
@@ -588,7 +624,6 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
                             accept="image/*"
                             className="hidden"
                             onChange={handleLogoChange}
-                            disabled={!isEditing}
                           />
                           <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB</p>
                         </div>
@@ -596,7 +631,6 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
                     </div>
                   </div>
                 </div>
-              </>
             )}
 
             {/* Success/Error Message */}

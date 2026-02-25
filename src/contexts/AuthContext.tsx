@@ -18,6 +18,7 @@ export interface User {
   instagram?: string;
   x?: string;
   facebook?: string;
+  tiktok?: string;
   logoUrl?: string;
   preferences: {
     notifications: boolean;
@@ -82,6 +83,7 @@ function parseCachedUser(): User | null {
       instagram: authUser.instagram,
       x: authUser.x,
       facebook: authUser.facebook,
+      tiktok: authUser.tiktok,
       logoUrl: authUser.logoUrl,
       preferences: { notifications: true, darkMode: false, language: 'en' },
     };
@@ -136,6 +138,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       instagram: authUser.instagram,
       x: authUser.x,
       facebook: authUser.facebook,
+      tiktok: authUser.tiktok,
       logoUrl: authUser.logoUrl,
       preferences: {
         notifications: true,
