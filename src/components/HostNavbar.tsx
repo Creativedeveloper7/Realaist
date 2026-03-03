@@ -40,9 +40,9 @@ export function HostNavbar({ isDarkMode }: HostNavbarProps) {
     <nav className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b ${navBg}`}>
       <div className="max-w-7xl mx-auto flex items-center justify-between py-4 px-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex items-center gap-2">
-          <img src="/logos/realaistlogo.png" alt="Realaist" className="h-8 w-auto" />
+          <img src="/logos/realaistlogo.png" alt="Stays" className="h-[2.4rem] w-auto" />
           <span className={`font-semibold text-xl ${text}`} style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}>
-            Realaist <span className={gold}>Stays</span>
+            <span className={gold}>Stays</span>
           </span>
         </Link>
 

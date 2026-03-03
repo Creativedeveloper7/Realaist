@@ -39,9 +39,9 @@ export default function HostsHomePage() {
   ];
 
   const features = [
-    { icon: Globe, title: 'Google Ads & Meta Integrations', desc: 'Run high-converting ad campaigns on Google, Meta and YouTube directly from your dashboard. Target travelers by location, interests and travel dates — then track every click, inquiry and booking in real-time. No agency needed, no guesswork. Just measurable results that fill your calendar.', image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=400&fit=crop' },
-    { icon: Camera, title: 'Dedicated Property Landing Pages', desc: 'Each property gets its own stunning, conversion-optimized landing page — complete with professional photo galleries, video tours, immersive 360° virtual walkthroughs, amenity lists, pricing, location maps and availability calendars. Give guests everything they need to book with confidence.', image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=400&fit=crop' },
-    { icon: Users, title: 'Direct Bookings & Guest CRM', desc: 'Accept bookings directly — no middlemen, no hefty commissions. Own the entire guest relationship from first inquiry to checkout. Our built-in CRM tracks every conversation, stores guest preferences, automates follow-ups and turns one-time visitors into loyal repeat guests.', image: 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800&h=400&fit=crop' },
+    { icon: Globe, title: 'Google Ads & Meta Integrations', desc: 'Run high-converting ad campaigns on Google, Meta and YouTube directly from your dashboard. Target travelers by location, interests and travel dates — then track every click, inquiry and booking in real-time. No agency needed, no guesswork. Just measurable results that fill your calendar.', image: '/logos/feature1.png' },
+    { icon: Camera, title: 'Dedicated Property Landing Pages', desc: 'Each property gets its own stunning, conversion-optimized landing page — complete with professional photo galleries, video tours, immersive 360° virtual walkthroughs, amenity lists, pricing, location maps and availability calendars. Give guests everything they need to book with confidence.', image: '/logos/feature2.png' },
+    { icon: Users, title: 'Direct Bookings & Guest CRM', desc: 'Accept bookings directly — no middlemen, no hefty commissions. Own the entire guest relationship from first inquiry to checkout. Our built-in CRM tracks every conversation, stores guest preferences, automates follow-ups and turns one-time visitors into loyal repeat guests.', image: '/logos/feature3.png' },
   ];
 
   const featuredUnits = [
@@ -240,11 +240,10 @@ export default function HostsHomePage() {
               <div className={`absolute inset-0 bg-gradient-to-br from-[#C7A667]/10 ${dark ? 'via-[#0E0E10] to-[#0E0E10]' : 'via-white to-white'}`} />
               <div className="relative z-10 text-center py-16 px-6">
                 <h2 className={`text-3xl sm:text-4xl font-bold mb-4 ${text}`} style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}>
-                  Ready to Fill Every Night?
+                Ready to transform your local vacation rental into a global lifestyle brand?
                 </h2>
                 <p className={`${muted} max-w-lg mx-auto mb-8`}>
-                  Join hundreds of hosts already using Realaist Stays to keep their vacation rentals
-                  fully booked with guests from around the world.
+                Join hundreds of successful hosts who trust Realaist Stays to keep their vacation homes consistently monetized.
                 </p>
                 <Link
                   to="/dashboard/short-stays"
