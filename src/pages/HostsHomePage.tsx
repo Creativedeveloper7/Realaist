@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Play, Upload, Megaphone, TrendingUp, Sparkles, Globe, Camera, Users, MapPin, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowRight, Play, Upload, Megaphone, TrendingUp, Globe, Camera, Users, MapPin, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 import { HostNavbar } from '../components/HostNavbar';
+import { propertiesService } from '../services/propertiesService';
 
 /**
  * Homepage for logged-in hosts. Lists and other sections can be added below.
@@ -12,6 +13,17 @@ import { HostNavbar } from '../components/HostNavbar';
 export default function HostsHomePage() {
   const { isDarkMode } = useTheme();
   const [featuredIndex, setFeaturedIndex] = useState(0);
+  const [shortStayCount, setShortStayCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    propertiesService
+      .getProperties({ propertyType: 'Short Stay' })
+      .then(({ properties, error }) => {
+        if (!cancelled && !error) setShortStayCount(properties.length);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   const dark = isDarkMode;
   const text = dark ? 'text-white' : 'text-gray-900';
@@ -21,10 +33,9 @@ export default function HostsHomePage() {
   const cardBg = dark ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-gray-200';
 
   const steps = [
-    { icon: Upload, step: '01', title: 'List Your Property', desc: 'Create a beautiful listing page with photos, videos, virtual tours and pricing — in minutes.' },
-    { icon: Megaphone, step: '02', title: 'Launch Ad Campaigns', desc: 'Push targeted ads to Google & Meta directly from the dashboard. Reach travelers worldwide instantly.' },
-    { icon: TrendingUp, step: '03', title: 'Grow & Monetize', desc: 'Track bookings, manage guests and optimize campaigns to keep your calendar fully booked year-round.' },
-    { icon: Sparkles, step: '04', title: 'Value-Added Services', desc: 'Get professional photography, cinematic videography, immersive 3D virtual walkthroughs and full property management — all in one place.' },
+    { icon: Upload, step: '01', title: 'List your property', desc: 'Create stunning listing page with property assets and pricing — in minutes.' },
+    { icon: Megaphone, step: '02', title: 'Launch Ad campaigns', desc: 'Push targeted ads to social media directly from the dashboard. Reach travellers worldwide instantly. No marketing experience required.' },
+    { icon: TrendingUp, step: '03', title: 'Grow & Monetize', desc: 'Manage sales & optimize campaigns with AI powered insights. Keep your calendar fully booked year-round.' },
   ];
 
   const features = [
@@ -88,12 +99,12 @@ export default function HostsHomePage() {
                 className={`text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-6 ${text}`}
                 style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}
               >
-                Keep Your Units{' '}
-                <span className="text-[#C7A667]">Always Fully Booked</span>
+                Keep Your Vacationn rentals{' '}
+                <span className="text-[#C7A667]">Fully Booked All Year Round.</span>
               </h1>
 
               <p className={`text-lg ${muted} leading-relaxed mb-8 max-w-xl`}>
-                Advertise your vacation rentals globally on Google & Meta, get new clients, and grow your business.
+                Advertise your units globally, attract new clients and grow your buisness with ease .
               </p>
 
               <div className="flex flex-wrap gap-4">
@@ -116,9 +127,9 @@ export default function HostsHomePage() {
               {/* Stats */}
               <div className="flex flex-wrap gap-10 mt-14">
                 {[
-                  ['500+', 'Properties Listed'],
-                  ['95%', 'Occupancy Rate'],
-                  ['30+', 'Countries'],
+                  [shortStayCount !== null ? (shortStayCount >= 100 ? '100+' : String(shortStayCount)) : '—', 'Properties Listed'],
+                  ['99%', 'Occupancy Rate'],
+                  ['1M+', 'Impressions'],
                 ].map(([val, label]) => (
                   <motion.div
                     key={label}
@@ -150,7 +161,7 @@ export default function HostsHomePage() {
               </h2>
             </motion.div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-5xl mx-auto">
+            <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
               {steps.map((s, i) => (
                 <motion.div
                   key={s.step}
