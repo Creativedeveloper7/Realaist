@@ -99,7 +99,7 @@ export default function HostsHomePage() {
                 className={`text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-6 ${text}`}
                 style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}
               >
-                Keep Your Vacationn rentals{' '}
+                Keep Your Vacation rentals{' '}
                 <span className="text-[#C7A667]">Fully Booked All Year Round.</span>
               </h1>
 
