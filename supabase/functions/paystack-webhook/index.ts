@@ -110,8 +110,39 @@ serve(async (req) => {
         status: transaction.status
       });
 
-      // Find payment by reference
-      // Note: We don't embed campaigns here to avoid PostgREST relationship ambiguity
+      // 1) Short-stay booking payments (separate from campaign `payments` table)
+      const { data: bookingPay, error: bookingErr } = await supabaseClient
+        .from("booking_payments")
+        .select("*")
+        .eq("paystack_reference", transaction.reference)
+        .maybeSingle();
+
+      if (!bookingErr && bookingPay) {
+        const txCurrency = transaction.currency || bookingPay.currency || "KES";
+        const updateBooking: Record<string, unknown> = {
+          status: "success",
+          amount_paid_minor: transaction.amount,
+          currency: txCurrency,
+          paid_at: transaction.paid_at
+            ? new Date(transaction.paid_at).toISOString()
+            : new Date().toISOString(),
+        };
+        const { error: buErr } = await supabaseClient
+          .from("booking_payments")
+          .update(updateBooking)
+          .eq("id", bookingPay.id);
+        if (buErr) {
+          console.error("booking_payments update error:", buErr);
+        } else {
+          console.log("booking_payments marked success:", bookingPay.id);
+        }
+        return new Response(JSON.stringify({ received: true }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // 2) Campaign payments
       const { data: payment, error: paymentError } = await supabaseClient
         .from("payments")
         .select("*")
@@ -123,7 +154,6 @@ serve(async (req) => {
           reference: transaction.reference,
           error: paymentError
         });
-        // Return 200 to acknowledge webhook even if payment not found
         return new Response(
           JSON.stringify({ received: true, error: "Payment not found" }),
           {
@@ -231,7 +261,23 @@ serve(async (req) => {
         reference: transaction.reference
       });
 
-      // Find payment by reference
+      const { data: failedBooking } = await supabaseClient
+        .from("booking_payments")
+        .select("id")
+        .eq("paystack_reference", transaction.reference)
+        .maybeSingle();
+
+      if (failedBooking) {
+        await supabaseClient
+          .from("booking_payments")
+          .update({ status: "failed" })
+          .eq("id", failedBooking.id);
+        return new Response(JSON.stringify({ received: true }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const { data: payment, error: paymentError } = await supabaseClient
         .from("payments")
         .select("id, campaign_id")

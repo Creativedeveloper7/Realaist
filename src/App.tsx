@@ -30,6 +30,7 @@ const DashboardCampaignAds = lazy(() => import('./pages/DashboardCampaignAds'));
 const ShortStays = lazy(() => import('./pages/ShortStays').then(m => ({ default: m.default })));
 const HostMessages = lazy(() => import('./pages/HostMessages').then(m => ({ default: m.HostMessages })));
 const HostBookings = lazy(() => import('./pages/HostBookings').then(m => ({ default: m.default })));
+const WalletPage = lazy(() => import('./pages/WalletPage'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
 const OverviewPage = lazy(() => import('./pages/admin/OverviewPage'));
 const AnalyticsPage = lazy(() => import('./pages/admin/AnalyticsPage'));
@@ -258,6 +259,17 @@ function AppContent() {
             <ProtectedRoute>
               <DashboardLayout isDarkMode={isDarkMode}>
                 <UserProfile isDarkMode={isDarkMode} />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/wallet"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout isDarkMode={isDarkMode}>
+                <WalletPage isDarkMode={isDarkMode} />
               </DashboardLayout>
             </ProtectedRoute>
           }

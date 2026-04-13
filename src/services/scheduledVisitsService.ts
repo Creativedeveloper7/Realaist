@@ -54,6 +54,8 @@ export interface CreateScheduledVisitData {
   visitorPhone?: string
   /** For short-stay bookings: last night of stay (YYYY-MM-DD). Omit for single-day visits. */
   checkOutDate?: string
+  /** Linked verified booking payment (short-stay). */
+  bookingPaymentId?: string
 }
 
 class ScheduledVisitsService {
@@ -91,6 +93,9 @@ class ScheduledVisitsService {
       if (data.checkOutDate) {
         insertPayload.check_out_date = data.checkOutDate
       }
+      if (data.bookingPaymentId) {
+        insertPayload.booking_payment_id = data.bookingPaymentId
+      }
       // Create the scheduled visit
       const { data: visitData, error } = await supabase
         .from('scheduled_visits')
@@ -123,7 +128,9 @@ class ScheduledVisitsService {
 
       if (error) {
         console.error('Error creating scheduled visit (unauth flow may be restricted):', error)
-        // Fall back to synthetic success to allow UI flow without auth
+        if (data.bookingPaymentId) {
+          return { visit: null, error: error.message || 'Could not create booking' }
+        }
         return { visit: null, error: null }
       }
 

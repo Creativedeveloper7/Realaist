@@ -19,7 +19,8 @@ import {
   ArrowLeft,
   Megaphone,
   Bed,
-  CalendarCheck
+  CalendarCheck,
+  Wallet
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
@@ -41,6 +42,7 @@ const allNavItems: NavItem[] = [
   { id: 'scheduled-visits', label: 'Client Data', icon: MessageSquare, href: '/dashboard/scheduled-visits', badge: 3 },
   { id: 'blogs', label: 'Blogs', icon: BookOpen, href: '/dashboard/blogs' },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/dashboard/analytics' },
+  { id: 'wallet', label: 'Wallet', icon: Wallet, href: '/dashboard/wallet' },
   { id: 'profile', label: 'Profile', icon: User, href: '/dashboard/profile' },
 ];
 
@@ -48,6 +50,7 @@ const allNavItems: NavItem[] = [
 const buyerNavItems: NavItem[] = [
   { id: 'overview', label: 'Overview', icon: Home, href: '/dashboard' },
   { id: 'scheduled-visits', label: 'Client Data', icon: MessageSquare, href: '/dashboard/scheduled-visits', badge: 3 },
+  { id: 'wallet', label: 'Wallet', icon: Wallet, href: '/dashboard/wallet' },
   { id: 'profile', label: 'Profile', icon: User, href: '/dashboard/profile' },
 ];
 
@@ -59,6 +62,7 @@ const developerNavItems: NavItem[] = [
   { id: 'blogs', label: 'Blogs', icon: BookOpen, href: '/dashboard/blogs' },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/dashboard/analytics' },
   { id: 'campaign-ads', label: 'Campaign Ads', icon: Megaphone, href: '/dashboard/campaign-ads' },
+  { id: 'wallet', label: 'Wallet', icon: Wallet, href: '/dashboard/wallet' },
   { id: 'profile', label: 'Profile', icon: User, href: '/dashboard/profile' },
 ];
 
@@ -69,6 +73,7 @@ const hostNavItems: NavItem[] = [
   { id: 'bookings', label: 'Bookings', icon: CalendarCheck, href: '/dashboard/bookings' },
   { id: 'messages', label: 'Guest Messages', icon: MessageSquare, href: '/dashboard/messages' },
   { id: 'campaign-ads', label: 'Campaign Ads', icon: Megaphone, href: '/dashboard/campaign-ads' },
+  { id: 'wallet', label: 'Wallet', icon: Wallet, href: '/dashboard/wallet' },
   { id: 'profile', label: 'Profile', icon: User, href: '/dashboard/profile' },
 ];
 
@@ -116,6 +121,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     if (path === '/dashboard/scheduled-visits') return 'scheduled-visits';
     if (path === '/dashboard/analytics') return 'analytics';
     if (path === '/dashboard/campaign-ads') return 'campaign-ads';
+    if (path === '/dashboard/wallet') return 'wallet';
     if (path === '/dashboard/profile') return 'profile';
     return 'overview';
   };

@@ -17,8 +17,10 @@ import {
   Instagram,
   Facebook,
   Twitter,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Wallet,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 
 interface UserProfileProps {
@@ -53,6 +55,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
     darkMode: user?.preferences?.darkMode || false,
     language: user?.preferences?.language || 'en',
   });
+
+  const showPayoutSettings = user?.userType === 'host' || user?.userType === 'developer';
 
   // Update form data when user changes
   useEffect(() => {
@@ -463,6 +467,28 @@ export const UserProfile: React.FC<UserProfileProps> = ({ isDarkMode }) => {
                   </div>
                 </div>
               </>
+            )}
+
+            {showPayoutSettings && (
+              <div
+                className={`mt-6 pt-6 border-t ${isDarkMode ? 'border-white/10' : 'border-gray-200'} rounded-xl p-4 ${
+                  isDarkMode ? 'bg-white/[0.04]' : 'bg-amber-50/80'
+                }`}
+              >
+                <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                  <Wallet className="w-4 h-4 text-[#C7A667]" />
+                  Wallet &amp; M-Pesa payouts
+                </h4>
+                <p className={`text-sm mb-3 ${isDarkMode ? 'text-white/65' : 'text-gray-600'}`}>
+                  View balances, short-stay earnings, withdrawals, and your M-Pesa number for Paystack transfers.
+                </p>
+                <Link
+                  to="/dashboard/wallet"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#C7A667] text-black text-sm font-semibold hover:opacity-90"
+                >
+                  Open wallet
+                </Link>
+              </div>
             )}
 
             {/* Social Links & Profile Photo – for developers and hosts */}

@@ -5,7 +5,10 @@ import { useTheme } from './ThemeContext';
 import { useAuth } from './contexts/AuthContext';
 import { propertiesService, Property } from './services/propertiesService';
 import { scheduledVisitsService } from './services/scheduledVisitsService';
-import { openPaystackInlineForBooking } from './services/paymentService';
+import { openPaystackPopup } from './services/paymentService';
+import { initializeBookingPayment, verifyBookingPayment } from './services/bookingPaymentService';
+import { campaignsConfig } from './config/campaigns';
+import { supabase } from './lib/supabase';
 import { Header } from './components/Header';
 import { HostNavbar } from './components/HostNavbar';
 import { shareToWhatsApp, PropertyShareData } from './utils/whatsappShare';
@@ -197,6 +200,11 @@ export default function PropertyDetails() {
   const [bookingName, setBookingName] = useState('');
   const [bookingEmail, setBookingEmail] = useState('');
   const [bookingPhone, setBookingPhone] = useState('');
+  /** After step 1 (Paystack init), guest completes pay then submits again to confirm. */
+  const [pendingBookingPayment, setPendingBookingPayment] = useState<{
+    id: string;
+    reference: string;
+  } | null>(null);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [resolvedLocation, setResolvedLocation] = useState<string | null>(null);
   const [bookedDatesForCalendar, setBookedDatesForCalendar] = useState<string[]>([]);
@@ -399,6 +407,12 @@ export default function PropertyDetails() {
     });
     return () => { cancelled = true; };
   }, [property?.id, property?.type, bookingModalOpen]);
+
+  useEffect(() => {
+    if (!bookingModalOpen) {
+      setPendingBookingPayment(null);
+    }
+  }, [bookingModalOpen]);
 
   // Resolve "Current location" to real place name when we have lat/lng (e.g. Kikuyu)
   useEffect(() => {
@@ -1879,38 +1893,52 @@ export default function PropertyDetails() {
                 try {
                   const total = totalBookingPrice;
 
-                  // Start Paystack payment (custom_fields appear on Paystack receipt)
-                  const paymentResult = await openPaystackInlineForBooking({
-                    amountKES: total,
-                    email: bookingEmail,
-                    metadata: {
-                      type: 'short_stay_booking',
+                  if (!pendingBookingPayment) {
+                    if (!campaignsConfig.payment.publicKey) {
+                      throw new Error('Paystack public key is not configured');
+                    }
+                    const init = await initializeBookingPayment({
                       propertyId: property.id,
-                      propertyTitle: property.title,
-                      checkInDate,
-                      checkOutDate,
+                      amountKes: total,
+                      email: bookingEmail.trim(),
+                      customerName: bookingName.trim(),
+                      checkIn: checkInDate,
+                      checkOut: checkOutDate,
                       nights: bookingNights,
                       guests: bookingGuests,
-                      custom_fields: [
-                        { display_name: 'Property', variable_name: 'property', value: property.title },
-                        { display_name: 'Check-in', variable_name: 'check_in', value: checkInDate },
-                        { display_name: 'Check-out', variable_name: 'check_out', value: checkOutDate },
-                        { display_name: 'Nights', variable_name: 'nights', value: String(bookingNights) },
-                        { display_name: 'Guests', variable_name: 'guests', value: String(bookingGuests) },
-                        { display_name: 'Total (KES)', variable_name: 'total', value: `KSh ${total.toLocaleString()}` },
-                      ],
-                    },
-                  });
-
-                  if (!paymentResult) {
-                    setBookingMessage('Payment was cancelled. Your booking was not created.');
+                      metadata: {
+                        property_title: property.title,
+                      },
+                    });
+                    setPendingBookingPayment({ id: init.id, reference: init.reference });
+                    await openPaystackPopup(
+                      campaignsConfig.payment.publicKey,
+                      init.access_code,
+                      init.authorization_url
+                    );
+                    setBookingMessage(
+                      'Complete payment in the Paystack window, then press the button again to confirm your reservation.'
+                    );
                     setIsSubmittingBooking(false);
                     return;
                   }
 
-                  const reference = paymentResult.reference;
+                  const { id: bookingPaymentId, reference } = pendingBookingPayment;
+                  const verified = await verifyBookingPayment({
+                    reference,
+                    bookingPaymentId,
+                    email: bookingEmail.trim(),
+                  });
 
-                  // Record booking as a scheduled visit for developer dashboard (and availability calendar)
+                  if (!verified.success || verified.status !== 'success') {
+                    setBookingMessage(
+                      verified.message ||
+                        'Payment is not confirmed yet. Finish paying in Paystack, wait a moment, then try again.'
+                    );
+                    setIsSubmittingBooking(false);
+                    return;
+                  }
+
                   const scheduledTime = '12:00';
                   const { visit, error } = await scheduledVisitsService.createScheduledVisit({
                     propertyId: property.id,
@@ -1920,23 +1948,30 @@ export default function PropertyDetails() {
                     visitorName: bookingName,
                     visitorEmail: bookingEmail,
                     visitorPhone: bookingPhone.trim() || undefined,
+                    bookingPaymentId,
                     message: `Short stay booking.\nCheck-in: ${checkInDate}\nCheck-out: ${checkOutDate}\nNights: ${bookingNights}\nGuests: ${bookingGuests}\nTotal: KSh ${total.toLocaleString()}\nPayment reference: ${reference}`,
                   });
 
-                  if (error) {
+                  if (error || !visit?.id) {
                     console.error('Error recording booking as scheduled visit:', error);
-                    setBookingMessage('Payment succeeded but we could not record your booking. Please contact support with your payment reference.');
+                    setBookingMessage(
+                      error ||
+                        'Payment succeeded but we could not record your booking. Please contact support with your payment reference.'
+                    );
                   } else {
-                    // Auto-confirm booking when payment succeeded (host does not need to approve)
-                    if (visit?.id) {
-                      await scheduledVisitsService.updateVisitStatus(visit.id, 'confirmed');
-                    }
-                    setBookingMessage(`Booking confirmed for ${bookingNights} night${bookingNights > 1 ? 's' : ''}. Payment reference: ${reference}. Receipt sent by Paystack.`);
-                    // Refresh availability calendar so new booking shows as unavailable
+                    await supabase.rpc('link_booking_payment_to_visit', {
+                      p_payment_id: bookingPaymentId,
+                      p_visit_id: visit.id,
+                      p_reference: reference,
+                    });
+                    await scheduledVisitsService.updateVisitStatus(visit.id, 'confirmed');
+                    setBookingMessage(
+                      `Booking confirmed for ${bookingNights} night${bookingNights > 1 ? 's' : ''}. Payment reference: ${reference}.`
+                    );
+                    setPendingBookingPayment(null);
                     scheduledVisitsService.getBookedDatesForProperty(property.id).then(({ bookedDates }) => {
                       setBookedDatesForCalendar(bookedDates);
                     });
-                    // Reset minimal fields but keep modal open so user can read confirmation
                     setCheckInDate('');
                     setCheckOutDate('');
                     setBookingGuests(1);
@@ -2122,7 +2157,11 @@ export default function PropertyDetails() {
                 whileHover={!isSubmittingBooking ? { scale: 1.02 } : {}}
                 whileTap={!isSubmittingBooking ? { scale: 0.98 } : {}}
               >
-                {isSubmittingBooking ? 'Processing...' : 'Confirm Booking Request'}
+                {isSubmittingBooking
+                  ? 'Processing...'
+                  : pendingBookingPayment
+                    ? 'Confirm reservation (after Paystack)'
+                    : 'Pay with M-Pesa / card (step 1)'}
               </motion.button>
             </form>
 
@@ -2131,7 +2170,7 @@ export default function PropertyDetails() {
               <p className={`text-xs transition-colors duration-300 ${
                 isDarkMode ? 'text-white/50' : 'text-gray-500'
               }`}>
-                This will send your preferred dates to the developer. They will confirm availability and finalize your stay.
+                You pay securely via Paystack; the host is notified when your stay is confirmed.
               </p>
             </div>
           </motion.div>

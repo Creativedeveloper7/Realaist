@@ -1,0 +1,15 @@
+# Paystack and guest booking endpoints must accept requests without a user JWT.
+[functions.initialize-booking-payment]
+verify_jwt = false
+
+[functions.verify-booking-payment]
+verify_jwt = false
+
+[functions.paystack-webhook]
+verify_jwt = false
+
+[functions.paystack-transfer-approval]
+verify_jwt = false
+
+[functions.paystack-transfer-webhook]
+verify_jwt = false
