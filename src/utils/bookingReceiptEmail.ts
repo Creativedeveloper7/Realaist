@@ -92,6 +92,42 @@ export function getGuestEmailForReceipt(visit: ScheduledVisit): string {
 }
 
 /**
+ * Get the guest phone for receipt (visitor_phone from booking form, or buyer phone).
+ */
+export function getGuestPhoneForReceipt(visit: ScheduledVisit): string {
+  return visit.visitorPhone || visit.buyer?.phone || '';
+}
+
+/**
+ * Normalize phone to digits with country code for WhatsApp (e.g. 254712345678).
+ */
+function normalizePhoneForWhatsApp(phone: string): string {
+  let digits = phone.replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.startsWith('0') && digits.length >= 10) {
+    digits = '254' + digits.slice(1);
+  } else if (digits.startsWith('7') && digits.length === 9) {
+    digits = '254' + digits;
+  } else if (digits.length === 9 && !digits.startsWith('0')) {
+    digits = '254' + digits;
+  }
+  return digits;
+}
+
+/**
+ * Open WhatsApp (or wa.me) with the receipt message pre-filled so the host can send to the guest's phone.
+ */
+export function openReceiptViaPhone(visit: ScheduledVisit): boolean {
+  const phone = getGuestPhoneForReceipt(visit);
+  const normalized = normalizePhoneForWhatsApp(phone);
+  if (!normalized) return false;
+  const text = encodeURIComponent(buildBookingReceiptBody(visit));
+  const url = `https://wa.me/${normalized}?text=${text}`;
+  window.open(url, '_blank', 'noopener,noreferrer');
+  return true;
+}
+
+/**
  * Open the host's email client with a pre-filled receipt to the guest.
  * Subject and body are set so the host only needs to click Send.
  */

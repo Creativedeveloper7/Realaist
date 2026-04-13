@@ -196,6 +196,7 @@ export default function PropertyDetails() {
   const [bookingMessage, setBookingMessage] = useState('');
   const [bookingName, setBookingName] = useState('');
   const [bookingEmail, setBookingEmail] = useState('');
+  const [bookingPhone, setBookingPhone] = useState('');
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [resolvedLocation, setResolvedLocation] = useState<string | null>(null);
   const [bookedDatesForCalendar, setBookedDatesForCalendar] = useState<string[]>([]);
@@ -1878,7 +1879,7 @@ export default function PropertyDetails() {
                 try {
                   const total = totalBookingPrice;
 
-                  // Start Paystack payment
+                  // Start Paystack payment (custom_fields appear on Paystack receipt)
                   const paymentResult = await openPaystackInlineForBooking({
                     amountKES: total,
                     email: bookingEmail,
@@ -1890,6 +1891,14 @@ export default function PropertyDetails() {
                       checkOutDate,
                       nights: bookingNights,
                       guests: bookingGuests,
+                      custom_fields: [
+                        { display_name: 'Property', variable_name: 'property', value: property.title },
+                        { display_name: 'Check-in', variable_name: 'check_in', value: checkInDate },
+                        { display_name: 'Check-out', variable_name: 'check_out', value: checkOutDate },
+                        { display_name: 'Nights', variable_name: 'nights', value: String(bookingNights) },
+                        { display_name: 'Guests', variable_name: 'guests', value: String(bookingGuests) },
+                        { display_name: 'Total (KES)', variable_name: 'total', value: `KSh ${total.toLocaleString()}` },
+                      ],
                     },
                   });
 
@@ -1903,13 +1912,14 @@ export default function PropertyDetails() {
 
                   // Record booking as a scheduled visit for developer dashboard (and availability calendar)
                   const scheduledTime = '12:00';
-                  const { error } = await scheduledVisitsService.createScheduledVisit({
+                  const { visit, error } = await scheduledVisitsService.createScheduledVisit({
                     propertyId: property.id,
                     scheduledDate: checkInDate,
                     scheduledTime,
                     checkOutDate: checkOutDate,
                     visitorName: bookingName,
                     visitorEmail: bookingEmail,
+                    visitorPhone: bookingPhone.trim() || undefined,
                     message: `Short stay booking.\nCheck-in: ${checkInDate}\nCheck-out: ${checkOutDate}\nNights: ${bookingNights}\nGuests: ${bookingGuests}\nTotal: KSh ${total.toLocaleString()}\nPayment reference: ${reference}`,
                   });
 
@@ -1917,7 +1927,11 @@ export default function PropertyDetails() {
                     console.error('Error recording booking as scheduled visit:', error);
                     setBookingMessage('Payment succeeded but we could not record your booking. Please contact support with your payment reference.');
                   } else {
-                    setBookingMessage(`Booking confirmed for ${bookingNights} night${bookingNights > 1 ? 's' : ''}. Payment reference: ${reference}`);
+                    // Auto-confirm booking when payment succeeded (host does not need to approve)
+                    if (visit?.id) {
+                      await scheduledVisitsService.updateVisitStatus(visit.id, 'confirmed');
+                    }
+                    setBookingMessage(`Booking confirmed for ${bookingNights} night${bookingNights > 1 ? 's' : ''}. Payment reference: ${reference}. Receipt sent by Paystack.`);
                     // Refresh availability calendar so new booking shows as unavailable
                     scheduledVisitsService.getBookedDatesForProperty(property.id).then(({ bookedDates }) => {
                       setBookedDatesForCalendar(bookedDates);
@@ -1926,6 +1940,7 @@ export default function PropertyDetails() {
                     setCheckInDate('');
                     setCheckOutDate('');
                     setBookingGuests(1);
+                    setBookingPhone('');
                   }
                 } catch (err: any) {
                   console.error('Error processing booking:', err);
@@ -1973,6 +1988,24 @@ export default function PropertyDetails() {
                         : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#C7A667]'
                     } outline-none focus:ring-2 focus:ring-[#C7A667]/20`}
                     placeholder="Enter your email"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className={`block text-sm font-medium mb-2 transition-colors duration-300 ${
+                    isDarkMode ? 'text-white/80' : 'text-gray-700'
+                  }`}>
+                    Phone number <span className="text-gray-500 font-normal">(optional — for receipt via WhatsApp/SMS)</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={bookingPhone}
+                    onChange={(e) => setBookingPhone(e.target.value)}
+                    className={`w-full px-4 py-3 rounded-lg border transition-colors duration-300 ${
+                      isDarkMode 
+                        ? 'bg-white/5 border-white/15 text-white placeholder-white/40 focus:border-[#C7A667]' 
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#C7A667]'
+                    } outline-none focus:ring-2 focus:ring-[#C7A667]/20`}
+                    placeholder="e.g. +254 700 000 000"
                   />
                 </div>
               </div>

@@ -15,6 +15,8 @@ export interface ScheduledVisit {
   visitorName?: string
   /** Guest email from booking form (for receipt). */
   visitorEmail?: string
+  /** Guest phone from booking form (for receipt via WhatsApp/SMS). */
+  visitorPhone?: string
   createdAt: string
   updatedAt: string
   // Related data
@@ -48,6 +50,8 @@ export interface CreateScheduledVisitData {
   message?: string
   visitorName: string
   visitorEmail: string
+  /** Guest phone (optional; for receipt via WhatsApp/SMS). */
+  visitorPhone?: string
   /** For short-stay bookings: last night of stay (YYYY-MM-DD). Omit for single-day visits. */
   checkOutDate?: string
 }
@@ -81,7 +85,8 @@ class ScheduledVisitsService {
         message: data.message || null,
         status: 'scheduled',
         visitor_name: data.visitorName || null,
-        visitor_email: data.visitorEmail || null
+        visitor_email: data.visitorEmail || null,
+        visitor_phone: data.visitorPhone || null
       }
       if (data.checkOutDate) {
         insertPayload.check_out_date = data.checkOutDate
@@ -134,6 +139,7 @@ class ScheduledVisitsService {
         message: visitData.message,
         visitorName: visitData.visitor_name,
         visitorEmail: visitData.visitor_email,
+        visitorPhone: visitData.visitor_phone,
         createdAt: visitData.created_at,
         updatedAt: visitData.updated_at,
         property: visitData.property ? {
@@ -226,6 +232,7 @@ class ScheduledVisitsService {
         checkOutDate: item.check_out_date,
         visitorName: item.visitor_name,
         visitorEmail: item.visitor_email,
+        visitorPhone: item.visitor_phone,
         property: item.property ? {
           id: item.property.id,
           title: item.property.title,
@@ -316,6 +323,7 @@ class ScheduledVisitsService {
         checkOutDate: item.check_out_date,
         visitorName: item.visitor_name,
         visitorEmail: item.visitor_email,
+        visitorPhone: item.visitor_phone,
         property: item.property ? {
           id: item.property.id,
           title: item.property.title,

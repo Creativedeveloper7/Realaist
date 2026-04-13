@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { scheduledVisitsService, ScheduledVisit } from '../services/scheduledVisitsService';
-import { openReceiptEmailToGuest, getGuestEmailForReceipt } from '../utils/bookingReceiptEmail';
+import { openReceiptEmailToGuest, getGuestEmailForReceipt, openReceiptViaPhone, getGuestPhoneForReceipt } from '../utils/bookingReceiptEmail';
 import {
   Calendar,
   Mail,
+  MessageCircle,
   CheckCircle2,
   User,
   Home,
@@ -70,11 +71,19 @@ export default function HostBookings({ isDarkMode }: HostBookingsProps) {
     }
   };
 
-  const handleSendConfirmation = (visit: ScheduledVisit) => {
+  const handleSendConfirmationEmail = (visit: ScheduledVisit) => {
     const sent = openReceiptEmailToGuest(visit);
     if (!sent) {
       const email = getGuestEmailForReceipt(visit);
       alert(email ? 'Could not open email client.' : 'No guest email on this booking.');
+    }
+  };
+
+  const handleSendConfirmationPhone = (visit: ScheduledVisit) => {
+    const sent = openReceiptViaPhone(visit);
+    if (!sent) {
+      const phone = getGuestPhoneForReceipt(visit);
+      alert(phone ? 'Could not open WhatsApp.' : 'No guest phone number on this booking. Ask the guest to add their phone when booking.');
     }
   };
 
@@ -178,6 +187,7 @@ export default function HostBookings({ isDarkMode }: HostBookingsProps) {
             const nights = parsed.nights ?? 1;
             const guestName = visit.visitorName || (visit.buyer ? `${visit.buyer.firstName || ''} ${visit.buyer.lastName || ''}`.trim() : 'Guest') || 'Guest';
             const guestEmail = getGuestEmailForReceipt(visit);
+            const guestPhone = getGuestPhoneForReceipt(visit);
             const isShortStay = !!visit.checkOutDate || (visit.message || '').includes('Short stay');
 
             return (
@@ -246,13 +256,25 @@ export default function HostBookings({ isDarkMode }: HostBookingsProps) {
                     {visit.status !== 'cancelled' && guestEmail && (
                       <button
                         type="button"
-                        onClick={() => handleSendConfirmation(visit)}
+                        onClick={() => handleSendConfirmationEmail(visit)}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg border font-medium text-sm ${
                           dark ? 'border-[#C7A667]/50 text-[#C7A667] hover:bg-[#C7A667]/10' : 'border-[#C7A667] text-[#C7A667] hover:bg-[#C7A667]/10'
                         }`}
                       >
                         <Mail className="w-4 h-4" />
-                        Send confirmation email
+                        Send receipt via email
+                      </button>
+                    )}
+                    {visit.status !== 'cancelled' && guestPhone && (
+                      <button
+                        type="button"
+                        onClick={() => handleSendConfirmationPhone(visit)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border font-medium text-sm ${
+                          dark ? 'border-[#C7A667]/50 text-[#C7A667] hover:bg-[#C7A667]/10' : 'border-[#C7A667] text-[#C7A667] hover:bg-[#C7A667]/10'
+                        }`}
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        Send receipt via phone
                       </button>
                     )}
                   </div>
