@@ -15,11 +15,30 @@ interface Body {
   mpesa_provider_code?: string;
 }
 
+/** Canonical storage form: 254 + 9 national digits (12 chars), e.g. 254712345678 */
 function normalizeKenyaMsisdn(raw: string): string {
   const digits = raw.replace(/\D/g, "");
-  if (digits.startsWith("254")) return digits;
+  if (digits.startsWith("254")) {
+    const national = digits.slice(3);
+    return national.length >= 9 ? `254${national.slice(0, 9)}` : digits;
+  }
   if (digits.startsWith("0") && digits.length === 10) return `254${digits.slice(1)}`;
   if (digits.length === 9) return `254${digits}`;
+  return digits;
+}
+
+/**
+ * Paystack Kenya M-Pesa transferrecipient expects local MSISDN, not international.
+ * @see docs/paystack/transfers/createTransferRecipient.md — Kenya example uses "0751234987"
+ */
+function paystackKenyaMpesaAccountNumber(canonical254: string): string {
+  const digits = canonical254.replace(/\D/g, "");
+  if (digits.startsWith("254") && digits.length >= 12) {
+    const national = digits.slice(3, 12);
+    return national.length === 9 ? `0${national}` : digits;
+  }
+  if (digits.startsWith("0") && digits.length === 10) return digits;
+  if (digits.length === 9) return `0${digits}`;
   return digits;
 }
 
@@ -70,8 +89,16 @@ serve(async (req) => {
     const mpesa_provider_code =
       (body.mpesa_provider_code ?? existing?.mpesa_provider_code ?? defaultBank).trim();
 
-    if (!mpesa_phone || mpesa_phone.length < 10) {
-      return new Response(JSON.stringify({ error: "Valid M-Pesa phone number required" }), {
+    if (!/^254\d{9}$/.test(mpesa_phone)) {
+      return new Response(JSON.stringify({ error: "Valid Kenya M-Pesa phone required (e.g. 07… or +254…)" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const paystackAccountNumber = paystackKenyaMpesaAccountNumber(mpesa_phone);
+    if (!/^0\d{9}$/.test(paystackAccountNumber)) {
+      return new Response(JSON.stringify({ error: "Could not format phone for Paystack (expected 10-digit local 0…)" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -109,7 +136,7 @@ serve(async (req) => {
       body: JSON.stringify({
         type: "mobile_money",
         name: account_holder_name,
-        account_number: mpesa_phone,
+        account_number: paystackAccountNumber,
         bank_code: mpesa_provider_code,
         currency: payoutCurrency,
       }),

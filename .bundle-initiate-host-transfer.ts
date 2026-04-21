@@ -15,9 +15,19 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Inlined from _shared/paystackKesAmounts.ts (single-file MCP deploy).
+/**
+ * Paystack KES amount rules (charges + transfers):
+ * - API `amount` is always in **currency subunits** (KES **cents**): integer = whole KES × 100.
+ * - Same convention as `amount` in Initialize Transaction and Initiate Transfer
+ *   (see docs/paystack/transfers/paystackSIngleTransfer.md — body uses integer subunits).
+ *
+ * Our ledger columns `*_minor` / `host_net_minor` store these same integers so withdrawals
+ * can pass `amount` to Paystack without rescaling drift.
+ */
+
 const KES_SUBUNITS_PER_UNIT = 100;
 
+/** Convert a decimal KES value from user/API input to Paystack subunits (integer). */
 function kesAmountToPaystackSubunits(amountKes: number): number {
   if (!Number.isFinite(amountKes)) return NaN;
   return Math.round(amountKes * KES_SUBUNITS_PER_UNIT);
@@ -28,6 +38,10 @@ type WithdrawalBody = {
   amount_kes?: unknown;
 };
 
+/**
+ * Resolve withdrawal size for host transfers: prefer integer `amount_minor` (matches UI + ledger);
+ * fall back to `amount_kes` with the same rounding as booking flows.
+ */
 function resolveWithdrawalAmountMinor(
   body: WithdrawalBody,
 ): { ok: true; amountMinor: number } | { ok: false; error: string } {
@@ -65,6 +79,7 @@ function resolveWithdrawalAmountMinor(
 
   return { ok: true, amountMinor: minor };
 }
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -104,8 +119,6 @@ function paystackHintForMessage(message: string, code?: string): string | undefi
   );
 }
 
-const LOG = "initiate-host-transfer";
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -120,7 +133,6 @@ serve(async (req) => {
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      console.error(`${LOG}: auth missing_bearer`);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -130,11 +142,6 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError || !user) {
-      console.error(`${LOG}: auth getUser failed`, {
-        message: userError?.message ?? null,
-        status: userError?.status ?? null,
-        name: userError?.name ?? null,
-      });
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -149,10 +156,6 @@ serve(async (req) => {
 
     const resolved = resolveWithdrawalAmountMinor(body);
     if (!resolved.ok) {
-      console.warn(`${LOG}: invalid_amount`, {
-        host_id: user.id,
-        error: resolved.error,
-      });
       return new Response(JSON.stringify({ error: resolved.error }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -170,7 +173,6 @@ serve(async (req) => {
       .maybeSingle();
 
     if (!profile?.paystack_recipient_code) {
-      console.warn(`${LOG}: missing_paystack_recipient`, { host_id: user.id });
       return new Response(
         JSON.stringify({
           error: "Complete payout profile and register M-Pesa with Paystack first",
@@ -203,11 +205,6 @@ serve(async (req) => {
 
     const available = Math.max(0, credits - reserved);
     if (amountMinor > available) {
-      console.warn(`${LOG}: insufficient_ledger`, {
-        host_id: user.id,
-        amount_minor: amountMinor,
-        available_minor: available,
-      });
       return new Response(
         JSON.stringify({
           error:
@@ -238,12 +235,7 @@ serve(async (req) => {
       .single();
 
     if (insertErr || !transferRow) {
-      console.error(`${LOG}: host_transfers insert failed`, {
-        host_id: user.id,
-        code: insertErr?.code ?? null,
-        message: insertErr?.message ?? null,
-        details: insertErr?.details ?? null,
-      });
+      console.error("host_transfers insert:", insertErr);
       return new Response(JSON.stringify({ error: "Could not create transfer request" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -252,10 +244,6 @@ serve(async (req) => {
 
     const paystackSecretKey = Deno.env.get("PAYSTACK_SECRET_KEY");
     if (!paystackSecretKey) {
-      console.error(`${LOG}: PAYSTACK_SECRET_KEY missing`, {
-        transfer_row_id: transferRow.id,
-        host_id: user.id,
-      });
       await supabaseClient.from("host_transfers").update({
         status: "failed",
         failure_reason: "Paystack not configured",
@@ -266,79 +254,35 @@ serve(async (req) => {
       });
     }
 
-    let transferRes: Response;
-    try {
-      transferRes = await fetch("https://api.paystack.co/transfer", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${paystackSecretKey}`,
-          "Content-Type": "application/json",
-        },
-        // amount: KES subunits (integer), identical to booking_payments.host_net_minor units
-        body: JSON.stringify({
-          source: "balance",
-          amount: amountMinor,
-          reference,
-          recipient: profile.paystack_recipient_code,
-          reason: payoutReason,
-          currency,
-        }),
-      });
-    } catch (fetchErr) {
-      console.error(`${LOG}: Paystack fetch network error`, {
+    const transferRes = await fetch("https://api.paystack.co/transfer", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${paystackSecretKey}`,
+        "Content-Type": "application/json",
+      },
+      // amount: KES subunits (integer), identical to booking_payments.host_net_minor units
+      body: JSON.stringify({
+        source: "balance",
+        amount: amountMinor,
         reference,
-        transfer_row_id: transferRow.id,
-        host_id: user.id,
-        error: fetchErr instanceof Error ? fetchErr.message : String(fetchErr),
-      });
-      await supabaseClient.from("host_transfers").update({
-        status: "failed",
-        failure_reason: "Paystack request failed (network)",
-      }).eq("id", transferRow.id);
-      return new Response(
-        JSON.stringify({ error: "Paystack request failed", error_code: "paystack_network" }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
+        recipient: profile.paystack_recipient_code,
+        reason: payoutReason,
+        currency,
+      }),
+    });
 
-    const rawBody = await transferRes.text();
-    let transferJson: {
+    const transferJson = await transferRes.json() as {
       status?: boolean;
       message?: string;
       code?: string;
       data?: Record<string, unknown>;
     };
-    try {
-      transferJson = JSON.parse(rawBody) as typeof transferJson;
-    } catch (parseErr) {
-      console.error(`${LOG}: Paystack response not JSON`, {
-        http_status: transferRes.status,
-        reference,
-        transfer_row_id: transferRow.id,
-        host_id: user.id,
-        body_preview: rawBody.slice(0, 500),
-        parse_error: parseErr instanceof Error ? parseErr.message : String(parseErr),
-      });
-      await supabaseClient.from("host_transfers").update({
-        status: "failed",
-        failure_reason: "Invalid Paystack response",
-      }).eq("id", transferRow.id);
-      return new Response(
-        JSON.stringify({ error: "Invalid response from Paystack", error_code: "paystack_parse" }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
 
     const data = transferJson.data;
 
     if (!transferRes.ok || !transferJson.status || !data) {
-      console.error(`${LOG}: Paystack POST /transfer rejected`, {
+      console.error("Paystack POST /transfer failed:", {
         http_status: transferRes.status,
-        reference,
-        transfer_row_id: transferRow.id,
-        host_id: user.id,
-        paystack_message: transferJson.message ?? null,
-        paystack_code: transferJson.code ?? null,
         body: transferJson,
       });
     }
@@ -347,17 +291,10 @@ serve(async (req) => {
       const msg = transferJson.message || "Paystack transfer rejected";
       const hint = paystackHintForMessage(msg, transferJson.code);
 
-      const { error: failUpdateErr } = await supabaseClient.from("host_transfers").update({
+      await supabaseClient.from("host_transfers").update({
         status: "failed",
         failure_reason: msg,
       }).eq("id", transferRow.id);
-      if (failUpdateErr) {
-        console.error(`${LOG}: failed to mark host_transfers failed after Paystack error`, {
-          transfer_row_id: transferRow.id,
-          code: failUpdateErr.code,
-          message: failUpdateErr.message,
-        });
-      }
 
       return new Response(
         JSON.stringify({
@@ -377,7 +314,7 @@ serve(async (req) => {
         ? "queued"
         : "processing";
 
-    const { error: successUpdateErr } = await supabaseClient
+    await supabaseClient
       .from("host_transfers")
       .update({
         status: nextStatus,
@@ -386,16 +323,6 @@ serve(async (req) => {
         metadata: { paystack_response: data },
       })
       .eq("id", transferRow.id);
-    if (successUpdateErr) {
-      console.error(`${LOG}: host_transfers update after Paystack success failed`, {
-        transfer_row_id: transferRow.id,
-        reference,
-        host_id: user.id,
-        paystack_status: data.status,
-        code: successUpdateErr.code,
-        message: successUpdateErr.message,
-      });
-    }
 
     return new Response(
       JSON.stringify({
@@ -409,9 +336,7 @@ serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    const stack = e instanceof Error ? e.stack : undefined;
-    console.error(`${LOG}: unhandled`, { message: msg, stack });
+    console.error("initiate-host-transfer:", e);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

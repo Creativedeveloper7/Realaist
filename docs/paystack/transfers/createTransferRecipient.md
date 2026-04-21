@@ -222,6 +222,8 @@ MPPAYBILL for Paybill numbers and requires additional information during disburs
 MPTILL for business Till numbers
 The recipient type for Paybill and Till numbers is mobile_money_business.
 
+**Integration note (Kenya individual M-Pesa):** Paystack expects `account_number` as the **local** mobile number (10 digits starting with `0`, e.g. `0712345678`), not international `254…`. Use `bank_code` **`MPESA`** for standard registered M-Pesa SIMs (`type`: `mobile_money`).
+
 
 cURL
 

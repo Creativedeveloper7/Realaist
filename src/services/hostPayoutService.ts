@@ -111,6 +111,7 @@ export async function upsertHostPaymentProfile(fields: {
   return { error: error?.message ?? null };
 }
 
+/** Keep in sync with HOST_TRANSFER_RESERVE_STATUSES in initiate-host-transfer edge function. */
 const TRANSFER_RESERVE_STATUSES = [
   'pending',
   'queued',
@@ -268,9 +269,19 @@ export async function syncHostPaystackRecipient(body?: {
   return { success: true, recipientCode: json.paystack_recipient_code };
 }
 
-export async function initiateHostTransfer(amountKes: number, reason?: string): Promise<{
+/**
+ * Withdraw to M-Pesa: send `amount_minor` (KES cents) so the Edge call matches ledger + Paystack `amount`
+ * without float rescaling (see docs/paystack/transfers/paystackSIngleTransfer.md).
+ */
+export async function initiateHostTransfer(params: {
+  amount_minor: number;
+  reason?: string;
+}): Promise<{
   success: boolean;
   error?: string;
+  hint?: string;
+  errorCode?: string;
+  availableKes?: number;
   requiresOtp?: boolean;
   transferCode?: string;
   reference?: string;
@@ -279,6 +290,14 @@ export async function initiateHostTransfer(amountKes: number, reason?: string): 
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return { success: false, error: 'Not signed in' };
 
+  if (
+    !Number.isFinite(params.amount_minor) ||
+    params.amount_minor <= 0 ||
+    !Number.isInteger(params.amount_minor)
+  ) {
+    return { success: false, error: 'Invalid withdrawal amount' };
+  }
+
   const res = await fetch(`${supabaseUrl}${bookingAndPayoutEndpoints.initiateHostTransfer}`, {
     method: 'POST',
     headers: {
@@ -286,13 +305,33 @@ export async function initiateHostTransfer(amountKes: number, reason?: string): 
       Authorization: `Bearer ${session.access_token}`,
       apikey: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
     },
-    body: JSON.stringify({ amount_kes: amountKes, reason }),
+    body: JSON.stringify({
+      amount_minor: params.amount_minor,
+      reason: params.reason,
+    }),
   });
 
-  const json = await res.json().catch(() => ({}));
+  const json = (await res.json().catch(() => ({}))) as {
+    error?: string;
+    hint?: string;
+    error_code?: string;
+    available_kes?: number;
+    requires_otp?: boolean;
+    transfer_code?: string;
+    reference?: string;
+  };
+
   if (!res.ok) {
-    return { success: false, error: json.error || 'Transfer failed' };
+    return {
+      success: false,
+      error: json.error || 'Transfer failed',
+      hint: json.hint,
+      errorCode: json.error_code,
+      availableKes:
+        typeof json.available_kes === 'number' ? json.available_kes : undefined,
+    };
   }
+
   return {
     success: true,
     requiresOtp: json.requires_otp,

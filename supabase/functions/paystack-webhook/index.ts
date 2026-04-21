@@ -1,13 +1,53 @@
 // Supabase Edge Function: Paystack Webhook Handler
-// This function handles webhook events from Paystack
+// Handles charge.* (campaign + short-stay) and transfer.* (host M-Pesa withdrawals).
+// Paystack uses one webhook URL for all event types (see docs/paystack/webhooks.md).
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Inlined so MCP/CLI deploy bundles a single entry file; see also _shared/paystackTransferEvents.ts (paystack-transfer-webhook).
+// deno-lint-ignore no-explicit-any
+async function applyPaystackTransferEventToHostTransfers(
+  supabaseClient: any,
+  event: { event: string; data?: Record<string, unknown> },
+): Promise<void> {
+  const ev = event.event;
+  const data = event.data;
+  const reference = data?.reference as string | undefined;
+
+  if (!reference) {
+    return;
+  }
+
+  if (ev === "transfer.success") {
+    await supabaseClient
+      .from("host_transfers")
+      .update({
+        status: "success",
+        paystack_transfer_code: (data?.transfer_code as string) ?? undefined,
+        failure_reason: null,
+        metadata: { last_webhook: event },
+      })
+      .eq("transfer_reference", reference);
+  } else if (ev === "transfer.failed" || ev === "transfer.reversed") {
+    await supabaseClient
+      .from("host_transfers")
+      .update({
+        status: "failed",
+        failure_reason:
+          (data?.failures as string) ||
+          (data?.message as string) ||
+          ev,
+        metadata: { last_webhook: event },
+      })
+      .eq("transfer_reference", reference);
+  }
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-paystack-signature",
 };
 
 // Paystack webhook IP addresses (for validation)
@@ -318,6 +358,12 @@ serve(async (req) => {
           console.log("Campaign payment status updated to failed:", payment.campaign_id);
         }
       }
+    } else if (
+      event.event === "transfer.success" ||
+      event.event === "transfer.failed" ||
+      event.event === "transfer.reversed"
+    ) {
+      await applyPaystackTransferEventToHostTransfers(supabaseClient, event);
     } else {
       console.log("Unhandled webhook event:", event.event);
     }

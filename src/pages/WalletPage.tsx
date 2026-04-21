@@ -13,6 +13,7 @@ import {
   type HostTransferLedgerRow,
   type PayerBookingPaymentRow,
 } from '../services/hostPayoutService';
+import { KES_PAYSTACK_SUBUNITS_PER_UNIT } from '../config/paystackKes';
 import { Wallet, RefreshCw, Smartphone, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 
 interface WalletPageProps {
@@ -25,7 +26,7 @@ function kesFromMinor(minor: number): string {
     currency: 'KES',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(minor / 100);
+  }).format(minor / KES_PAYSTACK_SUBUNITS_PER_UNIT);
 }
 
 type ActivityRow =
@@ -160,7 +161,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ isDarkMode }) => {
     if (n <= 0) {
       return { state: 'nonpositive' as const, message: 'Amount must be greater than zero.' };
     }
-    const amountMinor = Math.round(n * 100);
+    const amountMinor = Math.round(n * KES_PAYSTACK_SUBUNITS_PER_UNIT);
     if (balance != null && amountMinor > balance.availableMinor) {
       const overMinor = amountMinor - balance.availableMinor;
       return {
@@ -204,10 +205,12 @@ const WalletPage: React.FC<WalletPageProps> = ({ isDarkMode }) => {
       }
       return;
     }
-    const n = withdrawValidation.amountKes;
     setWithdrawLoading(true);
     setWithdrawMsg(null);
-    const r = await initiateHostTransfer(n, 'Host withdrawal');
+    const r = await initiateHostTransfer({
+      amount_minor: withdrawValidation.amountMinor,
+      reason: 'Host withdrawal',
+    });
     setWithdrawLoading(false);
     if (r.success) {
       setWithdrawAmount('');
@@ -218,7 +221,14 @@ const WalletPage: React.FC<WalletPageProps> = ({ isDarkMode }) => {
       );
       await loadHostData();
     } else {
-      setWithdrawMsg(r.error || 'Transfer failed.');
+      const lines = [r.error, r.hint].filter(Boolean);
+      if (
+        typeof r.availableKes === 'number' &&
+        r.errorCode === 'insufficient_ledger'
+      ) {
+        lines.push(`In-app available (KES): ${r.availableKes.toFixed(2)}`);
+      }
+      setWithdrawMsg(lines.join(' ') || 'Transfer failed.');
     }
   };
 
@@ -388,7 +398,9 @@ const WalletPage: React.FC<WalletPageProps> = ({ isDarkMode }) => {
                 Withdraw to M-Pesa
               </h2>
               <p className={`text-sm mb-4 ${labelMuted}`}>
-                Amount cannot exceed your available balance. Paystack may require OTP for some transfers.
+                Amount cannot exceed your in-app available balance. The transfer itself is sent from your Paystack
+                business balance (the same account that receives guest payments); Paystack may require OTP for some
+                transfers.
               </p>
               <div className="flex flex-wrap gap-3 items-end">
                 <div className="flex-1 min-w-[140px]">
@@ -404,7 +416,11 @@ const WalletPage: React.FC<WalletPageProps> = ({ isDarkMode }) => {
                   <input
                     type="number"
                     min={balance != null && balance.availableMinor > 0 ? 0.01 : 1}
-                    max={balance != null ? balance.availableMinor / 100 : undefined}
+                    max={
+                      balance != null
+                        ? balance.availableMinor / KES_PAYSTACK_SUBUNITS_PER_UNIT
+                        : undefined
+                    }
                     step="0.01"
                     value={withdrawAmount}
                     onChange={(e) => {

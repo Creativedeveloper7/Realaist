@@ -40,6 +40,9 @@ JSON
   "recipient": "RCP_gd9vgag7n5lr5ix",
   "reference": "acv_9ee55786-2323-4760-98e2-6380c9cb3f68"
 }
+
+**KES / ledger alignment:** For Kenyan Shilling, Paystack expects `amount` as integer **subunits** (cents): e.g. KES 1,000.00 → `100000`. Use the same integers in your own ledger (`host_net_minor`, withdrawal `amount_minor`) and pass that value as `amount` when `currency` is `KES`, so host withdrawals match booking credits without float conversion.
+
 Initiate a transfer
 To send money to a customer, you make a POST request to the Initate TransferAPI, passing the reference and recipient_code previously created.
 
